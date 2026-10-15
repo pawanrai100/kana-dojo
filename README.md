@@ -32,6 +32,27 @@ npm start          # serve the production build
 
 CLI alternative: `npm i -g vercel && vercel` from the project folder.
 
+## Accounts and cloud sync
+
+Optional. With no Supabase keys the site runs guest-only, exactly as before. Setup steps: **[SETUP-ACCOUNTS.md](SETUP-ACCOUNTS.md)**.
+
+- Login, signup, Google sign in, email verification, password reset: `/login`, `/signup`, `/forgot-password`, `/reset-password`, plus `/auth/callback` and `/auth/confirm` for email and Google links.
+- `/profile`: avatar, username, stats, password change, sign out (this device or everywhere), data download.
+- Guest progress stays under the original `localStorage` keys. After signing in, users are asked once whether to add it to their account (a backup is kept).
+- Each signed in user gets their own local copy (`kana-dojo:v1:u:<id>:...`) that syncs to one `user_progress` row. Saves happen locally first, then upload about 1.5 s later. It works offline and catches up when back online.
+- Two devices editing at once can't overwrite each other: every save carries a `rev` number, and a stale save is rejected, merged and retried (`src/lib/sync/`).
+- Database rules live in `supabase/migrations/`. Row Level Security limits every user to their own rows. `supabase/tests/` has the SQL tests used to check it.
+
+Where things live:
+
+| Path | What |
+| --- | --- |
+| `src/lib/supabase/` | client setup, public key guard, safe redirects |
+| `src/lib/sync/` | merge rules, sync engine, Supabase storage adapter (all unit tested) |
+| `src/features/auth/` | auth provider (session + sync), login/signup/password forms |
+| `src/features/profile/` | profile page |
+| `src/store/app-store.ts` | per-user local storage, guest import |
+
 ## How the game works
 
 - **Rounds** of 5/10/15/20 questions, forever. After grading you always get **Next N Words →**, whatever you scored. **Skip Round** gives fresh questions any time.

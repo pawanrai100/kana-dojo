@@ -7,6 +7,7 @@ import { MAIN_NAV, UPCOMING_MODULES } from "@/lib/modules";
 import { currentStreak, levelInfo } from "@/lib/progress/stats";
 import { cn } from "@/lib/utils";
 import { useAppState } from "@/store/app-store";
+import { AccountChip } from "./account-chip";
 import { ThemeSync } from "./theme-sync";
 
 function isActive(pathname: string, href: string) {
@@ -69,11 +70,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </ul>
 
-        <div className="mt-auto flex items-center gap-2 rounded-xl bg-sakura-soft px-3 py-2.5 text-sm text-sakura">
+        <div className="mt-auto space-y-3">
+          <AccountChip />
+        <div className="flex items-center gap-2 rounded-xl bg-sakura-soft px-3 py-2.5 text-sm text-sakura">
           <Flame className="size-4" />
           <span>
             <strong className="font-semibold">{streak}</strong> day streak
           </span>
+        </div>
         </div>
       </aside>
 
@@ -83,8 +87,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="font-kana grid size-8 place-items-center rounded-lg bg-primary text-lg text-primary-foreground">か</span>
             Kana Dojo
           </Link>
-          <span className="flex items-center gap-1.5 rounded-full bg-sakura-soft px-3 py-1 text-sm text-sakura">
-            <Flame className="size-4" /> {streak}
+          <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5 rounded-full bg-sakura-soft px-3 py-1 text-sm text-sakura">
+              <Flame className="size-4" /> {streak}
+            </span>
+            <AccountChip compact />
           </span>
         </header>
 
