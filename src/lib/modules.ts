@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { BookOpenText, Ear, Grid3x3, Languages, LayoutDashboard, LineChart, PenLine, Settings, Sparkles, Swords } from "lucide-react";
+import { BookOpenText, Castle, Ear, Grid3x3, Languages, LayoutDashboard, LineChart, PenLine, Settings, Sparkles, Swords } from "lucide-react";
 
 // nav + learning module registry. flip status to "live" and add a route
 // when a new module ships (katakana, kanji, vocab...)
@@ -20,6 +20,7 @@ export interface LearningModule {
 export const MAIN_NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/practice", label: "Hiragana Practice", icon: Swords },
+  { href: "/tower", label: "The Tower", icon: Castle },
   { href: "/chart", label: "Hiragana Chart", icon: Grid3x3 },
   { href: "/progress", label: "Progress & Stats", icon: LineChart },
   { href: "/settings", label: "Settings", icon: Settings },

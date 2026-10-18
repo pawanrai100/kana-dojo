@@ -12,6 +12,7 @@ import type { ActiveRound } from "@/lib/quiz/session";
 import type { AnswerState, GeneratorState, GradedRound } from "@/lib/quiz/types";
 import type { PracticeMode, Settings, TimerPace } from "@/lib/settings/types";
 import { levelInfo } from "@/lib/progress/stats";
+import type { Achievement } from "@/lib/tower/achievements";
 import { playSound, type SoundName } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
@@ -152,6 +153,7 @@ interface GradedView {
   graded: GradedRound;
   xpAfter: number;
   isBest: boolean;
+  badges: Achievement[];
 }
 
 function nextOpen(answers: AnswerState[], from: number): number {
@@ -184,9 +186,9 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const finish = (final: AnswerState[]) => {
     const g = gradeRound(round, final, { durationMs: Date.now() - initial.startedAt });
     const prevBest = actions.getState().progress.bestRoundPoints;
-    actions.recordRound(g);
+    const badges = actions.recordRound(g);
     setAnswers(final);
-    setView({ graded: g, xpAfter: actions.getState().progress.xp, isBest: g.totalPoints > prevBest });
+    setView({ graded: g, xpAfter: actions.getState().progress.xp, isBest: g.totalPoints > prevBest, badges });
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
@@ -360,6 +362,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
           graded={view.graded}
           xpAfter={view.xpAfter}
           isBest={view.isBest}
+          badges={view.badges}
           shortcuts={settings.shortcuts}
           nextLabel={`Next ${settings.questionsPerRound} Words →`}
           onNext={onNext}

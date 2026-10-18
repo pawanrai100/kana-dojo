@@ -1,4 +1,5 @@
 import { isBasicHiragana } from "@/lib/kana/hiragana";
+import { sanitizeTower } from "@/lib/tower/progress";
 import { emptyProgress, type CharStat, type DayStat, type Progress, type RoundLog, type SessionLog, type WordStat } from "./types";
 
 type Obj = Record<string, unknown>;
@@ -104,5 +105,6 @@ export function sanitizeProgress(raw: unknown): Progress {
       usedWords: strArr(gen.usedWords),
       recentCombos: strArr(gen.recentCombos),
     },
+    tower: sanitizeTower(raw.tower),
   };
 }

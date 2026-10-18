@@ -1,5 +1,6 @@
 import type { PracticeMode } from "@/lib/settings/types";
 import type { GeneratorState } from "@/lib/quiz/types";
+import { emptyTower, type TowerProgress } from "@/lib/tower/progress";
 
 export interface CharStat {
   seen: number;
@@ -64,6 +65,7 @@ export interface Progress {
   sessions: SessionLog[]; // newest last, capped
   roundLog: RoundLog[]; // newest last, capped
   gen: GeneratorState;
+  tower: TowerProgress;
 }
 
 export function emptyProgress(): Progress {
@@ -83,5 +85,6 @@ export function emptyProgress(): Progress {
     sessions: [],
     roundLog: [],
     gen: { deck: [], usedWords: [], recentCombos: [] },
+    tower: emptyTower(),
   };
 }

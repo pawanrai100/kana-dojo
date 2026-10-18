@@ -5,6 +5,8 @@ import { Flame, Star, Target, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd, ProgressBar } from "@/components/ui/misc";
 import type { GradedRound } from "@/lib/quiz/types";
+import type { Achievement } from "@/lib/tower/achievements";
+import { Medal } from "@/features/tower/medal";
 import { levelInfo, rankTitle } from "@/lib/progress/stats";
 import { cn } from "@/lib/utils";
 
@@ -14,13 +16,14 @@ interface Props {
   graded: GradedRound;
   xpAfter: number;
   isBest: boolean;
+  badges?: Achievement[];
   nextLabel: string;
   shortcuts: boolean;
   onNext: () => void;
 }
 
 export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundSummary(
-  { graded, xpAfter, isBest, nextLabel, shortcuts, onNext },
+  { graded, xpAfter, isBest, badges = [], nextLabel, shortcuts, onNext },
   ref,
 ) {
   const lvl = levelInfo(xpAfter);
@@ -63,6 +66,19 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
         </dl>
       </div>
 
+      {badges.length > 0 && (
+        <ul className="mt-5 flex flex-wrap gap-3">
+          {badges.map((b) => (
+            <li key={b.id} className="animate-stamp flex items-center gap-3 rounded-2xl bg-sun-soft py-2 pl-2 pr-4">
+              <Medal a={b} size={44} />
+              <span>
+                <span className="block text-sm font-extrabold">New badge: {b.name}</span>
+                <span className="block text-xs text-muted">{b.how}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       <div className="mt-6 flex flex-col gap-4 border-t-2 border-surface-2 pt-5 sm:flex-row sm:items-center">
         <div className="flex-1">
           <div className="mb-1.5 flex items-center justify-between text-xs text-muted">

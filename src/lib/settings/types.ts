@@ -1,7 +1,8 @@
 import { BASIC_KANA_LIST, isBasicHiragana } from "@/lib/kana/hiragana";
 
 export type PracticeMode = "mixed" | "words" | "random";
-export type LengthRange = "2-3" | "2-5" | "3-7";
+// 2-4 is only used by tower floors, settings still offer the three below
+export type LengthRange = "2-3" | "2-4" | "2-5" | "3-7";
 export type TimerPace = "off" | "relaxed" | "normal" | "fast";
 export type ThemePref = "light" | "dark" | "system";
 
@@ -33,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export const LENGTH_BOUNDS: Record<LengthRange, [number, number]> = {
   "2-3": [2, 3],
+  "2-4": [2, 4],
   "2-5": [2, 5],
   "3-7": [3, 7],
 };

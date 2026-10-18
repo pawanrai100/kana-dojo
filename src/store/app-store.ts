@@ -10,6 +10,9 @@ import { sanitizeActiveRound, type ActiveRound } from "@/lib/quiz/session";
 import { DEFAULT_SETTINGS, sanitizeSettings, type Settings } from "@/lib/settings/types";
 import { localRepo, STORAGE_PREFIX } from "@/lib/storage/local";
 import { hasProgress, mergeGuestInto } from "@/lib/sync/merge";
+import { newlyEarned, type Achievement } from "@/lib/tower/achievements";
+import type { BattleState } from "@/lib/tower/battle";
+import { applyBattle, type TowerOutcome } from "@/lib/tower/progress";
 import type { LocalSide, SyncMeta } from "@/lib/sync/types";
 
 // guest data lives under the same keys as before accounts existed, so nobody's
@@ -125,9 +128,20 @@ export const actions = {
   saveActive(active: ActiveRound | null) {
     set({ active });
   },
-  recordRound(graded: GradedRound) {
-    const s = ensure();
-    set({ progress: applyGradedRound(s.progress, graded, s.progress.gen), active: null });
+  // returns any badges this round just earned
+  recordRound(graded: GradedRound): Achievement[] {
+    const before = ensure().progress;
+    const after = applyGradedRound(before, graded, before.gen);
+    set({ progress: after, active: null });
+    return newlyEarned(before, after);
+  },
+  // a tower battle counts as practice too, then the floor result goes on top
+  recordBattle(graded: GradedRound | null, battle: BattleState): { outcome: TowerOutcome; badges: Achievement[] } {
+    const before = ensure().progress;
+    const practiced = graded ? applyGradedRound(before, graded, before.gen) : before;
+    const { progress, outcome } = applyBattle(practiced, battle);
+    set({ progress });
+    return { outcome, badges: newlyEarned(before, progress) };
   },
   clearActive() {
     set({ active: null });

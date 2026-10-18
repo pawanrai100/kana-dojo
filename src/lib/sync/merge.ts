@@ -1,10 +1,11 @@
 import type { CharStat, DayStat, Progress, RoundLog, SessionLog, WordStat } from "@/lib/progress/types";
+import { mergeTower } from "@/lib/tower/progress";
 
 const MAX_SESSIONS = 120;
 const MAX_ROUND_LOG = 300;
 
 export function hasProgress(p: Progress): boolean {
-  return p.totalAnswered > 0 || p.roundsSkipped > 0 || Object.keys(p.days).length > 0;
+  return p.totalAnswered > 0 || p.roundsSkipped > 0 || Object.keys(p.days).length > 0 || Object.keys(p.tower.floors).length > 0;
 }
 
 function unionSessions(a: SessionLog[], b: SessionLog[]): SessionLog[] {
@@ -67,6 +68,7 @@ export function mergeDiverged(local: Progress, remote: Progress): Progress {
     sessions: unionSessions(local.sessions, remote.sessions),
     roundLog: unionRounds(local.roundLog, remote.roundLog),
     gen: local.gen, // generator state is per device
+    tower: mergeTower(local.tower, remote.tower),
   };
 }
 
@@ -119,5 +121,6 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     sessions: unionSessions(account.sessions, guest.sessions),
     roundLog: unionRounds(account.roundLog, guest.roundLog),
     gen: account.gen,
+    tower: mergeTower(account.tower, guest.tower, true),
   };
 }

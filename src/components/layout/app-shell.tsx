@@ -18,6 +18,7 @@ function isActive(pathname: string, href: string) {
 const SHORT: Record<string, string> = {
   "/": "Home",
   "/practice": "Practice",
+  "/tower": "Tower",
   "/chart": "Chart",
   "/progress": "Stats",
   "/settings": "Settings",
@@ -89,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
       >
         {MAIN_NAV.map((item) => {
           const active = isActive(pathname, item.href);
@@ -98,9 +99,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={cn("flex flex-col items-center gap-1 py-2.5 text-[11px] font-extrabold", active ? "text-primary" : "text-muted")}
+              className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] font-extrabold sm:text-[11px]", active ? "text-primary" : "text-muted")}
             >
-              <span className={cn("grid h-8 w-12 place-items-center rounded-full", active && "bg-primary-soft")}>
+              <span className={cn("grid h-8 w-11 place-items-center rounded-full", active && "bg-primary-soft")}>
                 <item.icon className="size-5" />
               </span>
               {SHORT[item.href] ?? item.label}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CloudUpload, Download, LogOut, ShieldCheck } from "lucide-react";
+import { CloudUpload, Crown, Download, LogOut, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/misc";
@@ -18,6 +18,10 @@ import { useAuth, type Profile } from "@/features/auth/auth-provider";
 import { Avatar, SyncBadge, displayName } from "@/features/auth/account-bits";
 import { Field, FormMessage, PasswordField, friendlyAuthError, passwordProblem } from "@/features/auth/auth-ui";
 import { USERNAME_RE } from "@/features/auth/signup-form";
+import { Medal } from "@/features/tower/medal";
+import { ACHIEVEMENTS, currentTitle, earnedIds } from "@/lib/tower/achievements";
+import { clearedCount } from "@/lib/tower/progress";
+import { TOP_FLOOR } from "@/lib/tower/floors";
 
 const AVATAR_KANA = ["か", "さ", "た", "な", "は", "ま", "や", "ら", "わ", "ね", "の", "ゆ", "そ", "ほ", "み", "ん"];
 
@@ -92,6 +96,7 @@ function GuestProfile({ progress, enabled }: { progress: Progress; enabled: bool
           )}
         </div>
       </Card>
+      <TrophyStrip progress={progress} />
       <Card>
         <CardHeader>
           <CardTitle>Your progress on this device</CardTitle>
@@ -120,6 +125,11 @@ function SignedInProfile({ progress }: { progress: Progress }) {
           <Avatar profile={profile} size={84} />
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-2xl font-extrabold tracking-tight">{displayName(profile, email)}</h2>
+            {currentTitle(progress) && (
+              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold text-sun-ink">
+                <Crown className="size-3.5" aria-hidden /> {currentTitle(progress)}
+              </span>
+            )}
             <p className="text-sm text-muted">
               {profile ? `@${profile.username}` : "Loading profile…"}
               {joined && <>, joined {new Date(joined).toLocaleDateString([], { month: "long", year: "numeric" })}</>}
@@ -141,6 +151,8 @@ function SignedInProfile({ progress }: { progress: Progress }) {
           <StatGrid progress={progress} />
         </div>
       </Card>
+
+      <TrophyStrip progress={progress} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {profile && <EditProfile profile={profile} />}
@@ -363,5 +375,40 @@ function ChangePassword() {
         </Button>
       </div>
     </form>
+  );
+}
+
+// earned badges at a glance, with a way into the trophy room
+function TrophyStrip({ progress }: { progress: Progress }) {
+  const earned = earnedIds(progress);
+  const got = ACHIEVEMENTS.filter((a) => earned.has(a.id));
+  return (
+    <Card>
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-3">
+        <div>
+          <CardTitle>Trophies</CardTitle>
+          <CardDescription>
+            {earned.size} of {ACHIEVEMENTS.length} badges, tower floor {clearedCount(progress.tower)}/{TOP_FLOOR}
+          </CardDescription>
+        </div>
+        <Button asChild variant="secondary" size="sm">
+          <Link href="/tower#trophies">Trophy room</Link>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {got.length === 0 ? (
+          <p className="text-sm text-muted">No badges yet. Finish a round or clear the first tower floor to earn one.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-3">
+            {got.map((a) => (
+              <li key={a.id} title={`${a.name}: ${a.how}`} className="flex flex-col items-center gap-1">
+                <Medal a={a} size={52} />
+                <span className="max-w-20 text-center text-[11px] font-bold leading-tight text-muted">{a.name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }
