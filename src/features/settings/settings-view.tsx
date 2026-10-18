@@ -113,7 +113,7 @@ function SettingsBody({ s }: { s: Settings }) {
                     if (next.length) set({ enabledChars: next });
                   }}
                   className={cn(
-                    "rounded-xl border px-3 py-2 text-sm transition-colors",
+                    "press rounded-2xl border-2 px-3.5 py-2 text-sm font-bold transition-colors",
                     on ? "border-primary bg-primary-soft text-primary" : some ? "border-primary/50 border-dashed" : "border-border hover:bg-surface-2",
                   )}
                 >
@@ -186,7 +186,7 @@ function SettingsBody({ s }: { s: Settings }) {
               Keep progress
             </Button>
             <Button
-              className="bg-bad text-white"
+              variant="danger"
               onClick={() => {
                 actions.resetProgress();
                 setConfirmReset(false);

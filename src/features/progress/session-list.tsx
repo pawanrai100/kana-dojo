@@ -19,19 +19,19 @@ export function SessionList({ sessions, empty }: { sessions: SessionLog[]; empty
         return (
           <li key={s.id} className="flex items-center gap-4 py-3">
             <div
-              className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-sm font-semibold text-primary"
+              className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary-soft text-sm font-extrabold text-primary"
               aria-label={`${acc}% accuracy`}
             >
               {acc}%
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium">{when(s.endedAt)}</p>
+              <p className="text-sm font-extrabold">{when(s.endedAt)}</p>
               <p className="text-xs text-muted">
                 {MODE_LABEL[s.mode]}, {s.rounds} round{s.rounds === 1 ? "" : "s"}, {s.correct}/{s.answered} correct
               </p>
             </div>
             <div className="text-right text-xs text-muted">
-              <p className="font-medium text-foreground">+{s.xp} XP</p>
+              <p className="font-extrabold text-primary">+{s.xp} XP</p>
               {s.bestCombo > 1 && <p>combo ×{s.bestCombo}</p>}
             </div>
           </li>

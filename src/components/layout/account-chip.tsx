@@ -6,19 +6,19 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { Avatar, SyncBadge, displayName } from "@/features/auth/account-bits";
 import { cn } from "@/lib/utils";
 
-// sidebar: who's signed in + sync state, or a nudge to make an account
+// header avatar / log in button, or the bigger signed-in card
 export function AccountChip({ compact }: { compact?: boolean }) {
   const { status, user, profile, sync } = useAuth();
   if (status === "disabled") return null;
 
   if (status === "loading") {
-    return <div className={cn("animate-pulse rounded-full bg-surface-2", compact ? "size-8" : "h-14 rounded-xl")} aria-hidden />;
+    return <div className={cn("animate-pulse rounded-full bg-surface-2", compact ? "size-9" : "h-14 rounded-xl")} aria-hidden />;
   }
 
   if (status === "guest") {
     if (compact) {
       return (
-        <Link href="/login" className="rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
+        <Link href="/login" className="press rounded-full bg-primary px-4 py-1.5 text-sm font-extrabold text-primary-foreground shadow-[0_3px_0_var(--primary-deep)]">
           Log in
         </Link>
       );
@@ -36,7 +36,7 @@ export function AccountChip({ compact }: { compact?: boolean }) {
   if (compact) {
     return (
       <Link href="/profile" aria-label="Your profile" className="rounded-full ring-2 ring-transparent transition hover:ring-primary/40">
-        <Avatar profile={profile} size={32} />
+        <Avatar profile={profile} size={36} className="shadow-[0_3px_0_var(--border)]" />
       </Link>
     );
   }

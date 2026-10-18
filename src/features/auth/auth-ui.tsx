@@ -10,10 +10,10 @@ import { cn } from "@/lib/utils";
 // two column frame: a quiet kana panel on wide screens, the form on the right
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode }) {
   return (
-    <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface shadow-card md:grid-cols-[0.9fr_1fr]">
-      <div aria-hidden className="relative hidden flex-col justify-between bg-primary p-8 text-primary-foreground md:flex">
-        <span className="text-sm opacity-80">Kana Dojo</span>
-        <div className="font-kana select-none text-[9rem] leading-none opacity-95">
+    <div className="mx-auto grid w-full max-w-4xl overflow-hidden rounded-[var(--radius-card)] bg-surface shadow-card md:grid-cols-[0.9fr_1fr]">
+      <div aria-hidden className="relative hidden flex-col justify-between bg-primary p-8 text-white md:flex">
+        <span className="font-display text-lg">Kana Dojo</span>
+        <div className="font-display select-none text-[9rem] leading-none opacity-95">
           あ<span className="opacity-40">い</span>
         </div>
         <p className="max-w-[16rem] text-sm leading-relaxed opacity-85">
@@ -21,7 +21,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
         </p>
       </div>
       <div className="p-6 sm:p-10">
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="font-display text-3xl">{title}</h1>
         {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
         <div className="mt-7">{children}</div>
         {footer && <div className="mt-6 border-t border-border pt-5 text-sm text-muted">{footer}</div>}
@@ -58,7 +58,7 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field({ l
           aria-invalid={!!error}
           aria-describedby={describedBy}
           className={cn(
-            "h-11 w-full rounded-xl border bg-background px-3 text-[15px] outline-none transition-colors placeholder:text-muted/60 focus:border-primary",
+            "h-12 w-full rounded-2xl border-2 bg-background px-4 font-bold text-[15px] outline-none transition-colors placeholder:text-muted/60 focus:border-primary",
             error ? "border-bad" : "border-border",
             trailing && "pr-11",
             className,

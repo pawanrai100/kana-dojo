@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AlertCircle, Info, SkipForward, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge, Kbd, Segmented } from "@/components/ui/misc";
+import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
 import { generateRound } from "@/lib/quiz/generate";
 import { emptyAnswer, gradeRound } from "@/lib/quiz/grade";
@@ -15,7 +15,7 @@ import { levelInfo } from "@/lib/progress/stats";
 import { playSound, type SoundName } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
-import { QuestionCard, type CardState } from "./question-card";
+import { ActiveCard, ResultCard } from "./question-card";
 import { RoundSummary } from "./round-summary";
 import { Petals } from "./petals";
 
@@ -94,37 +94,27 @@ function PracticeSession({ settings }: { settings: Settings }) {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Reading practice</h1>
-          <p className="mt-1 text-sm text-muted">Read each word, type it in romaji, beat the clock.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Segmented label="Practice mode" value={settings.mode} options={MODE_OPTIONS} onChange={(mode) => changeSetting({ mode })} />
-        </div>
+      <div>
+        <h1 className="font-display text-3xl sm:text-4xl">Practice</h1>
+        <p className="mt-1 hidden text-sm text-muted sm:block">Read the kana, type it in romaji, beat the clock.</p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="flex items-center gap-1.5 text-muted">
-          <Timer className="size-4" /> Timer
+      <div className="flex flex-wrap items-center gap-2 text-sm [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-xs sm:[&_[role=radio]]:px-3.5 sm:[&_[role=radio]]:text-sm">
+        <Segmented label="Practice mode" value={settings.mode} options={MODE_OPTIONS} onChange={(mode) => changeSetting({ mode })} />
+        <span className="flex items-center gap-1.5">
+          <Timer className="size-4 text-muted" aria-hidden />
+          <Segmented label="Timer pace" value={settings.timerPace} options={PACE_OPTIONS} onChange={(timerPace) => changeSetting({ timerPace })} />
         </span>
-        <Segmented
-          label="Timer pace"
-          value={settings.timerPace}
-          options={PACE_OPTIONS}
-          onChange={(timerPace) => changeSetting({ timerPace })}
-          className="text-xs"
-        />
-        <Badge tone="primary" className="ml-auto">
-          {settings.enabledChars.length === 46 ? "All 46 hiragana" : `${settings.enabledChars.length} of 46 characters`}
-        </Badge>
-        <Link href="/chart" className="text-xs text-primary underline-offset-4 hover:underline">
-          Change
-        </Link>
+        <span className="ml-auto flex items-center gap-2">
+          <Badge tone="primary">{settings.enabledChars.length === 46 ? "All 46 hiragana" : `${settings.enabledChars.length} of 46 characters`}</Badge>
+          <Link href="/chart" className="text-xs font-extrabold text-primary hover:underline">
+            Change
+          </Link>
+        </span>
       </div>
 
       {current.kind === "error" ? (
-        <div role="alert" className="rounded-[var(--radius-card)] border border-border bg-surface p-6 shadow-card">
+        <div role="alert" className="rounded-[var(--radius-card)] bg-surface p-6 shadow-card">
           <div className="flex items-start gap-3">
             <AlertCircle className="mt-0.5 size-5 text-warn" />
             <div className="space-y-3">
@@ -182,12 +172,10 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const [view, setView] = useState<GradedView | null>(null);
   const [elapsed, setElapsed] = useState<{ idx: number; ms: number } | null>(null);
 
-  const inputs = useRef<(HTMLInputElement | null)[]>([]);
-  const cards = useRef<(HTMLDivElement | null)[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const nextBtn = useRef<HTMLButtonElement>(null);
   const summaryTop = useRef<HTMLDivElement>(null);
   const usedNow = useRef<() => number>(() => 0);
-  const firstFocus = useRef(true);
 
   const sfx = (n: SoundName) => {
     if (settings.sound) playSound(n);
@@ -265,13 +253,10 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     actions.saveActive({ ...initial, answers, activeIndex });
   }, [answers, activeIndex, view, initial]);
 
-  // focus + scroll the active question
+  // focus the card that just got dealt
   useEffect(() => {
     if (view) return;
-    const el = inputs.current[activeIndex];
-    if (settings.autoFocus && el) el.focus({ preventScroll: true });
-    if (!firstFocus.current) cards.current[activeIndex]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    firstFocus.current = false;
+    if (settings.autoFocus) inputRef.current?.focus({ preventScroll: true });
   }, [activeIndex, view, settings.autoFocus]);
 
   useEffect(() => {
@@ -317,7 +302,6 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     }
     if (i < total - 1) {
       setActiveIndex(i + 1);
-      inputs.current[i + 1]?.focus();
     } else {
       finish(answers);
     }
@@ -334,11 +318,8 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     finish(final);
   };
 
-  const cardState = (i: number): CardState => {
-    if (!timed) return "free";
-    if (answers[i].locked) return "locked";
-    return i === activeIndex ? "active" : "pending";
-  };
+  // untimed rounds let you jump back to any card
+  const canJump = (i: number) => !view && !timed && i !== activeIndex;
 
   const timeLeft = (i: number) => {
     const q = round.questions[i];
@@ -351,11 +332,28 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const lvl = levelInfo(actions.getState().progress.xp);
   const results = view?.graded.results;
 
+  const chipTone = (i: number) => {
+    const r = results?.[i];
+    if (r) return r.correct ? "bg-good text-white shadow-[0_3px_0_var(--good-deep)]" : "bg-bad text-white shadow-[0_3px_0_var(--bad-deep)]";
+    if (i === activeIndex) return "bg-surface text-primary ring-[3px] ring-inset ring-primary shadow-[0_3px_0_var(--border)]";
+    if (answers[i].locked) return "bg-primary text-primary-foreground shadow-[0_3px_0_var(--primary-deep)]";
+    if (answers[i].value.trim()) return "bg-primary-soft text-primary shadow-[0_3px_0_var(--border)]";
+    return "bg-surface text-muted shadow-[0_3px_0_var(--border)]";
+  };
+
+  const chipLabel = (i: number) => {
+    const r = results?.[i];
+    const st = r ? (r.correct ? "correct" : "incorrect") : answers[i].locked ? "locked in" : i === activeIndex ? "current" : answers[i].value.trim() ? "answered" : "not answered";
+    return `Question ${i + 1}: ${st}`;
+  };
+
+  const q = round.questions[activeIndex];
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {view?.graded.stars === 3 && <Petals />}
 
-      <div ref={summaryTop} className="scroll-mt-20" />
+      <div ref={summaryTop} className="scroll-mt-24" />
       {view && (
         <RoundSummary
           ref={nextBtn}
@@ -369,75 +367,88 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
       )}
 
       {round.notice && (
-        <p className="flex items-start gap-2 rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary">
+        <p className="flex items-start gap-2 rounded-2xl bg-primary-soft px-4 py-3 text-sm font-bold text-primary">
           <Info className="mt-0.5 size-4 shrink-0" />
           {round.notice}
         </p>
       )}
 
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-medium">Round {view ? roundNo - 1 : roundNo}</span>
-        <ol className="flex flex-1 gap-1" aria-label="Round progress">
-          {round.questions.map((q, i) => {
-            const r = results?.[i];
-            return (
-              <li
-                key={q.id}
-                aria-label={`Question ${i + 1}: ${r ? (r.correct ? "correct" : "incorrect") : answers[i].locked ? "locked in" : i === activeIndex ? "current" : "not answered"}`}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="font-extrabold">Round {view ? roundNo - 1 : roundNo}</span>
+        <ol className="order-last grid w-full grid-cols-10 gap-1 sm:order-none sm:flex sm:w-auto sm:flex-1 sm:flex-wrap sm:gap-1.5" aria-label="Round progress">
+          {round.questions.map((qq, i) => (
+            <li key={qq.id}>
+              <button
+                type="button"
+                aria-label={chipLabel(i)}
+                aria-current={i === activeIndex && !view ? "step" : undefined}
+                disabled={!canJump(i)}
+                onClick={() => setActiveIndex(i)}
                 className={cn(
-                  "h-1.5 flex-1 rounded-full transition-colors duration-300",
-                  r ? (r.correct ? "bg-good" : "bg-bad") : answers[i].locked ? "bg-primary" : i === activeIndex && timed ? "bg-primary/40" : "bg-surface-2",
+                  "grid h-9 w-full place-items-center rounded-xl text-sm font-extrabold transition-colors disabled:cursor-default sm:w-9",
+                  chipTone(i),
+                  canJump(i) && "press hover:brightness-95",
                 )}
-              />
-            );
-          })}
+              >
+                {settings.showNumbers ? i + 1 : ""}
+              </button>
+            </li>
+          ))}
         </ol>
-        <span className="text-xs tabular-nums text-muted">Lv {lvl.level}</span>
+        <span className="ml-auto flex items-center gap-2 text-xs font-extrabold text-muted sm:ml-0">
+          Lv {lvl.level}
+          <ProgressBar value={lvl.pct} label="Level progress" className="h-2.5 w-24" />
+        </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {round.questions.map((q, i) => (
-          <div key={q.id} ref={(el) => { cards.current[i] = el; }} className="scroll-mt-24 scroll-mb-28">
-            <QuestionCard
-              ref={(el) => { inputs.current[i] = el; }}
-              q={q}
-              index={i}
-              showNumber={settings.showNumbers}
-              answer={answers[i]}
-              state={cardState(i)}
-              result={results?.[i]}
-              timeLeftSec={timeLeft(i)}
-              revealDelayMs={i * 60}
-              onChange={(v) => setValue(i, v)}
-              onKeyDown={onInputKey(i)}
-              onFocus={() => !timed && setActiveIndex(i)}
-            />
-          </div>
-        ))}
-      </div>
+      {!view && q && (
+        <>
+          <ActiveCard
+            key={q.id}
+            q={q}
+            index={activeIndex}
+            total={total}
+            showNumber={settings.showNumbers}
+            answer={answers[activeIndex]}
+            timed={timed}
+            timeLeftSec={timeLeft(activeIndex)}
+            inputRef={inputRef}
+            onChange={(v) => setValue(activeIndex, v)}
+            onKeyDown={onInputKey(activeIndex)}
+          />
 
-      {!view && (
-        <div className="sticky bottom-[4.75rem] z-20 flex items-center gap-2 rounded-2xl border border-border bg-surface/95 p-2 shadow-card backdrop-blur sm:gap-3 sm:p-3 lg:bottom-4">
-          <Button onClick={checkNow} className="flex-1 sm:h-12 sm:flex-none sm:px-6 sm:text-base">
-            Check Answers
-          </Button>
-          <Button variant="outline" onClick={skipRound} className="sm:h-12" aria-label="Skip Round">
-            <SkipForward /> <span className="hidden sm:inline">Skip Round</span>
-          </Button>
-          <span className="shrink-0 text-xs text-muted">
-            {done}/{total} answered
-          </span>
-          <span className="ml-auto hidden items-center gap-3 text-xs text-muted md:flex">
-            <span>
-              <Kbd>Enter</Kbd> {timed ? "lock in" : "next"}
-            </span>
-            {settings.shortcuts && (
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button size="lg" onClick={checkNow}>
+                Check Answers
+              </Button>
+              <Button size="lg" variant="outline" onClick={skipRound}>
+                <SkipForward /> Skip Round
+              </Button>
+            </div>
+            <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs font-bold text-muted">
               <span>
-                <Kbd>Shift</Kbd>+<Kbd>Enter</Kbd> skip round
+                {done}/{total} answered
               </span>
-            )}
-          </span>
-        </div>
+              <span>
+                <Kbd>Enter</Kbd> {timed ? "lock in" : "next card"}
+              </span>
+              {settings.shortcuts && (
+                <span className="hidden sm:inline">
+                  <Kbd>Shift</Kbd>+<Kbd>Enter</Kbd> skip round
+                </span>
+              )}
+            </p>
+          </div>
+        </>
+      )}
+
+      {view && results && (
+        <section aria-label="Answers" className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {results.map((r, i) => (
+            <ResultCard key={r.question.id} result={r} index={i} showNumber={settings.showNumbers} revealDelayMs={i * 50} />
+          ))}
+        </section>
       )}
     </div>
   );

@@ -45,7 +45,7 @@ function StatGrid({ progress }: { progress: Progress }) {
         {tiles.map((t) => (
           <div key={t.label} className="rounded-xl bg-surface-2/60 p-3.5">
             <p className="text-xs text-muted">{t.label}</p>
-            <p className="mt-0.5 text-xl font-semibold tabular-nums">{t.value}</p>
+            <p className="mt-0.5 text-xl font-extrabold tabular-nums">{t.value}</p>
             <p className="text-xs text-muted">{t.sub}</p>
           </div>
         ))}
@@ -73,7 +73,7 @@ function GuestProfile({ progress, enabled }: { progress: Progress; enabled: bool
             ？
           </span>
           <div className="flex-1">
-            <h2 className="text-xl font-semibold">You&apos;re practicing as a guest</h2>
+            <h2 className="text-xl font-extrabold">You&apos;re practicing as a guest</h2>
             <p className="mt-1 max-w-prose text-sm text-muted">
               {enabled
                 ? "Your progress is saved in this browser only. Create a free account to keep it safe and pick up on any device."
@@ -119,7 +119,7 @@ function SignedInProfile({ progress }: { progress: Progress }) {
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
           <Avatar profile={profile} size={84} />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-2xl font-semibold tracking-tight">{displayName(profile, email)}</h2>
+            <h2 className="truncate text-2xl font-extrabold tracking-tight">{displayName(profile, email)}</h2>
             <p className="text-sm text-muted">
               {profile ? `@${profile.username}` : "Loading profile…"}
               {joined && <>, joined {new Date(joined).toLocaleDateString([], { month: "long", year: "numeric" })}</>}
@@ -296,7 +296,7 @@ function AccountCard({ email, providers, usesPassword }: { email: string | null;
 
       <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <DialogContent>
-          <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-sakura-soft text-sakura">
+          <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-sun-soft text-warn">
             <CloudUpload className="size-6" />
           </div>
           <DialogTitle>Some progress hasn&apos;t uploaded yet</DialogTitle>
