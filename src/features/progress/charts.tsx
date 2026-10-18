@@ -96,11 +96,11 @@ export function LineChart({
       </svg>
       {h && hover != null && (
         <div
-          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-card"
+          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-xl bg-surface px-3 py-2 shadow-[0_4px_0_var(--border)] ring-2 ring-border text-xs shadow-card"
           style={{ left: `${(x(hover) / W) * 100}%` }}
         >
           <div className="text-muted">{h.label}</div>
-          <div className="font-semibold">{format(h.value)}</div>
+          <div className="font-extrabold">{format(h.value)}</div>
           {h.detail && <div className="text-muted">{h.detail}</div>}
         </div>
       )}
@@ -169,11 +169,11 @@ export function BarChart({
       </svg>
       {h && hover != null && (
         <div
-          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs shadow-card"
+          className="pointer-events-none absolute top-0 -translate-x-1/2 rounded-xl bg-surface px-3 py-2 shadow-[0_4px_0_var(--border)] ring-2 ring-border text-xs shadow-card"
           style={{ left: `${((PAD.left + (hover + 0.5) * slot) / W) * 100}%` }}
         >
           <div className="text-muted">{h.label}</div>
-          <div className="font-semibold">{format(h.value)}</div>
+          <div className="font-extrabold">{format(h.value)}</div>
           {h.detail && <div className="text-muted">{h.detail}</div>}
         </div>
       )}
@@ -208,7 +208,7 @@ function DataTable({ data, format }: { data: Point[]; format: (v: number) => str
 
 function EmptyChart({ text }: { text: string }) {
   return (
-    <div className="grid h-40 place-items-center rounded-xl border border-dashed border-border text-center text-sm text-muted">
+    <div className="grid h-40 place-items-center rounded-2xl border-2 border-dashed border-border text-center text-sm text-muted">
       <p className="max-w-xs px-4">{text}</p>
     </div>
   );

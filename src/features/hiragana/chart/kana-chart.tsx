@@ -71,7 +71,7 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
         description="All 46 basic characters. Tick the ones you want in your rounds, or open one to see how you're doing with it."
       />
 
-      <div className="sticky top-16 z-20 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface/95 p-3 shadow-card backdrop-blur lg:top-4">
+      <div className="sticky top-[4.5rem] z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-surface/95 shadow-[0_4px_0_var(--border)] p-3 shadow-card backdrop-blur lg:top-4">
         <Button variant="secondary" size="sm" onClick={() => commit([...BASIC_KANA_LIST])}>
           Select all
         </Button>
@@ -97,7 +97,7 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-card sm:p-5">
+      <div className="overflow-x-auto rounded-[var(--radius-card)] bg-surface p-3 shadow-card sm:p-5">
         <table className="w-full min-w-[520px] border-separate border-spacing-1.5">
           <caption className="sr-only">Basic hiragana chart</caption>
           <tbody>
@@ -140,7 +140,7 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
         </table>
         <div className="mt-4 flex flex-wrap gap-4 px-2 text-xs text-muted">
           <span className="flex items-center gap-1.5"><CircleDot className="size-3.5 text-primary" /> practiced</span>
-          <span className="flex items-center gap-1.5"><Sparkles className="size-3.5 text-sakura" /> mastered</span>
+          <span className="flex items-center gap-1.5"><Sparkles className="size-3.5 text-sun-deep" /> mastered</span>
           <span>Dakuten (が, ぱ) and small kana arrive in a later module.</span>
         </div>
       </div>
@@ -169,7 +169,7 @@ function KanaCell({
   return (
     <div
       className={cn(
-        "relative rounded-xl border transition-colors",
+        "relative rounded-2xl border-2 transition-colors",
         selected ? "border-primary/40 bg-primary-soft/50" : "border-border bg-background opacity-60",
       )}
     >
@@ -179,7 +179,7 @@ function KanaCell({
       </button>
       <span className="absolute left-1.5 top-1.5 flex gap-0.5">
         {mastered ? (
-          <Sparkles className="size-3.5 text-sakura" aria-label="Mastered" />
+          <Sparkles className="size-3.5 text-sun-deep" aria-label="Mastered" />
         ) : s?.seen ? (
           <CircleDot className="size-3.5 text-primary" aria-label="Practiced" />
         ) : null}
@@ -229,7 +229,7 @@ function CharDetail({
                   {c.kana === "ん" && ", type n, nn or n'"}
                 </DialogDescription>
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {isMastered(s) ? <Badge tone="sakura">Mastered</Badge> : s?.seen ? <Badge tone="primary">Practiced</Badge> : <Badge>Not seen yet</Badge>}
+                  {isMastered(s) ? <Badge tone="sun">Mastered</Badge> : s?.seen ? <Badge tone="primary">Practiced</Badge> : <Badge>Not seen yet</Badge>}
                 </div>
               </div>
             </div>
@@ -237,15 +237,15 @@ function CharDetail({
             <dl className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-surface-2 p-2">
                 <dt className="text-xs text-muted">Accuracy</dt>
-                <dd className="font-semibold">{s?.seen ? pct(charAccuracy(s)) : "None"}</dd>
+                <dd className="font-extrabold">{s?.seen ? pct(charAccuracy(s)) : "None"}</dd>
               </div>
               <div className="rounded-xl bg-surface-2 p-2">
                 <dt className="text-xs text-muted">Reads</dt>
-                <dd className="font-semibold">{s?.seen ?? 0}</dd>
+                <dd className="font-extrabold">{s?.seen ?? 0}</dd>
               </div>
               <div className="rounded-xl bg-surface-2 p-2">
                 <dt className="text-xs text-muted">Good rounds</dt>
-                <dd className="font-semibold">{Math.min(s?.roundsCorrect ?? 0, 99)}/3</dd>
+                <dd className="font-extrabold">{Math.min(s?.roundsCorrect ?? 0, 99)}/3</dd>
               </div>
             </dl>
 

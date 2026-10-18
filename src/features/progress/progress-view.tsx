@@ -207,7 +207,7 @@ function ProgressBody({ p }: { p: Progress }) {
                   <li key={w.kana} className="flex items-center gap-3">
                     <span lang="ja" className="font-kana w-8 text-2xl">{w.kana}</span>
                     <span className="w-9 text-xs text-muted">{getKana(w.kana)!.romaji[0]}</span>
-                    <ProgressBar value={w.accuracy} label={`${w.kana} accuracy`} className="flex-1" barClassName="bg-sakura" />
+                    <ProgressBar value={w.accuracy} label={`${w.kana} accuracy`} className="flex-1" barClassName="bg-bad" />
                     <span className="w-24 text-right text-xs text-muted">
                       {pct(w.accuracy)}, {w.misses} missed
                     </span>
@@ -267,7 +267,7 @@ function Tile({ label, value, sub }: { label: string; value: string; sub: string
   return (
     <Card className="p-4">
       <p className="text-xs text-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-1 text-2xl font-extrabold tabular-nums">{value}</p>
       <p className="mt-1 text-xs text-muted">{sub}</p>
     </Card>
   );

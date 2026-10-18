@@ -8,7 +8,7 @@ import type { GradedRound } from "@/lib/quiz/types";
 import { levelInfo, rankTitle } from "@/lib/progress/stats";
 import { cn } from "@/lib/utils";
 
-const HEADLINES = ["Keep going, every round counts", "Getting there", "Nice reading", "Flawless brushwork"];
+const HEADLINES = ["Keep going!", "Getting there!", "Nice reading!", "Brilliant round!"];
 
 interface Props {
   graded: GradedRound;
@@ -32,7 +32,7 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
     <section
       aria-live="polite"
       aria-label="Round results"
-      className="animate-pop relative overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface p-5 shadow-card sm:p-6"
+      className="animate-pop relative overflow-hidden rounded-[var(--radius-card)] bg-surface p-5 shadow-[0_8px_0_var(--border)] sm:p-7"
     >
       <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
@@ -42,17 +42,17 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
                 key={s}
                 aria-hidden
                 className={cn(
-                  "size-7 transition-transform",
-                  s <= graded.stars ? "fill-sakura text-sakura animate-stamp" : "text-surface-2",
+                  "size-10 transition-transform",
+                  s <= graded.stars ? "fill-sun text-sun-deep animate-stamp" : "fill-surface-2 text-surface-2",
                 )}
                 style={{ animationDelay: `${s * 120}ms` }}
               />
             ))}
           </div>
-          <h2 className="text-xl font-semibold">{HEADLINES[graded.stars]}</h2>
+          <h2 className="font-display text-2xl sm:text-3xl">{graded.correctCount === total ? "Perfect round!" : HEADLINES[graded.stars]}</h2>
           <p className="text-sm text-muted">
             You read <strong className="text-foreground">{graded.correctCount}</strong> of {total} correctly
-            {isBest && graded.totalPoints > 0 && <span className="ml-2 rounded-full bg-sakura-soft px-2 py-0.5 text-xs text-sakura">New best score</span>}
+            {isBest && graded.totalPoints > 0 && <span className="ml-2 rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold text-sun-ink">New best score</span>}
           </p>
         </div>
 
@@ -63,12 +63,12 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
         </dl>
       </div>
 
-      <div className="mt-5 flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center">
+      <div className="mt-6 flex flex-col gap-4 border-t-2 border-surface-2 pt-5 sm:flex-row sm:items-center">
         <div className="flex-1">
           <div className="mb-1.5 flex items-center justify-between text-xs text-muted">
             <span className="flex items-center gap-1">
               <Zap className="size-3.5 text-primary" />+{graded.xpEarned} XP
-              {leveledUp && <strong className="ml-1 text-primary">Level up! {rankTitle(lvl.level)}</strong>}
+              {leveledUp && <strong className="ml-1 rounded-full bg-sun px-2 py-0.5 text-sun-ink">Level up! {rankTitle(lvl.level)}</strong>}
             </span>
             <span>
               Level {lvl.level}, {lvl.intoLevel}/{lvl.needed}
@@ -94,11 +94,11 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
 function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div>
-      <dt className="flex items-center justify-center gap-1 text-xs text-muted">
+      <dt className="flex items-center justify-center gap-1 text-xs font-bold text-muted">
         {icon}
         {label}
       </dt>
-      <dd className="mt-0.5 text-2xl font-semibold tabular-nums">{value}</dd>
+      <dd className="mt-0.5 text-2xl font-extrabold tabular-nums sm:text-3xl">{value}</dd>
     </div>
   );
 }

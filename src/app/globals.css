@@ -2,46 +2,61 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* arcade look: daytime sky, cobalt, sun yellow, chunky pressable surfaces */
 :root {
-  --background: #f2f3fa;
+  --background: #eaf2ff;
   --surface: #ffffff;
-  --surface-2: #e8eaf6;
-  --foreground: #17172b;
-  --muted: #5d6083;
-  --border: #dcdff0;
-  --primary: #3d3bb8;
-  --primary-soft: #e4e3fb;
+  --surface-2: #dde7fb;
+  --foreground: #14183a;
+  --muted: #535d82;
+  --border: #c9d6f2;
+  --primary: #2d45e6;
+  --primary-deep: #1b2c9e;
+  --primary-soft: #e1e8ff;
   --primary-foreground: #ffffff;
-  --sakura: #e2648c;
-  --sakura-soft: #fde6ee;
-  --good: #2f9467;
-  --good-soft: #def3e9;
-  --bad: #d2453f;
-  --bad-soft: #fbe3e2;
-  --warn: #c98a14;
-  --ring: #3d3bb8;
-  --shadow: 0 1px 2px rgb(23 23 43 / 0.04), 0 6px 18px -8px rgb(61 59 184 / 0.18);
+  --sun: #ffc93c;
+  --sun-deep: #d69a00;
+  --sun-soft: #fff4d6;
+  --sun-ink: #4a3500;
+  --sakura: #e2457a;
+  --sakura-soft: #ffe3ee;
+  --good: #178a4c;
+  --good-deep: #0f6537;
+  --good-soft: #dcf5e7;
+  --bad: #d93a31;
+  --bad-deep: #a3241d;
+  --bad-soft: #ffe2df;
+  --warn: #a86a00;
+  --ring: #2d45e6;
+  --shadow: 0 6px 0 var(--border);
 }
 
 .dark {
-  --background: #0f1230;
-  --surface: #171a3d;
-  --surface-2: #20244f;
-  --foreground: #eceefe;
-  --muted: #9da2cf;
-  --border: #2a2f60;
-  --primary: #8b88ff;
-  --primary-soft: #262a63;
-  --primary-foreground: #0f1230;
-  --sakura: #f08aab;
-  --sakura-soft: #3d2246;
-  --good: #4fc28d;
-  --good-soft: #173a3a;
-  --bad: #f27470;
-  --bad-soft: #43213a;
-  --warn: #e6b04a;
-  --ring: #a5a3ff;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 24px -12px rgb(0 0 0 / 0.6);
+  --background: #10142e;
+  --surface: #1b2048;
+  --surface-2: #262c5c;
+  --foreground: #eef1ff;
+  --muted: #a3abd6;
+  --border: #0b0e24;
+  --primary: #6f84ff;
+  --primary-deep: #3a4dc4;
+  --primary-soft: #262f70;
+  --primary-foreground: #0d1030;
+  --sun: #ffd25e;
+  --sun-deep: #b98500;
+  --sun-soft: #3a3320;
+  --sun-ink: #3a2a00;
+  --sakura: #ff7aa6;
+  --sakura-soft: #44213a;
+  --good: #4fd18b;
+  --good-deep: #1f7a4a;
+  --good-soft: #173a33;
+  --bad: #ff7a70;
+  --bad-deep: #a3352d;
+  --bad-soft: #45213a;
+  --warn: #ffc65a;
+  --ring: #9aa8ff;
+  --shadow: 0 6px 0 var(--border);
 }
 
 @theme inline {
@@ -52,20 +67,28 @@
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-primary: var(--primary);
+  --color-primary-deep: var(--primary-deep);
   --color-primary-soft: var(--primary-soft);
   --color-primary-foreground: var(--primary-foreground);
+  --color-sun: var(--sun);
+  --color-sun-deep: var(--sun-deep);
+  --color-sun-soft: var(--sun-soft);
+  --color-sun-ink: var(--sun-ink);
   --color-sakura: var(--sakura);
   --color-sakura-soft: var(--sakura-soft);
   --color-good: var(--good);
+  --color-good-deep: var(--good-deep);
   --color-good-soft: var(--good-soft);
   --color-bad: var(--bad);
+  --color-bad-deep: var(--bad-deep);
   --color-bad-soft: var(--bad-soft);
   --color-warn: var(--warn);
   --color-ring: var(--ring);
-  --font-sans: "Lexend", ui-sans-serif, system-ui, sans-serif;
-  --font-kana: "Klee One", "Hiragino Mincho ProN", "Yu Mincho", "Noto Sans JP", sans-serif;
+  --font-sans: "M PLUS Rounded 1c", ui-rounded, system-ui, sans-serif;
+  --font-display: "Dela Gothic One", "M PLUS Rounded 1c", sans-serif;
+  --font-kana: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
   --shadow-card: var(--shadow);
-  --radius-card: 1.25rem;
+  --radius-card: 1.5rem;
 }
 
 html {
@@ -79,40 +102,62 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
 }
 
+/* kana stay clear and readable: rounded gothic, heavy but open strokes */
 .font-kana {
   font-family: var(--font-kana);
-  font-weight: 600;
-  line-height: 1.1;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
 
-/* reveal animation when a round is graded */
+/* pressable: sits on a solid shadow, sinks when pressed */
+.press {
+  transition: transform 90ms ease, box-shadow 90ms ease, filter 120ms ease;
+}
+.press:active {
+  transform: translateY(3px);
+}
+
 @keyframes stamp {
-  0% { transform: scale(0.96); opacity: 0.4; }
-  60% { transform: scale(1.015); opacity: 1; }
+  0% { transform: scale(0.9); opacity: 0.3; }
+  60% { transform: scale(1.03); opacity: 1; }
   100% { transform: scale(1); }
 }
-.animate-stamp { animation: stamp 360ms cubic-bezier(.2,.8,.2,1) both; }
+.animate-stamp { animation: stamp 380ms cubic-bezier(.2,.9,.25,1.2) both; }
 
 @keyframes pop-up {
-  0% { transform: translateY(6px); opacity: 0; }
+  0% { transform: translateY(8px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
 }
-.animate-pop { animation: pop-up 280ms ease-out both; }
+.animate-pop { animation: pop-up 260ms ease-out both; }
+
+/* new card slides in from the deck */
+@keyframes deal {
+  0% { transform: translateY(18px) scale(0.97); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.animate-deal { animation: deal 260ms cubic-bezier(.2,.9,.3,1.1) both; }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
-.animate-shake { animation: shake 240ms ease-in-out 2; }
+.animate-shake { animation: shake 220ms ease-in-out 2; }
 
 @keyframes petal {
   0% { transform: translate(0, -10vh) rotate(0deg); opacity: 0; }

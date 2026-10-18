@@ -20,7 +20,7 @@ export function Petals({ count = 26 }: { count?: number }) {
       {petals.map((p) => (
         <span
           key={p.id}
-          className="petal absolute top-0 block rounded-[60%_0_60%_0] bg-sakura/80"
+          className={`petal absolute top-0 block rounded-[30%] ${p.id % 3 === 0 ? "bg-sun" : p.id % 3 === 1 ? "bg-primary" : "bg-sakura"}`}
           style={
             {
               left: `${p.left}%`,

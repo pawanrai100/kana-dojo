@@ -1,10 +1,11 @@
-// thin localStorage wrapper. swap this module for a cloud repo later,
-// the rest of the app only talks to the Repository interface
+// thin localStorage wrapper. signed in users get their own namespace,
+// and lib/sync keeps that copy in step with the cloud
 
 export interface Repository<T> {
   load(): T;
   save(value: T): void;
   clear(): void;
+  exists(): boolean;
 }
 
 export const STORAGE_PREFIX = "kana-dojo:v1:";
@@ -44,6 +45,13 @@ export function localRepo<T>(key: string, sanitize: (raw: unknown) => T): Reposi
       try {
         storage()?.removeItem(fullKey);
       } catch {}
+    },
+    exists() {
+      try {
+        return storage()?.getItem(fullKey) != null;
+      } catch {
+        return false;
+      }
     },
   };
 }
