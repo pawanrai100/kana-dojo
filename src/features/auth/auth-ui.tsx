@@ -25,6 +25,11 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
         {subtitle && <p className="mt-1.5 text-sm text-muted">{subtitle}</p>}
         <div className="mt-7">{children}</div>
         {footer && <div className="mt-6 border-t border-border pt-5 text-sm text-muted">{footer}</div>}
+        <p className="mt-5 text-xs text-muted">
+          By continuing you agree to the{" "}
+          <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">Terms</Link> and{" "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">Privacy Policy</Link>.
+        </p>
       </div>
     </div>
   );
