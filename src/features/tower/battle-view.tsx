@@ -12,13 +12,14 @@ import { DEFAULT_SETTINGS } from "@/lib/settings/types";
 import { playSound, type SoundName } from "@/lib/sound";
 import type { Achievement } from "@/lib/tower/achievements";
 import { applyAnswer, startBattle, type BattleState } from "@/lib/tower/battle";
-import { TOP_FLOOR, type Floor } from "@/lib/tower/floors";
+import { TOP_FLOOR, type Enemy, type Floor } from "@/lib/tower/floors";
 import type { TowerOutcome } from "@/lib/tower/progress";
 import { cn, pct } from "@/lib/utils";
 import { actions } from "@/store/app-store";
 import { ActiveCard } from "@/features/hiragana/practice/question-card";
 import { Petals } from "@/features/hiragana/practice/petals";
 import { Medal } from "./medal";
+import { YokaiArt } from "./yokai-art";
 
 type Phase = "intro" | "answer" | "feedback" | "result";
 
@@ -28,6 +29,12 @@ interface Feedback {
   missedIdx: number[];
   answer: string;
   timedOut: boolean;
+}
+
+// what the enemy sprite should be doing. n bumps every answer to replay the animation
+interface Fx {
+  kind: "hit" | "miss" | null;
+  n: number;
 }
 
 interface Logged {
@@ -48,6 +55,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   const [value, setValue] = useState("");
   const [fb, setFb] = useState<Feedback | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [fx, setFx] = useState<Fx>({ kind: null, n: 0 });
   const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[] } | null>(null);
 
   const gen = useRef<GeneratorState>(EMPTY_GEN_STATE);
@@ -93,6 +101,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     setValue("");
     setFb(null);
     setResult(null);
+    setFx({ kind: null, n: 0 });
     setPhase("answer");
   };
 
@@ -104,6 +113,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     const used = timedOut && q.timeLimitSec ? q.timeLimitSec * 1000 : Math.round(usedNow.current());
     log.current.push({ q, a: { value, locked: true, timedOut, timeUsedMs: used } });
     setBattle((b) => applyAnswer(b, check.correct));
+    setFx((f) => ({ kind: check.correct ? "hit" : "miss", n: f.n + 1 }));
     setFb({ q, correct: check.correct, missedIdx: check.missedIdx, answer: value, timedOut });
     lockedAt.current = Date.now();
     setPhase("feedback");
@@ -227,7 +237,10 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
 
   return (
     <div className="space-y-6">
-      <Hud floor={floor} battle={battle} isBoss={isBoss} />
+      {phase === "feedback" && fx.kind === "miss" && (
+        <div key={fx.n} aria-hidden className="animate-hurt pointer-events-none fixed inset-0 z-50 shadow-[inset_0_0_110px_40px_rgb(229_72_77/0.6)]" />
+      )}
+      <Hud floor={floor} battle={battle} isBoss={isBoss} fx={fx} />
 
       {phase === "answer" && q && (
         <>
@@ -266,38 +279,70 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   );
 }
 
-function Hearts({ n, max }: { n: number; max: number }) {
+function Hearts({ n, max, breaking, fxKey }: { n: number; max: number; breaking: number; fxKey: number }) {
   return (
     <span className="flex gap-1" role="img" aria-label={`${n} of ${max} hearts left`}>
       {Array.from({ length: max }, (_, i) => (
         <Heart
-          key={i}
+          key={i === breaking ? `b${fxKey}` : i}
           aria-hidden
-          className={cn("size-6 transition-transform", i < n ? "fill-bad text-bad" : "fill-surface-2 text-border scale-90")}
+          className={cn(
+            "size-6 transition-transform",
+            i < n ? "fill-bad text-bad" : "fill-surface-2 text-border scale-90",
+            i === breaking && "animate-heart-break",
+          )}
         />
       ))}
     </span>
   );
 }
 
-function Hud({ floor, battle, isBoss }: { floor: Floor; battle: BattleState; isBoss: boolean }) {
+// the enemy: bobs while idle, flinches when hit, lunges when you miss, falls when beaten
+export function Sprite({ enemy, fx, down, className }: { enemy: Enemy; fx?: Fx; down?: boolean; className?: string }) {
+  const act = down ? "" : fx?.kind === "hit" ? "animate-yokai-hit" : fx?.kind === "miss" ? "animate-yokai-attack" : "";
+  return (
+    <div className={cn("relative shrink-0", className)}>
+      <div className={cn("size-full", down ? "animate-yokai-down" : "animate-yokai-bob")}>
+        <div key={fx?.n ?? 0} className={cn("size-full", act)}>
+          <YokaiArt id={enemy.id} className="size-full drop-shadow-[0_4px_0_rgb(0_0_0/0.18)]" />
+        </div>
+      </div>
+      {fx?.kind === "hit" && (
+        <span
+          key={`d${fx.n}`}
+          aria-hidden
+          className="animate-dmg pointer-events-none absolute left-1/2 top-0 font-display text-3xl text-sun [-webkit-text-stroke:2px_#1a1d3a] [paint-order:stroke_fill]"
+        >
+          -1
+        </span>
+      )}
+    </div>
+  );
+}
+
+function Hud({ floor, battle, isBoss, fx }: { floor: Floor; battle: BattleState; isBoss: boolean; fx: Fx }) {
   const hpPct = battle.enemyHp / battle.maxEnemyHp;
   return (
     <div
       className={cn(
-        "mx-auto flex w-full max-w-[620px] flex-wrap items-center gap-x-5 gap-y-3 rounded-[var(--radius-card)] p-4 sm:p-5",
-        isBoss ? "bg-bad text-white shadow-[0_6px_0_var(--bad-deep)]" : "bg-surface shadow-[0_6px_0_var(--border)]",
+        "mx-auto flex w-full max-w-[620px] items-center gap-3 rounded-[var(--radius-card)] p-3 sm:gap-5 sm:p-5",
+        floor.kind === "final"
+          ? "bg-foreground text-background shadow-[0_6px_0_var(--sun-deep)]"
+          : isBoss
+            ? "bg-bad text-white shadow-[0_6px_0_var(--bad-deep)]"
+            : "bg-surface shadow-[0_6px_0_var(--border)]",
       )}
     >
-      <div className="min-w-0 flex-1 basis-56">
-        <div className="mb-2 flex items-baseline gap-2">
-          {isBoss && floor.boss && (
-            <span lang="ja" className="font-display text-xl">
-              {floor.boss.kana}
+      <Sprite enemy={floor.enemy} fx={fx} down={battle.status === "won"} className={isBoss ? "size-24 sm:size-28" : "size-20 sm:size-24"} />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex items-baseline gap-2">
+          <span className="min-w-0 truncate">
+            <span className={cn("block truncate font-extrabold", isBoss && "font-display text-lg")}>{floor.enemy.name}</span>
+            <span lang={isBoss ? "ja" : undefined} className={cn("block truncate text-xs font-bold", isBoss ? "opacity-80" : "text-muted")}>
+              {isBoss && floor.boss ? floor.boss.kana : `Floor ${floor.id}: ${floor.name}`}
             </span>
-          )}
-          <span className="truncate font-extrabold">{isBoss ? floor.boss?.name : `Floor ${floor.id}: ${floor.name}`}</span>
-          <span className={cn("ml-auto text-xs font-extrabold tabular-nums", isBoss ? "text-white/80" : "text-muted")}>
+          </span>
+          <span className={cn("ml-auto shrink-0 text-xs font-extrabold tabular-nums", isBoss ? "opacity-80" : "text-muted")}>
             HP {battle.enemyHp}/{battle.maxEnemyHp}
           </span>
         </div>
@@ -314,14 +359,16 @@ function Hud({ floor, battle, isBoss }: { floor: Floor; battle: BattleState; isB
             style={{ width: `${hpPct * 100}%` }}
           />
         </div>
-      </div>
-      <div className="flex items-center gap-3">
-        {battle.combo >= 2 && (
-          <span className="animate-pop rounded-full bg-sun px-2.5 py-1 text-xs font-extrabold text-sun-ink">Combo ×{battle.combo}</span>
-        )}
-        <span className={cn("rounded-xl px-2 py-1", isBoss && "bg-white")}>
-          <Hearts n={battle.hearts} max={battle.maxHearts} />
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn("rounded-xl", isBoss && "bg-white px-2 py-1")}>
+            <Hearts n={battle.hearts} max={battle.maxHearts} breaking={fx.kind === "miss" ? battle.hearts : -1} fxKey={fx.n} />
+          </span>
+          {battle.combo >= 2 && (
+            <span key={battle.combo} className="animate-pop rounded-full bg-sun px-2.5 py-1 text-xs font-extrabold text-sun-ink">
+              Combo ×{battle.combo}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -385,15 +432,21 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
         </span>
         {boss ? (
           <>
-            <p lang="ja" className="font-display text-6xl sm:text-7xl">
-              {boss.kana}
-            </p>
-            <h1 className="font-display text-3xl">{boss.name}</h1>
+            <Sprite enemy={floor.enemy} className="size-36 sm:size-44" />
+            <div>
+              <h1 className="font-display text-3xl sm:text-4xl">{boss.name}</h1>
+              <p lang="ja" className="font-display mt-1 text-lg opacity-80">
+                {boss.kana}
+              </p>
+            </div>
             <p className="max-w-sm font-medium opacity-90">{boss.blurb}</p>
           </>
         ) : (
           <>
             <h1 className="font-display text-3xl">{floor.name}</h1>
+            <p className="flex items-center gap-2 text-sm font-bold text-muted">
+              <Sprite enemy={floor.enemy} className="size-12" /> Guarded by {floor.enemy.name}
+            </p>
             {floor.newChars.length > 0 ? (
               <>
                 <p className="text-sm text-muted">New kana on this floor</p>
@@ -471,6 +524,13 @@ function Result({
     <div className="mx-auto max-w-[620px] space-y-5">
       {won && boss && <Petals count={40} />}
       <section aria-label="Battle result" className="animate-pop flex flex-col items-center gap-4 rounded-[var(--radius-card)] bg-surface p-7 text-center shadow-[0_8px_0_var(--border)] sm:p-9">
+        <div className={cn("relative", boss ? "size-28" : "size-20")} aria-hidden>
+          {won ? (
+            <YokaiArt id={floor.enemy.id} className="yokai-down size-full" />
+          ) : (
+            <Sprite enemy={floor.enemy} className="size-full" />
+          )}
+        </div>
         {won ? (
           <div className="flex gap-1.5" aria-label={`${outcome.stars} of 3 stars`}>
             {[1, 2, 3].map((s) => (

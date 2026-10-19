@@ -173,7 +173,7 @@ describe("achievements", () => {
     const got = newlyEarned(before, p).map((a) => a.id);
     expect(got).toContain("boss-kappa");
     expect(got).toContain("untouchable");
-    expect(currentTitle(p)).toBe("Kappa Tamer");
+    expect(currentTitle(p)).toBe("Ugyappa Tamer");
   });
 
   it("hanamaru needs 3 stars everywhere", () => {

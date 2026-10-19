@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useAppState } from "@/store/app-store";
 import { BattleView } from "./battle-view";
 import { BadgeCard } from "./medal";
+import { YokaiArt } from "./yokai-art";
 
 export function TowerView() {
   const state = useAppState();
@@ -181,12 +182,13 @@ function FloorButton({
         )}
         aria-hidden
       >
-        {!unlocked ? (
-          <Lock className="size-5" />
-        ) : boss ? (
-          <span lang="ja" className="font-display text-lg leading-none">
-            {boss.kana}
+        {boss ? (
+          <span className="relative size-12">
+            <YokaiArt id={f.enemy.id} className={cn("size-full", !unlocked && "brightness-0 opacity-45")} />
+            {!unlocked && <Lock className="absolute inset-0 m-auto size-5 text-white" />}
           </span>
+        ) : !unlocked ? (
+          <Lock className="size-5" />
         ) : cleared ? (
           <Check className="size-6" />
         ) : (

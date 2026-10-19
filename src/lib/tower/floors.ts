@@ -14,6 +14,18 @@ export interface Boss {
   blurb: string;
 }
 
+// who you fight on a floor. art is keyed by id
+export interface Enemy {
+  id: "obake" | "shisa" | "kappa" | "tanuki" | "kitsune" | "tengu" | "oni" | "ryu";
+  name: string;
+}
+
+// regular floors: lantern ghosts guard the drills, shisa lion-dogs guard the mixes
+export const MINIONS = {
+  drill: { id: "obake", name: "Basobake" },
+  mix: { id: "shisa", name: "Shisarr" },
+} as const satisfies Record<string, Enemy>;
+
 export interface Zone {
   id: number;
   name: string;
@@ -34,6 +46,7 @@ export interface Floor {
   enemyHp: number; // correct answers needed
   hearts: number; // misses allowed
   bonusXp: number;
+  enemy: Enemy;
   boss?: Boss;
 }
 
@@ -42,40 +55,40 @@ export const ZONES: Zone[] = [
     id: 1,
     name: "Bamboo Gate",
     drills: [["vowel"], ["k"]],
-    boss: { id: "kappa", name: "Kappa", kana: "かっぱ", title: "Kappa Tamer", blurb: "A river imp guarding the gate. Keep your head dry." },
+    boss: { id: "kappa", name: "Ugyappa", kana: "うぎゃっぱ", title: "Ugyappa Tamer", blurb: "A kappa river imp guarding the gate. Keep your head dry." },
   },
   {
     id: 2,
     name: "Lantern Hall",
     drills: [["s"], ["t"]],
-    boss: { id: "tanuki", name: "Tanuki", kana: "たぬき", title: "Tanuki Trickster", blurb: "A shapeshifter. Its words never look the same twice." },
+    boss: { id: "tanuki", name: "Hyunuki", kana: "ひゅぬき", title: "Hyunuki Trickster", blurb: "A shapeshifting tanuki. Its words never look the same twice." },
   },
   {
     id: 3,
     name: "Moon Garden",
     drills: [["n"], ["h"]],
-    boss: { id: "kitsune", name: "Kitsune", kana: "きつね", title: "Kitsune Whisperer", blurb: "A clever fox spirit that loves lookalike kana." },
+    boss: { id: "kitsune", name: "Ayutsune", kana: "あゆつね", title: "Ayutsune Whisperer", blurb: "A sly kitsune fox spirit that loves lookalike kana." },
   },
   {
     id: 4,
     name: "Mountain Pass",
     drills: [["m"], ["y"]],
-    boss: { id: "tengu", name: "Tengu", kana: "てんぐ", title: "Tengu Climber", blurb: "A mountain goblin. It speaks fast, so read faster." },
+    boss: { id: "tengu", name: "Deepengu", kana: "でぃぺんぐ", title: "Deepengu Climber", blurb: "A long-nosed tengu of the mountains. It speaks fast, so read faster." },
   },
   {
     id: 5,
     name: "Thunder Roof",
     drills: [["r"], ["w", "nn"]],
-    boss: { id: "oni", name: "Oni", kana: "おに", title: "Oni Breaker", blurb: "A storm demon on the last roof before the peak." },
+    boss: { id: "oni", name: "Jinkoni", kana: "じんこに", title: "Jinkoni Breaker", blurb: "A thunder oni on the last roof before the peak. Bring your best." },
   },
 ];
 
 export const FINAL_BOSS: Boss = {
   id: "ryu",
-  name: "Ryū the Dragon",
-  kana: "りゅう",
+  name: "Pawaryū the Dragon",
+  kana: "ぱわりゅう",
   title: "Dragon Slayer",
-  blurb: "Every one of the 46 kana, fast, with three hearts. The top of the tower.",
+  blurb: "The power dragon who built this tower. Every one of the 46 kana, fast, with three hearts.",
 };
 
 // difficulty ramps by zone (index 0 = zone 1). words get longer, the timer
@@ -133,6 +146,7 @@ function buildFloors(): Floor[] {
         enemyHp: t.hp,
         hearts: t.hearts,
         bonusXp: 40 + 10 * (z.id - 1),
+        enemy: MINIONS.drill,
       });
     }
     const zoneRows = z.drills.flat();
@@ -152,6 +166,7 @@ function buildFloors(): Floor[] {
       enemyHp: m.hp,
       hearts: m.hearts,
       bonusXp: 60 + 15 * (z.id - 1),
+      enemy: MINIONS.mix,
     });
     learned.push(...zoneChars);
     // boss: everything learned so far, real words where possible
@@ -169,6 +184,7 @@ function buildFloors(): Floor[] {
       enemyHp: b.hp,
       hearts: b.hearts,
       bonusXp: 150 * z.id,
+      enemy: { id: z.boss.id as Enemy["id"], name: z.boss.name },
       boss: z.boss,
     });
   }
@@ -186,6 +202,7 @@ function buildFloors(): Floor[] {
     enemyHp: FINAL.hp,
     hearts: FINAL.hearts,
     bonusXp: 1500,
+    enemy: { id: "ryu", name: FINAL_BOSS.name },
     boss: FINAL_BOSS,
   });
   return out;

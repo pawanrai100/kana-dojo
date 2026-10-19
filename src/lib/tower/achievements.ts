@@ -1,7 +1,7 @@
 import { BASIC_KANA_LIST } from "@/lib/kana/hiragana";
 import { encounteredChars, masteredChars } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
-import { ALL_BOSSES, FLOORS, FINAL_BOSS } from "./floors";
+import { ALL_BOSSES, FLOORS, FINAL_BOSS, type Enemy } from "./floors";
 import { clearedCount, isCleared } from "./progress";
 
 // badges are worked out from progress, never stored on their own,
@@ -16,6 +16,7 @@ export interface Achievement {
   glyph: string; // big character on the medal
   tier: BadgeTier;
   title?: string; // bosses grant a title
+  art?: Enemy["id"]; // boss portrait instead of the glyph
   earned: (p: Progress) => boolean;
 }
 
@@ -31,6 +32,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     glyph: b.kana[0],
     tier: b.id === FINAL_BOSS.id ? "gold" : "boss",
     title: b.title,
+    art: b.id as Enemy["id"],
     earned: (p) => isCleared(p.tower, bossFloor(b.id)),
   })),
   {

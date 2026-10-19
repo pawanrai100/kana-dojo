@@ -1,5 +1,6 @@
 import type { Achievement, BadgeTier } from "@/lib/tower/achievements";
 import { cn } from "@/lib/utils";
+import { YokaiArt } from "./yokai-art";
 
 const TIER: Record<BadgeTier, string> = {
   bronze: "bg-[#f6dfca] text-[#7a3f12] ring-[#c47a3a] dark:bg-[#3d2a1e] dark:text-[#f0c79f]",
@@ -20,7 +21,7 @@ export function Medal({ a, earned = true, size = 64, className }: { a: Achieveme
         className,
       )}
     >
-      {earned ? a.glyph : "?"}
+      {!earned ? "?" : a.art ? <YokaiArt id={a.art} className="size-[82%]" /> : a.glyph}
     </span>
   );
 }
