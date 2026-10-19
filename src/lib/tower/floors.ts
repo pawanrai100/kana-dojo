@@ -78,6 +78,32 @@ export const FINAL_BOSS: Boss = {
   blurb: "Every one of the 46 kana, fast, with three hearts. The top of the tower.",
 };
 
+// difficulty ramps by zone (index 0 = zone 1). words get longer, the timer
+// gets faster, enemies get tougher and you get fewer hearts as you climb
+type Tier = { len: LengthRange; pace: Exclude<TimerPace, "off">; hp: number; hearts: number };
+const DRILL: Tier[] = [
+  { len: "2-3", pace: "relaxed", hp: 6, hearts: 5 },
+  { len: "2-3", pace: "relaxed", hp: 7, hearts: 5 },
+  { len: "2-4", pace: "normal", hp: 8, hearts: 4 },
+  { len: "2-4", pace: "normal", hp: 9, hearts: 4 },
+  { len: "2-5", pace: "normal", hp: 10, hearts: 4 },
+];
+const MIX: Tier[] = [
+  { len: "2-4", pace: "normal", hp: 8, hearts: 5 },
+  { len: "2-4", pace: "normal", hp: 9, hearts: 4 },
+  { len: "2-5", pace: "normal", hp: 10, hearts: 4 },
+  { len: "2-5", pace: "fast", hp: 11, hearts: 4 },
+  { len: "3-7", pace: "fast", hp: 12, hearts: 4 },
+];
+const BOSS: Tier[] = [
+  { len: "2-4", pace: "fast", hp: 10, hearts: 3 },
+  { len: "2-5", pace: "fast", hp: 12, hearts: 3 },
+  { len: "2-5", pace: "fast", hp: 14, hearts: 3 },
+  { len: "3-7", pace: "fast", hp: 16, hearts: 3 },
+  { len: "3-7", pace: "fast", hp: 18, hearts: 3 },
+];
+const FINAL: Tier = { len: "3-7", pace: "fast", hp: 25, hearts: 3 };
+
 const ROW = new Map(HIRAGANA_ROWS.map((r) => [r.id, r]));
 const rowChars = (ids: string[]) => ids.flatMap((id) => ROW.get(id)!.chars);
 const rowLabel = (id: string) => ROW.get(id)!.label;
@@ -93,6 +119,7 @@ function buildFloors(): Floor[] {
     // one floor per new row: drill just that row
     for (const d of z.drills) {
       const chars = rowChars(d);
+      const t = DRILL[z.id - 1];
       out.push({
         id: id++,
         zone: z.id,
@@ -101,16 +128,17 @@ function buildFloors(): Floor[] {
         chars,
         newChars: chars,
         mode: "random",
-        lengthRange: "2-3",
-        pace: "relaxed",
-        enemyHp: 6,
-        hearts: 5,
-        bonusXp: 40,
+        lengthRange: t.len,
+        pace: t.pace,
+        enemyHp: t.hp,
+        hearts: t.hearts,
+        bonusXp: 40 + 10 * (z.id - 1),
       });
     }
     const zoneRows = z.drills.flat();
     const zoneChars = rowChars(zoneRows);
     // mix floor: the zone's rows together, longer words
+    const m = MIX[z.id - 1];
     out.push({
       id: id++,
       zone: z.id,
@@ -119,14 +147,15 @@ function buildFloors(): Floor[] {
       chars: zoneChars,
       newChars: [],
       mode: "random",
-      lengthRange: "2-4",
-      pace: "normal",
-      enemyHp: 8,
-      hearts: 5,
-      bonusXp: 60,
+      lengthRange: m.len,
+      pace: m.pace,
+      enemyHp: m.hp,
+      hearts: m.hearts,
+      bonusXp: 60 + 15 * (z.id - 1),
     });
     learned.push(...zoneChars);
     // boss: everything learned so far, real words where possible
+    const b = BOSS[z.id - 1];
     out.push({
       id: id++,
       zone: z.id,
@@ -135,10 +164,10 @@ function buildFloors(): Floor[] {
       chars: [...learned],
       newChars: [],
       mode: "mixed",
-      lengthRange: "2-4",
-      pace: "fast",
-      enemyHp: 10,
-      hearts: 3,
+      lengthRange: b.len,
+      pace: b.pace,
+      enemyHp: b.hp,
+      hearts: b.hearts,
       bonusXp: 150 * z.id,
       boss: z.boss,
     });
@@ -152,10 +181,10 @@ function buildFloors(): Floor[] {
     chars: [...learned],
     newChars: [],
     mode: "mixed",
-    lengthRange: "2-5",
-    pace: "fast",
-    enemyHp: 15,
-    hearts: 3,
+    lengthRange: FINAL.len,
+    pace: FINAL.pace,
+    enemyHp: FINAL.hp,
+    hearts: FINAL.hearts,
     bonusXp: 1500,
     boss: FINAL_BOSS,
   });

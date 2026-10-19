@@ -41,6 +41,25 @@ describe("tower floors", () => {
     expect(new Set(FLOORS[20].chars).size).toBe(46);
   });
 
+  it("gets harder the higher you climb", () => {
+    const maxLen = (f: (typeof FLOORS)[number]) => Number(f.lengthRange.split("-")[1]);
+    const PACE = { relaxed: 0, normal: 1, fast: 2 };
+    // same slot in each zone (1st drill, 2nd drill, mix, boss) never gets easier
+    for (let slot = 0; slot < 4; slot++) {
+      const fs = [1, 2, 3, 4, 5].map((z) => FLOORS.filter((f) => f.zone === z)[slot]);
+      for (let i = 1; i < fs.length; i++) {
+        expect(maxLen(fs[i])).toBeGreaterThanOrEqual(maxLen(fs[i - 1]));
+        expect(PACE[fs[i].pace]).toBeGreaterThanOrEqual(PACE[fs[i - 1].pace]);
+        expect(fs[i].enemyHp).toBeGreaterThan(fs[i - 1].enemyHp);
+        expect(fs[i].hearts).toBeLessThanOrEqual(fs[i - 1].hearts);
+      }
+    }
+    const bosses = FLOORS.filter((f) => f.kind === "boss");
+    bosses.slice(1).forEach((b, i) => expect(b.enemyHp).toBeGreaterThan(bosses[i].enemyHp));
+    expect(FLOORS[20].enemyHp).toBeGreaterThan(bosses[4].enemyHp);
+    expect(maxLen(FLOORS[20])).toBe(7);
+  });
+
   it("every floor can actually generate questions using only its kana", () => {
     for (const f of FLOORS) {
       const r = generateRound({

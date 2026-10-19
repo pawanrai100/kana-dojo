@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowRight, Check, Crown, Heart, Map as MapIcon, RotateCcw, Star, Swords, X, Zap } from "lucide-react";
+import { ArrowRight, Check, Crown, Heart, Map as MapIcon, RotateCcw, Ruler, Star, Swords, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/misc";
 import { generateRound } from "@/lib/quiz/generate";
@@ -416,6 +416,9 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
           </li>
           <li className="flex items-center gap-1.5">
             <Heart className="size-4" aria-hidden /> {floor.hearts} hearts
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Ruler className="size-4" aria-hidden /> {floor.lengthRange.replace("-", "–")} kana words
           </li>
           <li className="flex items-center gap-1.5">
             <Zap className="size-4" aria-hidden /> {floor.pace === "fast" ? "Fast" : floor.pace === "normal" ? "Normal" : "Relaxed"} timer
