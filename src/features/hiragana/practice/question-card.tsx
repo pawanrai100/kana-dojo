@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Hourglass, X } from "lucide-react";
+import { ArrowRight, Check, Hourglass, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { AnswerState, Difficulty, GradedQuestion, Question } from "@/lib/quiz/types";
 import { comboMultiplier } from "@/lib/game/scoring";
 import { cn } from "@/lib/utils";
@@ -164,5 +165,68 @@ export function ResultCard({ result, index, showNumber, revealDelayMs = 0 }: { r
         )}
       </p>
     </article>
+  );
+}
+
+// shown right after you press enter: right or wrong, the reading and what it means
+export function AnswerFeedback({
+  q,
+  correct,
+  missedIdx,
+  answer,
+  timedOut,
+  onNext,
+  nextLabel = "Got it",
+}: {
+  q: Question;
+  correct: boolean;
+  missedIdx: number[];
+  answer: string;
+  timedOut: boolean;
+  onNext: () => void;
+  nextLabel?: string;
+}) {
+  const missed = new Set(missedIdx);
+  return (
+    <div className="mx-auto w-full max-w-[620px]">
+      <article
+        role="status"
+        className={cn(
+          "animate-stamp flex flex-col items-center gap-3 rounded-[1.75rem] px-6 py-8 text-center",
+          correct ? "bg-good-soft shadow-[0_10px_0_var(--good)]" : "animate-shake bg-bad-soft shadow-[0_10px_0_var(--bad)]",
+        )}
+      >
+        <span className={cn("grid size-12 place-items-center rounded-full text-white", correct ? "bg-good" : "bg-bad")}>
+          {correct ? <Check className="size-7" aria-label="Correct" /> : <X className="size-7" aria-label="Missed" />}
+        </span>
+        <p lang="ja" className={cn("font-kana break-all", kanaSize(q.chars.length))}>
+          {q.chars.map((k, i) => (
+            <span key={i} className={cn(missed.has(i) && !correct && "text-bad underline decoration-4 underline-offset-[12px]")}>
+              {k}
+            </span>
+          ))}
+        </p>
+        <p className="text-2xl font-extrabold">{q.romaji}</p>
+        {!correct && (
+          <p className="text-sm text-muted">
+            {timedOut && !answer ? (
+              "Time ran out."
+            ) : (
+              <>
+                You typed <span className="font-bold text-bad line-through">{answer || "nothing"}</span>
+              </>
+            )}
+          </p>
+        )}
+        <p className="text-sm font-bold">
+          {q.meaning ?? <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-extrabold text-muted">Reading practice</span>}
+        </p>
+        {!correct && (
+          <Button className="mt-2" onClick={onNext} autoFocus>
+            {nextLabel} <ArrowRight />
+          </Button>
+        )}
+      </article>
+    </div>
   );
 }

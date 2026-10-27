@@ -8,6 +8,7 @@ import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
 import { generateRound } from "@/lib/quiz/generate";
 import { emptyAnswer, gradeRound } from "@/lib/quiz/grade";
+import { checkAnswer } from "@/lib/quiz/validate";
 import type { ActiveRound } from "@/lib/quiz/session";
 import type { AnswerState, GeneratorState, GradedRound } from "@/lib/quiz/types";
 import type { PracticeMode, Settings, TimerPace } from "@/lib/settings/types";
@@ -16,7 +17,7 @@ import type { Achievement } from "@/lib/tower/achievements";
 import { playSound, type SoundName } from "@/lib/sound";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
-import { ActiveCard, ResultCard } from "./question-card";
+import { ActiveCard, AnswerFeedback, ResultCard } from "./question-card";
 import { RoundSummary } from "./round-summary";
 import { Petals } from "./petals";
 
@@ -156,6 +157,16 @@ interface GradedView {
   badges: Achievement[];
 }
 
+// the answer you just checked, shown until you move on
+interface Checked {
+  i: number;
+  correct: boolean;
+  missedIdx: number[];
+  timedOut: boolean;
+}
+
+const AUTO_NEXT_MS = 750;
+
 function nextOpen(answers: AnswerState[], from: number): number {
   for (let k = 1; k <= answers.length; k++) {
     const j = (from + k) % answers.length;
@@ -170,9 +181,14 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const timed = round.questions.some((q) => q.timeLimitSec != null);
 
   const [answers, setAnswers] = useState<AnswerState[]>(initial.answers);
-  const [activeIndex, setActiveIndex] = useState(initial.activeIndex);
+  // after a refresh the saved card might already be checked, so start on the next open one
+  const [activeIndex, setActiveIndex] = useState(() =>
+    initial.answers[initial.activeIndex]?.locked ? Math.max(0, nextOpen(initial.answers, initial.activeIndex)) : initial.activeIndex,
+  );
   const [view, setView] = useState<GradedView | null>(null);
   const [elapsed, setElapsed] = useState<{ idx: number; ms: number } | null>(null);
+  const [checked, setChecked] = useState<Checked | null>(null);
+  const checkedAt = useRef(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const nextBtn = useRef<HTMLButtonElement>(null);
@@ -192,23 +208,42 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
+  // enter (or the clock running out) locks the answer and shows right/wrong straight away
   const lock = (i: number, timedOut: boolean) => {
+    if (checked || answers[i].locked) return;
     const q = round.questions[i];
-    const used = timedOut && q.timeLimitSec ? q.timeLimitSec * 1000 : Math.round(usedNow.current());
+    const used = timed ? (timedOut && q.timeLimitSec ? q.timeLimitSec * 1000 : Math.round(usedNow.current())) : 0;
     const next = answers.map((a, j) => (j === i ? { ...a, locked: true, timedOut, timeUsedMs: used } : a));
     setAnswers(next);
-    sfx(timedOut ? "timeout" : "lock");
-    const ni = nextOpen(next, i);
-    if (ni === -1) finish(next);
+    const res = checkAnswer(q.kana, next[i].value);
+    setChecked({ i, correct: res.correct, missedIdx: res.missedIdx, timedOut });
+    checkedAt.current = Date.now();
+    sfx(res.correct ? "correct" : timedOut ? "timeout" : "wrong");
+  };
+
+  const advance = () => {
+    if (!checked) return;
+    const ni = nextOpen(answers, checked.i);
+    setChecked(null);
+    setElapsed(null);
+    if (ni === -1) finish(answers);
     else setActiveIndex(ni);
   };
 
   const onTimeout = useEffectEvent((i: number) => lock(i, true));
+  const onAutoNext = useEffectEvent(() => advance());
+
+  // right answers move on by themselves, misses wait so you can read the fix
+  useEffect(() => {
+    if (!checked?.correct) return;
+    const t = window.setTimeout(() => onAutoNext(), AUTO_NEXT_MS);
+    return () => window.clearTimeout(t);
+  }, [checked]);
   const onTick = useEffectEvent(() => sfx("tick"));
 
   // per-question countdown, pauses while the tab is hidden
   useEffect(() => {
-    if (view || !timed) return;
+    if (view || !timed || checked) return;
     const q = round.questions[activeIndex];
     if (!q?.timeLimitSec) return;
     const limit = q.timeLimitSec * 1000;
@@ -247,7 +282,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [activeIndex, view, timed, round, initial.answers]);
+  }, [activeIndex, view, timed, round, initial.answers, checked]);
 
   // keep the unfinished round saved so it survives a refresh
   useEffect(() => {
@@ -257,9 +292,9 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
 
   // focus the card that just got dealt
   useEffect(() => {
-    if (view) return;
+    if (view || checked) return;
     if (settings.autoFocus) inputRef.current?.focus({ preventScroll: true });
-  }, [activeIndex, view, settings.autoFocus]);
+  }, [activeIndex, view, settings.autoFocus, checked]);
 
   useEffect(() => {
     if (!view) return;
@@ -273,6 +308,14 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   };
 
   const onGlobalKey = useEffectEvent((e: KeyboardEvent) => {
+    if (checked && e.key === "Enter") {
+      if (Date.now() - checkedAt.current < 250) return; // the same press that checked it
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "BUTTON" || tag === "A") return;
+      e.preventDefault();
+      advance();
+      return;
+    }
     if (!settings.shortcuts || !view) return;
     const t = e.target as HTMLElement | null;
     const tag = t?.tagName;
@@ -298,15 +341,9 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
       if (settings.shortcuts) skipRound();
       return;
     }
-    if (timed) {
-      lock(i, false);
-      return;
-    }
-    if (i < total - 1) {
-      setActiveIndex(i + 1);
-    } else {
-      finish(answers);
-    }
+    // untimed: an empty enter does nothing, so you don't burn a card by accident
+    if (!timed && !answers[i].value.trim()) return;
+    lock(i, false);
   };
 
   const setValue = (i: number, v: string) =>
@@ -321,7 +358,9 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   };
 
   // untimed rounds let you jump back to any card
-  const canJump = (i: number) => !view && !timed && i !== activeIndex;
+  const canJump = (i: number) => !view && !timed && !checked && i !== activeIndex && !answers[i].locked;
+  // locked answers already know if they're right, so the chips can show it
+  const lockedOk = (i: number) => checkAnswer(round.questions[i].kana, answers[i].value).correct;
 
   const timeLeft = (i: number) => {
     const q = round.questions[i];
@@ -337,15 +376,16 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const chipTone = (i: number) => {
     const r = results?.[i];
     if (r) return r.correct ? "bg-good text-white shadow-[0_3px_0_var(--good-deep)]" : "bg-bad text-white shadow-[0_3px_0_var(--bad-deep)]";
+    if (answers[i].locked)
+      return lockedOk(i) ? "bg-good text-white shadow-[0_3px_0_var(--good-deep)]" : "bg-bad text-white shadow-[0_3px_0_var(--bad-deep)]";
     if (i === activeIndex) return "bg-surface text-primary ring-[3px] ring-inset ring-primary shadow-[0_3px_0_var(--border)]";
-    if (answers[i].locked) return "bg-primary text-primary-foreground shadow-[0_3px_0_var(--primary-deep)]";
     if (answers[i].value.trim()) return "bg-primary-soft text-primary shadow-[0_3px_0_var(--border)]";
     return "bg-surface text-muted shadow-[0_3px_0_var(--border)]";
   };
 
   const chipLabel = (i: number) => {
     const r = results?.[i];
-    const st = r ? (r.correct ? "correct" : "incorrect") : answers[i].locked ? "locked in" : i === activeIndex ? "current" : answers[i].value.trim() ? "answered" : "not answered";
+    const st = r ? (r.correct ? "correct" : "incorrect") : answers[i].locked ? (lockedOk(i) ? "correct" : "incorrect") : i === activeIndex ? "current" : answers[i].value.trim() ? "answered" : "not answered";
     return `Question ${i + 1}: ${st}`;
   };
 
@@ -416,7 +456,19 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
         </span>
       </div>
 
-      {!view && q && (
+      {!view && checked && (
+        <AnswerFeedback
+          q={round.questions[checked.i]}
+          correct={checked.correct}
+          missedIdx={checked.missedIdx}
+          answer={answers[checked.i].value}
+          timedOut={checked.timedOut}
+          onNext={advance}
+          nextLabel={nextOpen(answers, checked.i) === -1 ? "See results" : "Got it"}
+        />
+      )}
+
+      {!view && !checked && q && (
         <>
           <ActiveCard
             key={q.id}
@@ -446,7 +498,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
                 {done}/{total} answered
               </span>
               <span>
-                <Kbd>Enter</Kbd> {timed ? "lock in" : "next card"}
+                <Kbd>Enter</Kbd> check answer
               </span>
               {settings.shortcuts && (
                 <span className="hidden sm:inline">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowRight, Check, Crown, Heart, Map as MapIcon, RotateCcw, Ruler, Star, Swords, X, Zap } from "lucide-react";
+import { ArrowRight, Crown, Heart, Map as MapIcon, RotateCcw, Ruler, Star, Swords, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/misc";
 import { generateRound } from "@/lib/quiz/generate";
@@ -16,7 +16,7 @@ import { TOP_FLOOR, type Enemy, type Floor } from "@/lib/tower/floors";
 import type { TowerOutcome } from "@/lib/tower/progress";
 import { cn, pct } from "@/lib/utils";
 import { actions } from "@/store/app-store";
-import { ActiveCard } from "@/features/hiragana/practice/question-card";
+import { ActiveCard, AnswerFeedback } from "@/features/hiragana/practice/question-card";
 import { Petals } from "@/features/hiragana/practice/petals";
 import { Medal } from "./medal";
 import { YokaiArt } from "./yokai-art";
@@ -268,7 +268,9 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         </>
       )}
 
-      {phase === "feedback" && fb && <FeedbackCard fb={fb} onNext={advance} last={battle.status !== "fighting"} />}
+      {phase === "feedback" && fb && (
+        <AnswerFeedback q={fb.q} correct={fb.correct} missedIdx={fb.missedIdx} answer={fb.answer} timedOut={fb.timedOut} onNext={advance} nextLabel={battle.status !== "fighting" ? "See result" : "Got it"} />
+      )}
 
       <div className="text-center">
         <button type="button" onClick={onExit} className="text-sm font-bold text-muted hover:text-foreground">
@@ -370,44 +372,6 @@ function Hud({ floor, battle, isBoss, fx }: { floor: Floor; battle: BattleState;
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function FeedbackCard({ fb, onNext, last }: { fb: Feedback; onNext: () => void; last: boolean }) {
-  const missed = new Set(fb.missedIdx);
-  return (
-    <div className="mx-auto w-full max-w-[620px]">
-      <article
-        role="status"
-        className={cn(
-          "animate-stamp flex flex-col items-center gap-3 rounded-[1.75rem] px-6 py-8 text-center",
-          fb.correct ? "bg-good-soft shadow-[0_10px_0_var(--good)]" : "animate-shake bg-bad-soft shadow-[0_10px_0_var(--bad)]",
-        )}
-      >
-        <span className={cn("grid size-12 place-items-center rounded-full text-white", fb.correct ? "bg-good" : "bg-bad")}>
-          {fb.correct ? <Check className="size-7" aria-label="Correct" /> : <X className="size-7" aria-label="Missed" />}
-        </span>
-        <p lang="ja" className="font-kana text-6xl sm:text-7xl">
-          {fb.q.chars.map((k, i) => (
-            <span key={i} className={cn(missed.has(i) && !fb.correct && "text-bad underline decoration-4 underline-offset-[12px]")}>
-              {k}
-            </span>
-          ))}
-        </p>
-        <p className="text-2xl font-extrabold">{fb.q.romaji}</p>
-        {!fb.correct && (
-          <p className="text-sm text-muted">
-            {fb.timedOut && !fb.answer ? "Time ran out." : <>You typed <span className="font-bold text-bad line-through">{fb.answer || "nothing"}</span></>}
-          </p>
-        )}
-        <p className="text-sm font-bold">{fb.q.meaning ?? <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-extrabold text-muted">Reading practice</span>}</p>
-        {!fb.correct && (
-          <Button className="mt-2" onClick={onNext} autoFocus>
-            {last ? "See result" : "Got it"} <ArrowRight />
-          </Button>
-        )}
-      </article>
     </div>
   );
 }
