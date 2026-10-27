@@ -16,7 +16,7 @@ export interface Boss {
 
 // who you fight on a floor. art is keyed by id
 export interface Enemy {
-  id: "obake" | "shisa" | "kappa" | "tanuki" | "kitsune" | "tengu" | "oni" | "ryu";
+  id: "obake" | "shisa" | "saru" | "orochi" | "kitsune" | "tako" | "kozo" | "ryu";
   name: string;
 }
 
@@ -55,13 +55,13 @@ export const ZONES: Zone[] = [
     id: 1,
     name: "Bamboo Gate",
     drills: [["vowel"], ["k"]],
-    boss: { id: "kappa", name: "Ugyappa", kana: "うぎゃっぱ", title: "Ugyappa Tamer", blurb: "A kappa river imp guarding the gate. Keep your head dry." },
+    boss: { id: "saru", name: "Ugyasaru", kana: "うぎゃさる", title: "Ugyasaru Tamer", blurb: "A buck-toothed mountain monkey guarding the gate. Don't let him steal your answers." },
   },
   {
     id: 2,
     name: "Lantern Hall",
     drills: [["s"], ["t"]],
-    boss: { id: "tanuki", name: "Hyunuki", kana: "ひゅぬき", title: "Hyunuki Trickster", blurb: "A shapeshifting tanuki. Its words never look the same twice." },
+    boss: { id: "orochi", name: "Hyunorochi", kana: "ひゅのろち", title: "Hyunorochi Charmer", blurb: "A grinning orochi serpent coiled in the hall. Its words slither past you." },
   },
   {
     id: 3,
@@ -73,13 +73,13 @@ export const ZONES: Zone[] = [
     id: 4,
     name: "Mountain Pass",
     drills: [["m"], ["y"]],
-    boss: { id: "tengu", name: "Deepengu", kana: "でぃぺんぐ", title: "Deepengu Climber", blurb: "A long-nosed tengu of the mountains. It speaks fast, so read faster." },
+    boss: { id: "tako", name: "Deeptako", kana: "でぃぷたこ", title: "Deeptako Wrangler", blurb: "A tako octopus yokai with eight arms and a huge grin. It reads fast, so read faster." },
   },
   {
     id: 5,
     name: "Thunder Roof",
     drills: [["r"], ["w", "nn"]],
-    boss: { id: "oni", name: "Jinkoni", kana: "じんこに", title: "Jinkoni Breaker", blurb: "A thunder oni on the last roof before the peak. Bring your best." },
+    boss: { id: "kozo", name: "Jinkozō", kana: "じんこぞう", title: "Jinkozō Breaker", blurb: "A one-eyed hitotsume-kozō on the last roof before the peak. One eye, zero mercy." },
   },
 ];
 
@@ -88,7 +88,7 @@ export const FINAL_BOSS: Boss = {
   name: "Pawaryū the Dragon",
   kana: "ぱわりゅう",
   title: "Dragon Slayer",
-  blurb: "The power dragon who built this tower. Every one of the 46 kana, fast, with three hearts.",
+  blurb: "The katana-wielding dragon who built this tower. Every one of the 46 kana, fast, with three hearts.",
 };
 
 // difficulty ramps by zone (index 0 = zone 1). words get longer, the timer

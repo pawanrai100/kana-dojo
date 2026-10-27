@@ -35,7 +35,7 @@ describe("tower floors", () => {
   });
 
   it("bosses test everything learned so far, the dragon tests all 46", () => {
-    const boss2 = FLOORS.find((f) => f.boss?.id === "tanuki")!;
+    const boss2 = FLOORS.find((f) => f.boss?.id === "orochi")!;
     expect(boss2.chars).toEqual(expect.arrayContaining(["あ", "か", "さ", "た"]));
     expect(boss2.chars).not.toContain("な");
     expect(new Set(FLOORS[20].chars).size).toBe(46);
@@ -169,11 +169,11 @@ describe("achievements", () => {
     let p = emptyProgress();
     for (let id = 1; id <= 3; id++) p = applyBattle(p, win(id)).progress;
     const before = p;
-    p = applyBattle(p, win(4)).progress; // kappa, no hearts lost
+    p = applyBattle(p, win(4)).progress; // ugyasaru, no hearts lost
     const got = newlyEarned(before, p).map((a) => a.id);
-    expect(got).toContain("boss-kappa");
+    expect(got).toContain("boss-saru");
     expect(got).toContain("untouchable");
-    expect(currentTitle(p)).toBe("Ugyappa Tamer");
+    expect(currentTitle(p)).toBe("Ugyasaru Tamer");
   });
 
   it("hanamaru needs 3 stars everywhere", () => {
