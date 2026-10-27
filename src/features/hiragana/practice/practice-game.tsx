@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { AlertCircle, Info, SkipForward, Timer } from "lucide-react";
+import { AlertCircle, Info, RotateCcw, SkipForward, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
@@ -373,6 +373,18 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
         <p className="flex items-start gap-2 rounded-2xl bg-primary-soft px-4 py-3 text-sm font-bold text-primary">
           <Info className="mt-0.5 size-4 shrink-0" />
           {round.notice}
+        </p>
+      )}
+
+      {!view && round.focus && round.focus.length > 0 && (
+        <p className="flex flex-wrap items-center gap-2 rounded-2xl bg-sun-soft px-4 py-2.5 text-sm font-bold text-warn" aria-label={`Extra practice on ${round.focus.join(" ")}`}>
+          <RotateCcw className="size-4 shrink-0" aria-hidden />
+          Extra practice on
+          {round.focus.map((k) => (
+            <span key={k} lang="ja" className="font-kana rounded-lg bg-surface px-1.5 text-base text-foreground shadow-[0_2px_0_var(--border)]">
+              {k}
+            </span>
+          ))}
         </p>
       )}
 

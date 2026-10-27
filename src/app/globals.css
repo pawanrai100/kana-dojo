@@ -86,7 +86,7 @@
   --color-ring: var(--ring);
   --font-sans: "M PLUS Rounded 1c", ui-rounded, system-ui, sans-serif;
   --font-display: "Dela Gothic One", "M PLUS Rounded 1c", sans-serif;
-  --font-kana: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
+  --font-kana: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
   --shadow-card: var(--shadow);
   --radius-card: 1.5rem;
 }
@@ -106,11 +106,21 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* kana stay clear and readable: rounded gothic, heavy but open strokes */
+/* kana have to be easy to tell apart, so the default keeps loops open and
+   shows the stroke gaps you'd write by hand (き さ り). switchable in settings */
 .font-kana {
   font-family: var(--font-kana);
-  font-weight: 800;
+  font-weight: var(--kana-weight, 700);
   line-height: 1.15;
+  letter-spacing: 0.04em;
+}
+:root[data-kana="textbook"] {
+  --font-kana: "Klee One", "Hiragino Mincho ProN", serif;
+  --kana-weight: 600;
+}
+:root[data-kana="rounded"] {
+  --font-kana: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
+  --kana-weight: 800;
 }
 
 .font-display {

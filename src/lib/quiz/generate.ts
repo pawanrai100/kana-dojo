@@ -3,7 +3,7 @@ import type { CharStat, WordStat } from "@/lib/progress/types";
 import { LENGTH_BOUNDS, type Settings } from "@/lib/settings/types";
 import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
 import type { VocabWord } from "@/lib/vocab/types";
-import { charWeight } from "./adaptive";
+import { charWeight, focusChars, wordNeedsRetry } from "./adaptive";
 import { randInt, shuffle, weightedSample, type Rng } from "./random";
 import { rateQuestion } from "./timer";
 import type { GeneratorState, Question, Round } from "./types";
@@ -58,6 +58,10 @@ export function generateRound(input: GenerateInput): GenerateResult {
     };
   }
 
+  // chars you just missed or keep missing, pulled forward into this round
+  const focus = focusChars(enabled, chars, 8, now);
+  const focusSet = new Set(focus);
+
   const notices: string[] = [];
   const gen: GeneratorState = {
     deck: input.gen.deck.filter((k) => enabled.includes(k)),
@@ -96,7 +100,8 @@ export function generateRound(input: GenerateInput): GenerateResult {
   const picked: VocabWord[] = [];
   if (wordCount > 0) {
     const used = new Set(gen.usedWords);
-    let fresh = pool.filter((w) => !used.has(w.id));
+    const retry = (w: VocabWord) => wordNeedsRetry(words[w.id]);
+    let fresh = pool.filter((w) => !used.has(w.id) || retry(w));
     if (fresh.length < wordCount) {
       // pool exhausted, start a new cycle but keep the last few out so nothing repeats instantly
       const keepOut = gen.usedWords
@@ -104,16 +109,22 @@ export function generateRound(input: GenerateInput): GenerateResult {
         .slice(-Math.min(12, Math.floor(pool.length / 3)));
       gen.usedWords = keepOut;
       const keep = new Set(keepOut);
-      fresh = pool.filter((w) => !keep.has(w.id));
+      fresh = pool.filter((w) => !keep.has(w.id) || retry(w));
     }
     const weight = (w: VocabWord) => {
       const ks = splitKana(w.kana);
-      const avg = ks.reduce((s, k) => s + charWeight(chars[k], k), 0) / ks.length;
+      const avg = ks.reduce((s, k) => s + charWeight(chars[k], k, now), 0) / ks.length;
       const ws = words[w.id];
       const missBoost = ws ? ((ws.seen - ws.correct) / ws.seen) * 1.5 : 0.4;
-      return avg + missBoost;
+      const base = avg + missBoost;
+      return ks.some((k) => focusSet.has(k)) ? base * 3 : base; // has a char you just missed
     };
-    picked.push(...weightedSample(fresh, weight, Math.min(wordCount, fresh.length), rng));
+    // words you got wrong last time are guaranteed a spot (up to half the round)
+    const retries = shuffle(fresh.filter(retry), rng).slice(0, Math.ceil(wordCount / 2));
+    picked.push(...retries);
+    const rest = fresh.filter((w) => !retries.includes(w));
+    picked.push(...weightedSample(rest, weight, Math.min(wordCount - retries.length, rest.length), rng));
+    if (retries.length) picked.splice(0, picked.length, ...shuffle(picked, rng)); // don't always lead with the retry
     gen.usedWords.push(...picked.map((w) => w.id));
     if (gen.usedWords.length > vocab.length) gen.usedWords = gen.usedWords.slice(-vocab.length);
   }
@@ -123,8 +134,14 @@ export function generateRound(input: GenerateInput): GenerateResult {
   const taken = new Set<string>(picked.map((w) => w.kana));
   const recent = new Set(gen.recentCombos);
 
+  if (randomCount > 0 && focus.length) {
+    // each focus char goes in twice, so only take as many as the round has room for
+    const slots = Math.floor((randomCount * (minLen + maxLen)) / 2);
+    gen.deck = withFocus(gen.deck, focus.slice(0, Math.max(1, Math.floor(slots / 3))), rng);
+  }
+
   const draw = (): string => {
-    if (gen.deck.length === 0) gen.deck = buildDeck(enabled, chars, rng);
+    if (gen.deck.length === 0) gen.deck = buildDeck(enabled, chars, rng, now);
     return gen.deck.shift()!;
   };
 
@@ -173,6 +190,7 @@ export function generateRound(input: GenerateInput): GenerateResult {
       mode: settings.mode,
       questions: ordered.map((q, i) => ({ ...q, id: `${roundId}-${i}` })),
       notice: notices.length ? notices.join(" ") : undefined,
+      focus: focus.length ? focus : undefined,
     },
   };
 }
@@ -198,14 +216,34 @@ function makeQuestion(
   };
 }
 
-// every enabled char once, weak ones twice, shuffled. draining the deck
+// every enabled char once, weak ones up to 3 times, shuffled. draining the deck
 // guarantees every enabled char appears before any repeats pile up
-export function buildDeck(enabled: string[], stats: Record<string, CharStat>, rng: Rng): string[] {
+export function buildDeck(enabled: string[], stats: Record<string, CharStat>, rng: Rng, now = Date.now()): string[] {
   const deck: string[] = [];
   for (const k of enabled) {
     deck.push(k);
     const s = stats[k];
-    if (s?.seen && charWeight(s, k) >= 2.5) deck.push(k);
+    if (!s?.seen) continue;
+    const w = charWeight(s, k, now);
+    if (w >= 3.5) deck.push(k);
+    if (w >= 5.5) deck.push(k);
   }
   return shuffle(deck, rng);
+}
+
+// put each focus char near the front of the deck twice: once early, once a bit later.
+// one existing copy of it is pulled out so it doesn't pile up
+export function withFocus(deck: string[], focus: string[], rng: Rng): string[] {
+  const rest = [...deck];
+  for (const k of focus) {
+    const i = rest.indexOf(k);
+    if (i >= 0) rest.splice(i, 1);
+  }
+  const early = shuffle(focus, rng);
+  const late = shuffle(focus, rng);
+  const out: string[] = [];
+  // focus, filler, focus, filler... then the second copies, all early enough to land this round
+  for (const k of early) out.push(k, ...rest.splice(0, 1));
+  out.push(...late);
+  return [...out, ...rest];
 }

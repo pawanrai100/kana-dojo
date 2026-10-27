@@ -61,6 +61,7 @@ export function sanitizeActiveRound(raw: unknown): ActiveRound | null {
       mode,
       questions: questions as Question[],
       notice: typeof r.notice === "string" ? r.notice : undefined,
+      focus: Array.isArray(r.focus) ? r.focus.filter((k): k is string => typeof k === "string" && isBasicHiragana(k)).slice(0, 8) : undefined,
     },
     answers: answers.slice(0, questions.length),
     activeIndex,

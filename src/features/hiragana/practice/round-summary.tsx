@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { Flame, Star, Target, Trophy, Zap } from "lucide-react";
+import { Flame, RotateCcw, Star, Target, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd, ProgressBar } from "@/components/ui/misc";
 import type { GradedRound } from "@/lib/quiz/types";
@@ -30,6 +30,8 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
   const before = levelInfo(xpAfter - graded.xpEarned);
   const leveledUp = lvl.level > before.level;
   const total = graded.results.length;
+  // every char you slipped on this round, in the order you met them
+  const missed = [...new Set(graded.results.flatMap((r) => (r.correct ? [] : r.missedChars)))];
 
   return (
     <section
@@ -65,6 +67,18 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
           <Stat icon={<Flame className="size-4" />} label="Best combo" value={`×${graded.maxCombo}`} />
         </dl>
       </div>
+
+      {missed.length > 0 && (
+        <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl bg-sun-soft px-4 py-3 text-sm font-bold text-warn">
+          <RotateCcw className="size-4 shrink-0" aria-hidden />
+          <span>Coming back next round so you can nail them:</span>
+          {missed.map((k) => (
+            <span key={k} lang="ja" className="font-kana rounded-lg bg-surface px-2 py-0.5 text-lg text-foreground shadow-[0_2px_0_var(--border)]">
+              {k}
+            </span>
+          ))}
+        </div>
+      )}
 
       {badges.length > 0 && (
         <ul className="mt-5 flex flex-wrap gap-3">

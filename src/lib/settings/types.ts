@@ -5,6 +5,8 @@ export type PracticeMode = "mixed" | "words" | "random";
 export type LengthRange = "2-3" | "2-4" | "2-5" | "3-7";
 export type TimerPace = "off" | "relaxed" | "normal" | "fast";
 export type ThemePref = "light" | "dark" | "system";
+// clear = zen maru gothic, textbook = klee one (school style), rounded = the old heavy look
+export type KanaFont = "clear" | "textbook" | "rounded";
 
 export interface Settings {
   questionsPerRound: 5 | 10 | 15 | 20;
@@ -13,6 +15,7 @@ export interface Settings {
   timerPace: TimerPace;
   showNumbers: boolean;
   theme: ThemePref;
+  kanaFont: KanaFont;
   sound: boolean;
   autoFocus: boolean;
   shortcuts: boolean;
@@ -26,6 +29,7 @@ export const DEFAULT_SETTINGS: Settings = {
   timerPace: "normal",
   showNumbers: true,
   theme: "system",
+  kanaFont: "clear",
   sound: true,
   autoFocus: true,
   shortcuts: true,
@@ -60,6 +64,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     timerPace: pick(r.timerPace, ["off", "relaxed", "normal", "fast"] as const, d.timerPace),
     showNumbers: bool(r.showNumbers, d.showNumbers),
     theme: pick(r.theme, ["light", "dark", "system"] as const, d.theme),
+    kanaFont: pick(r.kanaFont, ["clear", "textbook", "rounded"] as const, d.kanaFont),
     sound: bool(r.sound, d.sound),
     autoFocus: bool(r.autoFocus, d.autoFocus),
     shortcuts: bool(r.shortcuts, d.shortcuts),

@@ -149,6 +149,18 @@ function SettingsBody({ s }: { s: Settings }) {
               ]}
             />
           </Row>
+          <Row label="Kana style" hint="Pick whichever is easiest for you to read. Clear keeps the stroke gaps you'd write by hand.">
+            <Segmented
+              label="Kana style"
+              value={s.kanaFont}
+              onChange={(kanaFont) => set({ kanaFont })}
+              options={[
+                { value: "clear", label: <FontSample font="'Zen Maru Gothic'" weight={700} name="Clear" /> },
+                { value: "textbook", label: <FontSample font="'Klee One'" weight={600} name="Textbook" /> },
+                { value: "rounded", label: <FontSample font="'M PLUS Rounded 1c'" weight={800} name="Bold" /> },
+              ]}
+            />
+          </Row>
           <ToggleRow label="Sound effects" checked={s.sound} onChange={(sound) => set({ sound })} />
           <ToggleRow label="Focus the answer box automatically" checked={s.autoFocus} onChange={(autoFocus) => set({ autoFocus })} />
           <ToggleRow
@@ -225,5 +237,17 @@ function ToggleRow({ label, hint, checked, onChange }: { label: string; hint?: s
       </div>
       <Switch id={id} checked={checked} onCheckedChange={onChange} />
     </div>
+  );
+}
+
+// each option previews itself in its own font
+function FontSample({ font, weight, name }: { font: string; weight: number; name: string }) {
+  return (
+    <span className="flex flex-col items-center leading-tight">
+      <span lang="ja" aria-hidden style={{ fontFamily: font, fontWeight: weight }} className="text-xl">
+        さぬね
+      </span>
+      <span className="text-xs">{name}</span>
+    </span>
   );
 }

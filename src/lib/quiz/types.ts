@@ -21,6 +21,7 @@ export interface Round {
   mode: PracticeMode;
   questions: Question[];
   notice?: string;
+  focus?: string[]; // chars brought back because you missed them
 }
 
 export interface AnswerState {
