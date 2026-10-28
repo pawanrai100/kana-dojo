@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { AlertCircle, Info, RotateCcw, SkipForward, Timer } from "lucide-react";
+import { AlertCircle, Check, Flag, Info, RotateCcw, SkipForward, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
@@ -188,6 +188,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const [view, setView] = useState<GradedView | null>(null);
   const [elapsed, setElapsed] = useState<{ idx: number; ms: number } | null>(null);
   const [checked, setChecked] = useState<Checked | null>(null);
+  const [blankTry, setBlankTry] = useState(0); // bumps when you try to check an empty answer
   const checkedAt = useRef(0);
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -229,6 +230,11 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     if (ni === -1) finish(answers);
     else setActiveIndex(ni);
   };
+
+  // after a blank try, put the cursor back in the box
+  useEffect(() => {
+    if (blankTry > 0) inputRef.current?.focus({ preventScroll: true });
+  }, [blankTry]);
 
   const onTimeout = useEffectEvent((i: number) => lock(i, true));
   const onAutoNext = useEffectEvent(() => advance());
@@ -334,6 +340,15 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     return () => window.removeEventListener("keydown", h);
   }, []);
 
+  // enter or the check button. blank answers don't count, only the clock can lock a blank
+  const submit = (i: number) => {
+    if (!answers[i].value.trim()) {
+      setBlankTry((n) => n + 1);
+      return;
+    }
+    lock(i, false);
+  };
+
   const onInputKey = (i: number) => (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
     e.preventDefault();
@@ -341,13 +356,13 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
       if (settings.shortcuts) skipRound();
       return;
     }
-    // untimed: an empty enter does nothing, so you don't burn a card by accident
-    if (!timed && !answers[i].value.trim()) return;
-    lock(i, false);
+    submit(i);
   };
 
-  const setValue = (i: number, v: string) =>
+  const setValue = (i: number, v: string) => {
+    setBlankTry(0);
     setAnswers((prev) => prev.map((a, j) => (j === i ? { ...a, value: v } : a)));
+  };
 
   const checkNow = () => {
     // lock whatever is typed, including the question on the clock
@@ -485,12 +500,20 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
           />
 
           <div className="flex flex-col items-center gap-4">
+            {blankTry > 0 && (
+              <p key={blankTry} role="alert" className="animate-shake rounded-full bg-bad-soft px-4 py-1.5 text-sm font-extrabold text-bad">
+                Type the reading first
+              </p>
+            )}
+            <Button size="lg" className="w-full max-w-xs" onClick={() => submit(activeIndex)}>
+              <Check /> Check
+            </Button>
             <div className="flex flex-wrap justify-center gap-3">
-              <Button size="lg" onClick={checkNow}>
-                Check Answers
+              <Button variant="outline" onClick={checkNow}>
+                <Flag /> Finish round
               </Button>
-              <Button size="lg" variant="outline" onClick={skipRound}>
-                <SkipForward /> Skip Round
+              <Button variant="outline" onClick={skipRound}>
+                <SkipForward /> Skip round
               </Button>
             </div>
             <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs font-bold text-muted">

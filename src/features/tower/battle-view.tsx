@@ -56,6 +56,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   const [fb, setFb] = useState<Feedback | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [fx, setFx] = useState<Fx>({ kind: null, n: 0 });
+  const [blankTry, setBlankTry] = useState(0);
   const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[] } | null>(null);
 
   const gen = useRef<GeneratorState>(EMPTY_GEN_STATE);
@@ -118,6 +119,16 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     lockedAt.current = Date.now();
     setPhase("feedback");
     sfx(check.correct ? "correct" : timedOut ? "timeout" : "wrong");
+  };
+
+  // blank answers don't count, only the clock can lock a blank
+  const strike = () => {
+    if (!value.trim()) {
+      setBlankTry((n) => n + 1);
+      inputRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    lock(false);
   };
 
   const finish = (final: BattleState) => {
@@ -254,14 +265,27 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
             timed
             timeLeftSec={q.timeLimitSec ? Math.max(0, q.timeLimitSec - elapsed / 1000) : undefined}
             inputRef={inputRef}
-            onChange={setValue}
+            onChange={(v) => {
+              setBlankTry(0);
+              setValue(v);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                 e.preventDefault();
-                lock(false);
+                strike();
               }
             }}
           />
+          {blankTry > 0 && (
+            <p key={blankTry} role="alert" className="animate-shake mx-auto w-fit rounded-full bg-bad-soft px-4 py-1.5 text-sm font-extrabold text-bad">
+              Type the reading first
+            </p>
+          )}
+          <div className="flex justify-center">
+            <Button size="lg" className="w-full max-w-xs" onClick={strike}>
+              <Swords /> Strike
+            </Button>
+          </div>
           <p className="text-center text-xs font-bold text-muted">
             <Kbd>Enter</Kbd> to strike
           </p>
