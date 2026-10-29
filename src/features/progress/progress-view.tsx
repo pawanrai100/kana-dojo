@@ -25,6 +25,7 @@ import { cn, pct, plural } from "@/lib/utils";
 import { useAppState } from "@/store/app-store";
 import { BarChart, LineChart } from "./charts";
 import { SessionList } from "./session-list";
+import { CoachCard } from "@/features/coach/coach-card";
 
 // dakuten, combos and small っ, counted apart from the basic 46
 const EXTRAS = ALL_KANA_LIST.filter((k) => !BASIC_KANA_LIST.includes(k));
@@ -105,6 +106,10 @@ function ProgressBody({ p }: { p: Progress }) {
         <Tile label="Real words learned" value={String(wordsLearned(p))} sub={`${plural(wordsPracticed(p), "word")} practiced`} />
         <Tile label="Best combo" value={`×${p.bestCombo}`} sub={`Best round ${p.bestRoundPoints.toLocaleString()} pts`} />
       </section>
+
+      <div id="coach" className="scroll-mt-24">
+        <CoachCard progress={p} full />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

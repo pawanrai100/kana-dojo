@@ -2,8 +2,10 @@ import { ALL_KANA_LIST, SMALL_TSU, canFollowSokuon, isKnownKana, splitKana, toRo
 import type { CharStat, WordStat } from "@/lib/progress/types";
 import { LENGTH_BOUNDS, type Settings } from "@/lib/settings/types";
 import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
+import { SENTENCES, type Sentence } from "@/lib/vocab/sentences";
 import type { VocabWord } from "@/lib/vocab/types";
-import { charWeight, focusChars, wordNeedsRetry } from "./adaptive";
+import { EMPTY_COACH, charWeight, focusChars, wordNeedsRetry, type CoachContext } from "./adaptive";
+import { skillsOf } from "@/lib/coach/analyze";
 import { randInt, shuffle, weightedSample, type Rng } from "./random";
 import { rateQuestion } from "./timer";
 import type { GeneratorState, Question, Round } from "./types";
@@ -16,11 +18,12 @@ export interface GenerateInput {
   vocab?: VocabWord[];
   rng?: Rng;
   now?: number;
+  coach?: CoachContext;
 }
 
 export type GenerateResult =
   | { ok: true; round: Round; gen: GeneratorState }
-  | { ok: false; reason: "no-chars" | "no-words"; message: string };
+  | { ok: false; reason: "no-chars" | "no-words" | "no-sentences"; message: string };
 
 const VOCAB_BY_KANA = new Map(HIRAGANA_VOCAB.map((w) => [w.kana, w]));
 
@@ -58,6 +61,7 @@ export function generateRound(input: GenerateInput): GenerateResult {
   const rng = input.rng ?? Math.random;
   const now = input.now ?? Date.now();
   const { settings, chars, words } = input;
+  const coach = input.coach ?? EMPTY_COACH;
   const vocab = input.vocab ?? HIRAGANA_VOCAB;
   const enabled = resolveEnabled(settings.enabledChars);
   const need = settings.questionsPerRound;
@@ -66,6 +70,8 @@ export function generateRound(input: GenerateInput): GenerateResult {
   if (enabled.length === 0) {
     return { ok: false, reason: "no-chars", message: "Pick at least one character to practice." };
   }
+
+  if (settings.mode === "sentences") return sentenceRound(input, enabled, rng, now);
 
   const charPool = wordsForChars(enabled, vocab);
   if (settings.mode === "words" && charPool.length === 0) {
@@ -78,7 +84,7 @@ export function generateRound(input: GenerateInput): GenerateResult {
   }
 
   // chars you just missed or keep missing, pulled forward into this round
-  const focus = focusChars(enabled, chars, 8, now);
+  const focus = focusChars(enabled, chars, 8, now, coach);
   const focusSet = new Set(focus);
 
   const notices: string[] = [];
@@ -132,10 +138,12 @@ export function generateRound(input: GenerateInput): GenerateResult {
     }
     const weight = (w: VocabWord) => {
       const ks = splitKana(w.kana);
-      const avg = ks.reduce((s, k) => s + charWeight(chars[k], k, now), 0) / ks.length;
+      const avg = ks.reduce((s, k) => s + charWeight(chars[k], k, now, coach), 0) / ks.length;
       const ws = words[w.id];
       const missBoost = ws ? ((ws.seen - ws.correct) / ws.seen) * 1.5 : 0.4;
-      const base = avg + missBoost;
+      let base = avg + missBoost;
+      // words that practise a habit you're slipping on (long vowels, small っ...)
+      if (coach.weakSkills.size && ks.some((_, i) => skillsOf(ks, i).some((sk) => coach.weakSkills.has(sk)))) base *= 1.8;
       return ks.some((k) => focusSet.has(k)) ? base * 3 : base; // has a char you just missed
     };
     // words you got wrong last time are guaranteed a spot (up to half the round)
@@ -160,7 +168,7 @@ export function generateRound(input: GenerateInput): GenerateResult {
   }
 
   const draw = (): string => {
-    if (gen.deck.length === 0) gen.deck = buildDeck(enabled, chars, rng, now);
+    if (gen.deck.length === 0) gen.deck = buildDeck(enabled, chars, rng, now, coach);
     return gen.deck.shift()!;
   };
 
@@ -239,13 +247,13 @@ function makeQuestion(
 
 // every enabled char once, weak ones up to 3 times, shuffled. draining the deck
 // guarantees every enabled char appears before any repeats pile up
-export function buildDeck(enabled: string[], stats: Record<string, CharStat>, rng: Rng, now = Date.now()): string[] {
+export function buildDeck(enabled: string[], stats: Record<string, CharStat>, rng: Rng, now = Date.now(), coach: CoachContext = EMPTY_COACH): string[] {
   const deck: string[] = [];
   for (const k of enabled) {
     deck.push(k);
     const s = stats[k];
     if (!s?.seen) continue;
-    const w = charWeight(s, k, now);
+    const w = charWeight(s, k, now, coach);
     if (w >= 3.5) deck.push(k);
     if (w >= 5.5) deck.push(k);
   }
@@ -316,4 +324,71 @@ export function makeRetryQuestion(input: RetryInput): Omit<Question, "id"> | nul
     return { ...makeQuestion(kana, "random", VOCAB_BY_KANA.get(kana), settings, chars), retry: true };
   }
   return null;
+}
+
+// reading mode: whole sentences you can read with the kana you have switched on
+function sentenceRound(input: GenerateInput, enabled: string[], rng: Rng, now: number): GenerateResult {
+  const { settings, chars } = input;
+  const coach = input.coach ?? EMPTY_COACH;
+  const allowed = new Set(enabled);
+  const pool = SENTENCES.filter((s) => usesOnly(s.kana, allowed));
+  if (!pool.length) {
+    return {
+      ok: false,
+      reason: "no-sentences",
+      message: "No sentences fit the kana you have switched on yet. Turn on the basic 46 (and dakuten for lots more) on the chart.",
+    };
+  }
+  const gen: GeneratorState = { deck: input.gen.deck, usedWords: [...input.gen.usedWords], recentCombos: [...input.gen.recentCombos] };
+  const used = new Set(gen.usedWords);
+  let fresh = pool.filter((s) => !used.has(s.id));
+  if (fresh.length < Math.min(settings.questionsPerRound, pool.length)) {
+    // seen them all lately, start over (but not with the last few)
+    gen.usedWords = gen.usedWords.filter((id) => !id.startsWith("s:"));
+    const recent = new Set([...used].filter((id) => id.startsWith("s:")).slice(-3));
+    fresh = pool.filter((s) => !recent.has(s.id));
+  }
+  const focus = new Set(focusChars(enabled, chars, 8, now, coach));
+  const weight = (s: Sentence) => {
+    const ks = splitKana(s.kana);
+    let w = ks.reduce((n, k) => n + charWeight(chars[k], k, now, coach), 0) / ks.length;
+    if (ks.some((k) => focus.has(k))) w *= 2;
+    if (coach.weakSkills.has("particles") && s.tokens.some((t) => t.particle && ["は", "を", "へ"].includes(t.kana))) w *= 1.8;
+    return w;
+  };
+  const need = Math.min(settings.questionsPerRound, fresh.length);
+  const picked = weightedSample(fresh, weight, need, rng);
+  gen.usedWords.push(...picked.map((s) => s.id));
+  gen.usedWords = gen.usedWords.slice(-600);
+
+  const roundId = `${now.toString(36)}${Math.floor(rng() * 1e6).toString(36)}`;
+  const notice =
+    pool.length < settings.questionsPerRound
+      ? `Only ${pool.length} sentence${pool.length === 1 ? "" : "s"} fit your kana so far. Turn on dakuten and combos on the chart to unlock a lot more.`
+      : undefined;
+  return {
+    ok: true,
+    gen,
+    round: {
+      id: roundId,
+      createdAt: now,
+      mode: "sentences",
+      notice,
+      questions: picked.map((s, i) => {
+        const units = splitKana(s.kana);
+        const rating = rateQuestion(units, "sentence", settings.timerPace, chars);
+        return {
+          id: `${roundId}-${i}`,
+          kind: "sentence" as const,
+          kana: s.kana,
+          romaji: s.romaji,
+          chars: units,
+          meaning: s.meaning,
+          tokens: s.tokens,
+          difficulty: rating.difficulty,
+          timeLimitSec: rating.timeLimitSec,
+        };
+      }),
+    },
+  };
 }

@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { AlertCircle, Check, Flag, Info, RotateCcw, SkipForward, Timer } from "lucide-react";
+import { AlertCircle, Check, Flag, Info, RotateCcw, SkipForward, Target, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
 import { describeSelection } from "@/lib/kana/hiragana";
 import { generateRound, makeRetryQuestion } from "@/lib/quiz/generate";
+import { coachContext } from "@/lib/quiz/adaptive";
+import { analyzeAnswer } from "@/lib/coach/analyze";
+import { particleInfo } from "@/lib/quiz/tokens";
 import { emptyAnswer, gradeRound } from "@/lib/quiz/grade";
-import { checkAnswer } from "@/lib/quiz/validate";
+import { checkQuestion } from "@/lib/quiz/validate";
 import type { ActiveRound } from "@/lib/quiz/session";
 import type { AnswerState, GeneratorState, GradedRound } from "@/lib/quiz/types";
 import type { PracticeMode, Settings, TimerPace } from "@/lib/settings/types";
@@ -30,6 +33,7 @@ const MODE_OPTIONS: { value: PracticeMode; label: string }[] = [
   { value: "mixed", label: "Mixed" },
   { value: "words", label: "Real words" },
   { value: "random", label: "Random combos" },
+  { value: "sentences", label: "Sentences" },
 ];
 
 const PACE_OPTIONS: { value: TimerPace; label: string }[] = [
@@ -46,6 +50,7 @@ function makeRound(): Current {
     chars: s.progress.chars,
     words: s.progress.words,
     gen: s.progress.gen,
+    coach: coachContext(s.progress),
   });
   if (!r.ok) return { kind: "error", message: r.message };
   return {
@@ -236,11 +241,17 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     const used = timed ? (timedOut && q.timeLimitSec ? q.timeLimitSec * 1000 : Math.round(usedNow.current())) : 0;
     const next = answers.map((a, j) => (j === i ? { ...a, locked: true, timedOut, timeUsedMs: used } : a));
     setAnswers(next);
-    const res = checkAnswer(q.kana, next[i].value);
+    const res = checkQuestion(q, next[i].value);
     setChecked({ i, correct: res.correct, missedIdx: res.missedIdx, timedOut });
     checkedAt.current = Date.now();
     sfx(res.correct ? "correct" : timedOut ? "timeout" : "wrong");
-    if (!res.correct) secondChance(i, res.missedIdx.length ? res.missedIdx.map((x) => q.chars[x]) : q.chars, next);
+    if (!res.correct) {
+      // retry the kana you missed plus whatever you read it as, so you see both side by side
+      const parts = particleInfo(q).units;
+      const missedK = (res.missedIdx.length ? res.missedIdx : q.chars.map((_, x) => x)).filter((x) => !parts.has(x)).map((x) => q.chars[x]);
+      const twins = analyzeAnswer(q.chars, res.typed, res.missedIdx, parts).confusions.map(([, as]) => as);
+      if (missedK.length) secondChance(i, [...missedK, ...twins], next);
+    }
   };
 
   const advance = () => {
@@ -396,7 +407,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   // untimed rounds let you jump back to any card
   const canJump = (i: number) => !view && !timed && !checked && i !== activeIndex && !answers[i].locked;
   // locked answers already know if they're right, so the chips can show it
-  const lockedOk = (i: number) => checkAnswer(round.questions[i].kana, answers[i].value).correct;
+  const lockedOk = (i: number) => checkQuestion(round.questions[i], answers[i].value).correct;
 
   const timeLeft = (i: number) => {
     const q = round.questions[i];
@@ -452,7 +463,14 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
         </p>
       )}
 
-      {!view && round.focus && round.focus.length > 0 && (
+      {round.drill && (
+        <p className="flex flex-wrap items-center gap-2 rounded-2xl bg-primary-soft px-4 py-2.5 text-sm font-bold text-primary">
+          <Target className="size-4 shrink-0" aria-hidden />
+          Coach drill: just your trouble kana, side by side. The next round goes back to normal.
+        </p>
+      )}
+
+      {!view && !round.drill && round.focus && round.focus.length > 0 && (
         <p className="flex flex-wrap items-center gap-2 rounded-2xl bg-sun-soft px-4 py-2.5 text-sm font-bold text-warn" aria-label={`Extra practice on ${round.focus.join(" ")}`}>
           <RotateCcw className="size-4 shrink-0" aria-hidden />
           Extra practice on

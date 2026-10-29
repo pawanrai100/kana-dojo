@@ -1,4 +1,4 @@
-import type { CharStat, DayStat, Progress, RoundLog, SessionLog, WordStat } from "@/lib/progress/types";
+import type { CharStat, DayStat, Progress, RoundLog, SessionLog, SkillStat, WordStat } from "@/lib/progress/types";
 import { mergeTower } from "@/lib/tower/progress";
 
 const MAX_SESSIONS = 120;
@@ -44,6 +44,22 @@ function pickBy<T>(a: Record<string, T>, b: Record<string, T>, better: (x: T, y:
 const moreSeen = <T extends { seen: number; lastSeen: number }>(x: T, y: T) =>
   y.seen > x.seen || (y.seen === x.seen && y.lastSeen > x.lastSeen) ? y : x;
 
+// confusion tables: keep the stronger signal, or add them up for a guest joining
+function mergeConfusions(a: Progress["confusions"], b: Progress["confusions"], add = false): Progress["confusions"] {
+  const out: Progress["confusions"] = {};
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const row: Record<string, number> = { ...a[k] };
+    for (const [as, n] of Object.entries(b[k] ?? {})) row[as] = add ? (row[as] ?? 0) + n : Math.max(row[as] ?? 0, n);
+    out[k] = row;
+  }
+  return out;
+}
+
+function addSkill(x: SkillStat, y: SkillStat): SkillStat {
+  const [older, newer] = x.lastSeen <= y.lastSeen ? [x, y] : [y, x];
+  return { seen: x.seen + y.seen, missed: x.missed + y.missed, recent: [...older.recent, ...newer.recent].slice(-30), lastSeen: newer.lastSeen };
+}
+
 // same account, edited on two devices before they could sync.
 // overlapping history, so take the fuller copy of each piece instead of adding
 export function mergeDiverged(local: Progress, remote: Progress): Progress {
@@ -69,6 +85,8 @@ export function mergeDiverged(local: Progress, remote: Progress): Progress {
     roundLog: unionRounds(local.roundLog, remote.roundLog),
     gen: local.gen, // generator state is per device
     tower: mergeTower(local.tower, remote.tower),
+    confusions: mergeConfusions(local.confusions, remote.confusions),
+    skills: pickBy(local.skills, remote.skills, moreSeen),
   };
 }
 
@@ -82,6 +100,7 @@ function addChar(x: CharStat, y: CharStat): CharStat {
     lastRoundId: newer.lastRoundId,
     recent: [...older.recent, ...newer.recent].slice(-10),
     lastSeen: newer.lastSeen,
+    avgMs: newer.avgMs ?? older.avgMs,
   };
 }
 
@@ -122,5 +141,7 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     roundLog: unionRounds(account.roundLog, guest.roundLog),
     gen: account.gen,
     tower: mergeTower(account.tower, guest.tower, true),
+    confusions: mergeConfusions(account.confusions, guest.confusions, true),
+    skills: pickBy(account.skills, guest.skills, addSkill),
   };
 }

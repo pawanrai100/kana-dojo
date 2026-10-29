@@ -10,6 +10,15 @@ export interface CharStat {
   lastRoundId?: string;
   recent: boolean[]; // last 10 results, newest last
   lastSeen: number;
+  avgMs?: number; // how long a right read takes, smoothed. slow = still shaky
+}
+
+// a habit like "forgets small っ": recent results every time it came up
+export interface SkillStat {
+  seen: number;
+  missed: number;
+  recent: boolean[]; // last 30, true = got it right
+  lastSeen: number;
 }
 
 export interface WordStat {
@@ -66,6 +75,9 @@ export interface Progress {
   roundLog: RoundLog[]; // newest last, capped
   gen: GeneratorState;
   tower: TowerProgress;
+  // kana shown -> kana you read it as -> how strongly (fades as you get it right)
+  confusions: Record<string, Record<string, number>>;
+  skills: Record<string, SkillStat>;
 }
 
 export function emptyProgress(): Progress {
@@ -86,5 +98,7 @@ export function emptyProgress(): Progress {
     roundLog: [],
     gen: { deck: [], usedWords: [], recentCombos: [] },
     tower: emptyTower(),
+    confusions: {},
+    skills: {},
   };
 }

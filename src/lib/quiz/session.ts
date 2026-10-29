@@ -1,4 +1,5 @@
 import { isKnownKana, splitKana, toRomaji } from "@/lib/kana/hiragana";
+import { tokensRomaji } from "./tokens";
 import type { AnswerState, Question, Round } from "./types";
 
 // an unfinished round we can resume after a refresh
@@ -20,11 +21,17 @@ function question(v: unknown): Question | null {
   const difficulty = ["easy", "medium", "hard"].includes(v.difficulty as string)
     ? (v.difficulty as Question["difficulty"])
     : "medium";
+  // sentences keep their words; they must spell out exactly the same kana
+  const tokens = Array.isArray(v.tokens)
+    ? v.tokens.filter((t): t is { kana: string; particle?: boolean } => isObj(t) && typeof t.kana === "string").map((t) => ({ kana: t.kana, particle: t.particle === true || undefined }))
+    : undefined;
+  const goodTokens = tokens && tokens.length && tokens.map((t) => t.kana).join("") === v.kana ? tokens : undefined;
   return {
     id: v.id,
-    kind: v.kind === "word" ? "word" : "random",
+    kind: v.kind === "word" ? "word" : v.kind === "sentence" && goodTokens ? "sentence" : "random",
     kana: v.kana,
-    romaji: toRomaji(v.kana),
+    romaji: goodTokens ? tokensRomaji(goodTokens) : toRomaji(v.kana),
+    tokens: goodTokens,
     chars,
     meaning: typeof v.meaning === "string" ? v.meaning : undefined,
     wordId: typeof v.wordId === "string" ? v.wordId : undefined,
@@ -52,7 +59,7 @@ export function sanitizeActiveRound(raw: unknown): ActiveRound | null {
   if (questions.length === 0 || questions.some((q) => !q)) return null;
   const answers = Array.isArray(raw.answers) ? raw.answers.map(answer) : [];
   while (answers.length < questions.length) answers.push(answer(null));
-  const mode = ["mixed", "words", "random"].includes(r.mode as string) ? (r.mode as Round["mode"]) : "mixed";
+  const mode = ["mixed", "words", "random", "sentences"].includes(r.mode as string) ? (r.mode as Round["mode"]) : "mixed";
   const activeIndex =
     typeof raw.activeIndex === "number" ? Math.min(Math.max(0, Math.floor(raw.activeIndex)), questions.length - 1) : 0;
   return {
@@ -62,6 +69,7 @@ export function sanitizeActiveRound(raw: unknown): ActiveRound | null {
       mode,
       questions: questions as Question[],
       notice: typeof r.notice === "string" ? r.notice : undefined,
+      drill: r.drill === true ? true : undefined,
       focus: Array.isArray(r.focus) ? r.focus.filter((k): k is string => typeof k === "string" && isKnownKana(k)).slice(0, 8) : undefined,
     },
     answers: answers.slice(0, questions.length),

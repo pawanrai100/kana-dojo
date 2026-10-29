@@ -1,6 +1,6 @@
 import { ALL_KANA_LIST, BASIC_KANA_LIST, isKnownKana } from "@/lib/kana/hiragana";
 
-export type PracticeMode = "mixed" | "words" | "random";
+export type PracticeMode = "mixed" | "words" | "random" | "sentences";
 // 2-4 is only used by tower floors, settings still offer the three below
 export type LengthRange = "2-3" | "2-4" | "2-5" | "3-7";
 export type TimerPace = "off" | "relaxed" | "normal" | "fast";
@@ -60,7 +60,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   return {
     questionsPerRound: pick(r.questionsPerRound, [5, 10, 15, 20] as const, d.questionsPerRound),
     lengthRange: pick(r.lengthRange, ["2-3", "2-5", "3-7"] as const, d.lengthRange),
-    mode: pick(r.mode, ["mixed", "words", "random"] as const, d.mode),
+    mode: pick(r.mode, ["mixed", "words", "random", "sentences"] as const, d.mode),
     timerPace: pick(r.timerPace, ["off", "relaxed", "normal", "fast"] as const, d.timerPace),
     showNumbers: bool(r.showNumbers, d.showNumbers),
     theme: pick(r.theme, ["light", "dark", "system"] as const, d.theme),

@@ -1,6 +1,6 @@
 import type { PracticeMode } from "@/lib/settings/types";
 
-export type QuestionKind = "word" | "random";
+export type QuestionKind = "word" | "random" | "sentence";
 export type Difficulty = "easy" | "medium" | "hard";
 
 export interface Question {
@@ -14,6 +14,7 @@ export interface Question {
   difficulty: Difficulty;
   timeLimitSec: number | null; // null = no timer (zen)
   retry?: boolean; // a second shot at kana you just missed
+  tokens?: { kana: string; particle?: boolean }[]; // sentences: the words, in order
 }
 
 export interface Round {
@@ -23,6 +24,7 @@ export interface Round {
   questions: Question[];
   notice?: string;
   focus?: string[]; // chars brought back because you missed them
+  drill?: boolean; // a coach drill on your trouble spots
 }
 
 export interface AnswerState {
@@ -38,6 +40,7 @@ export interface GradedQuestion {
   correct: boolean;
   missedChars: string[];
   missedIdx: number[];
+  typed?: string[]; // what you typed for each unit, for the coach
   timedOut: boolean;
   timeUsedMs: number;
   points: number;

@@ -2,6 +2,8 @@
 
 import { ArrowRight, Check, Hourglass, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { splitKana } from "@/lib/kana/hiragana";
+import { particleInfo } from "@/lib/quiz/tokens";
 import type { AnswerState, Difficulty, GradedQuestion, Question } from "@/lib/quiz/types";
 import { comboMultiplier } from "@/lib/game/scoring";
 import { cn } from "@/lib/utils";
@@ -12,6 +14,39 @@ const DIFF_TONE: Record<Difficulty, string> = {
   medium: "bg-primary-soft text-primary",
   hard: "bg-bad-soft text-bad",
 };
+
+// draws a question's kana. sentences get spaces between words and blue particles,
+// combos stay glued together, missed units can be marked
+export function KanaLine({ q, missed, missedClass, className }: { q: Question; missed?: Set<number>; missedClass?: string; className?: string }) {
+  const unit = (u: string, i: number) => (
+    <span key={i} className={cn("kana-unit inline-block", u.length > 1 && "kana-combo", missed?.has(i) && missedClass)}>
+      {u}
+    </span>
+  );
+  if (!q.tokens) {
+    return (
+      <p lang="ja" className={cn("font-kana break-all text-center", className ?? kanaSize(q.chars.length))} aria-label={`Hiragana: ${q.kana}`}>
+        {q.chars.map(unit)}
+      </p>
+    );
+  }
+  // where each word starts in the unit list
+  const words = q.tokens.map((t) => ({ ...t, units: splitKana(t.kana) }));
+  const starts = words.map((_, i) => words.slice(0, i).reduce((n, w) => n + w.units.length, 0));
+  return (
+    <p lang="ja" className={cn("font-kana flex flex-wrap justify-center gap-x-[0.45em] gap-y-2 text-center", className ?? "text-4xl sm:text-5xl")} aria-label={`Hiragana: ${q.kana}`}>
+      {words.map((t, ti) => {
+        const units = t.units;
+        const start = starts[ti];
+        return (
+          <span key={ti} className={cn("inline-block whitespace-nowrap", t.particle && "text-primary")}>
+            {units.map((u, j) => unit(u, start + j))}
+          </span>
+        );
+      })}
+    </p>
+  );
+}
 
 // long words shrink so they stay on one line, even on a phone
 function kanaSize(n: number) {
@@ -87,13 +122,7 @@ export function ActiveCard({ q, index, total, showNumber, answer, timeLeftSec, t
           )}
         </div>
 
-        <p lang="ja" className={cn("font-kana break-all text-center", kanaSize(q.chars.length))} aria-label={`Hiragana: ${q.kana}`}>
-          {q.chars.map((k, i) => (
-            <span key={i} className={cn("kana-unit inline-block", k.length > 1 && "kana-combo")}>
-              {k}
-            </span>
-          ))}
-        </p>
+        <KanaLine q={q} />
 
         <label htmlFor={inputId} className="sr-only">
           Reading for question {index + 1}
@@ -144,13 +173,7 @@ export function ResultCard({ result, index, showNumber, revealDelayMs = 0 }: { r
           </span>
         ) : null}
       </div>
-      <p lang="ja" className="font-kana text-4xl" aria-label={`Hiragana: ${q.kana}`}>
-        {q.chars.map((k, i) => (
-          <span key={i} className={cn(missed.has(i) && "text-bad underline decoration-[3px] underline-offset-[10px]")}>
-            {k}
-          </span>
-        ))}
-      </p>
+      <KanaLine q={q} missed={missed} missedClass="text-bad underline decoration-[3px] underline-offset-[10px]" className={cn("justify-start text-left", q.tokens ? "text-2xl" : "text-4xl")} />
       <p className="flex items-center gap-2 text-lg">
         {result.correct ? <Check className="size-5 text-good" aria-label="Correct" /> : <X className="size-5 text-bad" aria-label="Incorrect" />}
         <span className="font-extrabold">{q.romaji}</span>
@@ -161,7 +184,7 @@ export function ResultCard({ result, index, showNumber, revealDelayMs = 0 }: { r
         </p>
       )}
       <p className="text-sm">
-        {q.kind === "word" ? (
+        {q.kind === "word" || q.kind === "sentence" ? (
           <span className="font-bold">{q.meaning}</span>
         ) : q.meaning ? (
           <span className="font-bold">Reading practice, and also a real word: {q.meaning}</span>
@@ -204,14 +227,13 @@ export function AnswerFeedback({
         <span className={cn("grid size-12 place-items-center rounded-full text-white", correct ? "bg-good" : "bg-bad")}>
           {correct ? <Check className="size-7" aria-label="Correct" /> : <X className="size-7" aria-label="Missed" />}
         </span>
-        <p lang="ja" className={cn("font-kana break-all", kanaSize(q.chars.length))}>
-          {q.chars.map((k, i) => (
-            <span key={i} className={cn("kana-unit inline-block", k.length > 1 && "kana-combo", missed.has(i) && !correct && "text-bad underline decoration-4 underline-offset-[12px]")}>
-              {k}
-            </span>
-          ))}
-        </p>
+        <KanaLine q={q} missed={correct ? undefined : missed} missedClass="text-bad underline decoration-4 underline-offset-[12px]" />
         <p className="text-2xl font-extrabold">{q.romaji}</p>
+        {!correct && particleSlip(q, missed) && (
+          <p className="rounded-xl bg-surface px-3 py-1.5 text-sm font-bold text-primary">
+            Particle tip: は reads wa, を reads o and へ reads e when they&apos;re particles.
+          </p>
+        )}
         {!correct && (
           <p className="text-sm text-muted">
             {timedOut && !answer ? (
@@ -234,4 +256,10 @@ export function AnswerFeedback({
       </article>
     </div>
   );
+}
+
+// did you slip on a particle は / を / へ?
+function particleSlip(q: Question, missed: Set<number>): boolean {
+  const { overrides } = particleInfo(q);
+  return Object.keys(overrides).some((i) => missed.has(Number(i)));
 }

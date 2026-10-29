@@ -47,6 +47,7 @@ function SettingsBody({ s }: { s: Settings }) {
                 { value: "mixed", label: "Mixed" },
                 { value: "words", label: "Real words" },
                 { value: "random", label: "Random combos" },
+                { value: "sentences", label: "Sentences" },
               ]}
             />
           </Row>

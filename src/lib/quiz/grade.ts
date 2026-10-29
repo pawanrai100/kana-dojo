@@ -1,6 +1,6 @@
 import { questionPoints, roundStars, xpFromPoints } from "@/lib/game/scoring";
 import type { AnswerState, GradedQuestion, GradedRound, Round } from "./types";
-import { checkAnswer } from "./validate";
+import { checkQuestion } from "./validate";
 
 export function emptyAnswer(): AnswerState {
   return { value: "", locked: false, timedOut: false, timeUsedMs: 0 };
@@ -15,7 +15,7 @@ export function gradeRound(
   let maxCombo = 0;
   const results: GradedQuestion[] = round.questions.map((q, i) => {
     const a = answers[i] ?? emptyAnswer();
-    const check = checkAnswer(q.kana, a.value);
+    const check = checkQuestion(q, a.value);
     combo = check.correct ? combo + 1 : 0;
     maxCombo = Math.max(maxCombo, combo);
     return {
@@ -24,6 +24,7 @@ export function gradeRound(
       correct: check.correct,
       missedChars: check.missedIdx.map((idx) => q.chars[idx]),
       missedIdx: check.missedIdx,
+      typed: check.typed,
       timedOut: a.timedOut,
       timeUsedMs: a.timeUsedMs,
       comboAfter: combo,

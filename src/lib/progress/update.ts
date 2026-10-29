@@ -1,6 +1,8 @@
+import { analyzeAnswer } from "@/lib/coach/analyze";
+import { particleInfo } from "@/lib/quiz/tokens";
 import type { GeneratorState, GradedRound } from "@/lib/quiz/types";
 import { currentStreak, dayKey, masteredChars } from "./stats";
-import type { CharStat, Progress, WordStat } from "./types";
+import type { CharStat, Progress, SkillStat, WordStat } from "./types";
 
 const SESSION_GAP_MS = 30 * 60 * 1000;
 const MAX_SESSIONS = 120;
@@ -23,6 +25,27 @@ function bumpChar(prev: CharStat | undefined, ok: boolean, roundId: string, now:
   } else {
     s.streak = 0;
   }
+  return s;
+}
+
+// confusions fade each time you read the kana right, so old slips stop haunting you
+const CONFUSION_FADE = 0.7;
+
+function fadeConfusion(c: Progress["confusions"], k: string) {
+  const row = c[k];
+  if (!row) return;
+  const next: Record<string, number> = {};
+  for (const [as, n] of Object.entries(row)) if (n * CONFUSION_FADE >= 0.3) next[as] = n * CONFUSION_FADE;
+  if (Object.keys(next).length) c[k] = next;
+  else delete c[k];
+}
+
+function bumpSkill(prev: SkillStat | undefined, seen: number, missed: number, now: number): SkillStat {
+  const s: SkillStat = prev ? { ...prev, recent: [...prev.recent] } : { seen: 0, missed: 0, recent: [], lastSeen: 0 };
+  s.seen += seen;
+  s.missed += missed;
+  s.lastSeen = now;
+  s.recent = [...s.recent, ...Array(seen - missed).fill(true), ...Array(missed).fill(false)].slice(-30);
   return s;
 }
 
@@ -50,6 +73,8 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
     chars: { ...p.chars },
     words: { ...p.words },
     days: { ...p.days },
+    confusions: Object.fromEntries(Object.entries(p.confusions).map(([k, v]) => [k, { ...v }])),
+    skills: { ...p.skills },
     sessions: [...p.sessions],
     roundLog: [...p.roundLog],
     gen,
@@ -64,10 +89,30 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
   // cards you never got to (finished early) don't count for or against you
   const tried = g.results.filter((r) => !r.unanswered);
   for (const r of tried) {
-    const missed = new Set(r.missedChars);
-    for (const k of new Set(r.question.chars)) {
+    const units = r.question.chars;
+    const particles = particleInfo(r.question).units;
+    const missedIdx = new Set(r.correct ? [] : r.missedIdx);
+    // a particle read wrong is a grammar slip, not a kana slip, so it only feeds the particle habit
+    const missed = new Set(units.filter((_, i) => missedIdx.has(i) && !particles.has(i)));
+    const plainUnits = new Set(units.filter((_, i) => !particles.has(i)));
+    // time per sound on right answers, so slow-but-right kana still count as shaky
+    const msPerUnit = r.correct && r.timeUsedMs > 0 && r.question.timeLimitSec ? r.timeUsedMs / units.length : 0;
+    for (const k of plainUnits) {
       const ok = r.correct || !missed.has(k);
       next.chars[k] = bumpChar(next.chars[k], ok, roundId, now);
+      if (msPerUnit) {
+        const prev = next.chars[k].avgMs;
+        next.chars[k] = { ...next.chars[k], avgMs: Math.round(prev ? prev * 0.7 + msPerUnit * 0.3 : msPerUnit) };
+      }
+      if (ok) fadeConfusion(next.confusions, k);
+    }
+    const a = analyzeAnswer(units, r.typed ?? [], r.correct ? [] : r.missedIdx, particles);
+    for (const [shown, as] of a.confusions) {
+      // capped so a bad day can be undone by a handful of right answers
+      next.confusions[shown] = { ...next.confusions[shown], [as]: Math.min(6, (next.confusions[shown]?.[as] ?? 0) + 1) };
+    }
+    for (const [sk, v] of Object.entries(a.skills)) {
+      next.skills[sk] = bumpSkill(next.skills[sk], v!.seen, v!.missed, now);
     }
     if (r.question.kind === "word" && r.question.wordId) {
       next.words[r.question.wordId] = bumpWord(next.words[r.question.wordId], r.correct, roundId, now);

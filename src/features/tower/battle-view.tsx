@@ -5,9 +5,10 @@ import { ArrowRight, Crown, Heart, Map as MapIcon, RotateCcw, Ruler, Star, Sword
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/misc";
 import { generateRound, makeRetryQuestion } from "@/lib/quiz/generate";
+import { coachContext } from "@/lib/quiz/adaptive";
 import { gradeRound } from "@/lib/quiz/grade";
 import { EMPTY_GEN_STATE, type AnswerState, type GeneratorState, type Question } from "@/lib/quiz/types";
-import { checkAnswer } from "@/lib/quiz/validate";
+import { checkQuestion } from "@/lib/quiz/validate";
 import { DEFAULT_SETTINGS } from "@/lib/settings/types";
 import { playSound, type SoundName } from "@/lib/sound";
 import type { Achievement } from "@/lib/tower/achievements";
@@ -88,6 +89,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       chars: p.chars,
       words: p.words,
       gen: gen.current,
+      coach: coachContext(p),
     });
     if (!r.ok) return [];
     gen.current = r.gen;
@@ -112,7 +114,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
 
   const lock = (timedOut: boolean) => {
     if (phase !== "answer" || !q) return;
-    const check = checkAnswer(q.kana, value);
+    const check = checkQuestion(q, value);
     const used = timedOut && q.timeLimitSec ? q.timeLimitSec * 1000 : Math.round(usedNow.current());
     log.current.push({ q, a: { value, locked: true, timedOut, timeUsedMs: used } });
     setBattle((b) => applyAnswer(b, check.correct));
@@ -155,7 +157,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     const { outcome, badges } = actions.recordBattle(graded, final);
     const seen = new Set<string>();
     const misses = items
-      .filter((l) => !checkAnswer(l.q.kana, l.a.value).correct)
+      .filter((l) => !checkQuestion(l.q, l.a.value).correct)
       .map((l) => l.q)
       .filter((m) => (seen.has(m.kana) ? false : (seen.add(m.kana), true)));
     setResult({ outcome, badges, misses });

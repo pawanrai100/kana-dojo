@@ -1,6 +1,6 @@
 import type { SessionLog } from "@/lib/progress/types";
 
-const MODE_LABEL = { mixed: "Mixed", words: "Real words", random: "Random combos" } as const;
+const MODE_LABEL = { mixed: "Mixed", words: "Real words", random: "Random combos", sentences: "Sentences" } as const;
 
 function when(ts: number) {
   const d = new Date(ts);

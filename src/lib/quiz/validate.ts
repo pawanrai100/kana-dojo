@@ -1,10 +1,14 @@
 import { SMALL_TSU, getKana, sokuonSpellings, splitKana } from "@/lib/kana/hiragana";
+import { particleInfo } from "./tokens";
+import type { Question } from "./types";
 
 export interface AnswerCheck {
   correct: boolean;
   normalized: string;
   // index of each kana unit the learner got wrong (empty when correct)
   missedIdx: number[];
+  // what was typed for each unit, lined up with the kana ("" when skipped)
+  typed: string[];
 }
 
 // lowercase, strip spaces/dashes, unify apostrophes
@@ -35,12 +39,13 @@ const MAX_SLICE = 4;
 // edit-style alignment between kana units and typed romaji.
 // cost 0 = typed a valid spelling, cost 1 = wrong / missing / extra.
 // gives us which kana were misread instead of failing the whole word blindly
-export function checkAnswer(kanaText: string, input: string): AnswerCheck {
+// overrides swap the spellings for some units, ex the particle は is read wa
+export function checkAnswer(kanaText: string, input: string, overrides: Record<number, string[]> = {}): AnswerCheck {
   const units = splitKana(kanaText);
   const s = normalizeAnswer(input);
   const n = units.length;
   const L = s.length;
-  const opts = units.map((u, i) => acceptedSpellings(u, units[i + 1]));
+  const opts = units.map((u, i) => overrides[i] ?? acceptedSpellings(u, units[i + 1]));
 
   const INF = 1e9;
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(L + 1).fill(INF));
@@ -73,12 +78,14 @@ export function checkAnswer(kanaText: string, input: string): AnswerCheck {
   }
 
   const missed = new Set<number>();
+  const typed = new Array<string>(n).fill("");
   let i = n;
   let j = L;
   while (i > 0 || j > 0) {
     const b = back[i][j];
     if (!b) break;
     if (b[2] >= 0) missed.add(b[2]);
+    if (b[0] === i - 1) typed[i - 1] = s.slice(b[1], j);
     [i, j] = [b[0], b[1]];
   }
 
@@ -86,5 +93,11 @@ export function checkAnswer(kanaText: string, input: string): AnswerCheck {
     correct: dp[n][L] === 0 && L > 0,
     normalized: s,
     missedIdx: [...missed].sort((a, b) => a - b),
+    typed,
   };
+}
+
+// check a whole question, sentences included (particles have their own readings)
+export function checkQuestion(q: Pick<Question, "kana" | "tokens">, input: string): AnswerCheck {
+  return checkAnswer(q.kana, input, particleInfo(q).overrides);
 }

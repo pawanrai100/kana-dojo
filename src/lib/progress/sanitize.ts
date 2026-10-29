@@ -1,13 +1,14 @@
 import { isKnownKana } from "@/lib/kana/hiragana";
 import { sanitizeTower } from "@/lib/tower/progress";
-import { emptyProgress, type CharStat, type DayStat, type Progress, type RoundLog, type SessionLog, type WordStat } from "./types";
+import { SKILLS } from "@/lib/coach/analyze";
+import { emptyProgress, type CharStat, type DayStat, type Progress, type RoundLog, type SessionLog, type SkillStat, type WordStat } from "./types";
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
 const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : d);
 const str = (v: unknown) => (typeof v === "string" ? v : undefined);
 const strArr = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
-const MODES = ["mixed", "words", "random"] as const;
+const MODES = ["mixed", "words", "random", "sentences"] as const;
 
 function charStat(v: unknown): CharStat | null {
   if (!isObj(v)) return null;
@@ -21,7 +22,34 @@ function charStat(v: unknown): CharStat | null {
     lastRoundId: str(v.lastRoundId),
     recent: Array.isArray(v.recent) ? v.recent.filter((b): b is boolean => typeof b === "boolean").slice(-10) : [],
     lastSeen: num(v.lastSeen),
+    avgMs: typeof v.avgMs === "number" && v.avgMs > 0 && v.avgMs < 60_000 ? v.avgMs : undefined,
   };
+}
+
+function skillStat(v: unknown): SkillStat | null {
+  if (!isObj(v)) return null;
+  const seen = num(v.seen);
+  return {
+    seen,
+    missed: Math.min(num(v.missed), seen),
+    recent: Array.isArray(v.recent) ? v.recent.filter((b): b is boolean => typeof b === "boolean").slice(-30) : [],
+    lastSeen: num(v.lastSeen),
+  };
+}
+
+// shown kana -> read-as kana -> weight. only kana we teach, sane numbers
+function confusions(v: unknown): Progress["confusions"] {
+  const out: Progress["confusions"] = {};
+  if (!isObj(v)) return out;
+  for (const [k, inner] of Object.entries(v)) {
+    if (!isKnownKana(k) || !isObj(inner)) continue;
+    const row: Record<string, number> = {};
+    for (const [as, n] of Object.entries(inner)) {
+      if (isKnownKana(as) && as !== k && typeof n === "number" && n > 0 && n < 1000) row[as] = n;
+    }
+    if (Object.keys(row).length) out[k] = row;
+  }
+  return out;
 }
 
 function wordStat(v: unknown): WordStat | null {
@@ -106,5 +134,7 @@ export function sanitizeProgress(raw: unknown): Progress {
       recentCombos: strArr(gen.recentCombos),
     },
     tower: sanitizeTower(raw.tower),
+    confusions: confusions(raw.confusions),
+    skills: record(raw.skills, skillStat, (k) => k in SKILLS),
   };
 }

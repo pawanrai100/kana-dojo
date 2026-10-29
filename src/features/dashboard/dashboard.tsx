@@ -30,6 +30,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { SessionList } from "@/features/progress/session-list";
 import { TOP_FLOOR, getFloor } from "@/lib/tower/floors";
 import { clearedCount, currentFloor } from "@/lib/tower/progress";
+import { CoachCard } from "@/features/coach/coach-card";
 
 // a word from the learner's pool that leans on their weakest chars
 function pickPreview(p: Progress, enabled: string[]) {
@@ -185,6 +186,8 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
           </CardContent>
         </Card>
       </section>
+
+      <CoachCard progress={progress} />
 
       <TowerCard progress={progress} />
 
