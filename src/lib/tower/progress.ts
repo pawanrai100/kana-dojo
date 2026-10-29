@@ -1,7 +1,7 @@
 import { dayKey } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
 import { battleStars, type BattleState } from "./battle";
-import { FLOORS, getFloor } from "./floors";
+import { SKY_FIRST, floorsOf, getFloor, type TowerId } from "./floors";
 
 export interface FloorRecord {
   stars: 0 | 1 | 2 | 3;
@@ -23,22 +23,26 @@ export function isCleared(t: TowerProgress, id: number): boolean {
 }
 
 // a floor opens once the one below it is cleared
-export function isUnlocked(t: TowerProgress, id: number): boolean {
-  return id === 1 || isCleared(t, id - 1);
+// the sky shrine's first floor has its own gate (see gate.ts), so callers pass it in
+export function isUnlocked(t: TowerProgress, id: number, skyOpen = false): boolean {
+  if (id === 1) return true;
+  if (id === SKY_FIRST) return skyOpen;
+  return isCleared(t, id - 1);
 }
 
 // highest floor you can play right now
-export function currentFloor(t: TowerProgress): number {
-  for (const f of FLOORS) if (!isCleared(t, f.id)) return f.id;
-  return FLOORS[FLOORS.length - 1].id;
+export function currentFloor(t: TowerProgress, tower: TowerId = "kana"): number {
+  const fs = floorsOf(tower);
+  for (const f of fs) if (!isCleared(t, f.id)) return f.id;
+  return fs[fs.length - 1].id;
 }
 
-export function clearedCount(t: TowerProgress): number {
-  return FLOORS.filter((f) => isCleared(t, f.id)).length;
+export function clearedCount(t: TowerProgress, tower: TowerId = "kana"): number {
+  return floorsOf(tower).filter((f) => isCleared(t, f.id)).length;
 }
 
-export function totalStars(t: TowerProgress): number {
-  return FLOORS.reduce((n, f) => n + (t.floors[f.id]?.stars ?? 0), 0);
+export function totalStars(t: TowerProgress, tower: TowerId = "kana"): number {
+  return floorsOf(tower).reduce((n, f) => n + (t.floors[f.id]?.stars ?? 0), 0);
 }
 
 export interface TowerOutcome {
@@ -68,10 +72,10 @@ export function applyBattle(p: Progress, b: BattleState, now = Date.now()): { pr
 
   // bonus also goes on today's log so a device merge can't drop it
   const days = { ...p.days };
-  if (bonusXp) {
+  if (bonusXp || won) {
     const k = dayKey(now);
     const d = days[k] ?? { answered: 0, correct: 0, rounds: 0, xp: 0 };
-    days[k] = { ...d, xp: d.xp + bonusXp };
+    days[k] = { ...d, xp: d.xp + bonusXp, floors: (d.floors ?? 0) + (won ? 1 : 0) };
   }
 
   return {

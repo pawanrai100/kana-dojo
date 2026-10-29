@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { Flame, RotateCcw, Star, Target, Trophy, Zap } from "lucide-react";
+import { Flame, RotateCcw, ScrollText, Star, Target, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/misc";
 import type { GradedRound } from "@/lib/quiz/types";
@@ -10,6 +10,7 @@ import { Medal } from "@/features/tower/medal";
 import { BELTS, type BeltStatus } from "@/lib/progress/belts";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { cn } from "@/lib/utils";
+import { QUEST_XP } from "@/lib/progress/quests";
 
 const HEADLINES = ["Keep going!", "Getting there!", "Nice reading!", "Brilliant round!"];
 
@@ -17,6 +18,7 @@ interface Props {
   graded: GradedRound;
   belt: BeltStatus;
   promoted?: number; // belt index you just earned
+  quests?: string[]; // daily quests this round finished
   isBest: boolean;
   badges?: Achievement[];
   nextLabel: string;
@@ -25,7 +27,7 @@ interface Props {
 }
 
 export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundSummary(
-  { graded, belt, promoted, isBest, badges = [], nextLabel, shortcuts, onNext },
+  { graded, belt, promoted, quests = [], isBest, badges = [], nextLabel, shortcuts, onNext },
   ref,
 ) {
   const total = graded.results.length;
@@ -94,6 +96,16 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
           ))}
         </ul>
       )}
+      {quests.length > 0 && (
+        <ul className="mt-5 flex flex-wrap gap-2">
+          {quests.map((q) => (
+            <li key={q} className="animate-stamp flex items-center gap-2 rounded-full bg-good-soft px-3 py-1.5 text-sm font-extrabold text-good">
+              <ScrollText className="size-4" aria-hidden /> Quest done: {q} (+{QUEST_XP} XP)
+            </li>
+          ))}
+        </ul>
+      )}
+
       {promoted !== undefined && (
         <div className="mt-5">
           <BeltPromotion belt={BELTS[promoted]} />

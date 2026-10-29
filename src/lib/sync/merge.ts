@@ -124,6 +124,11 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     correct: x.correct + y.correct,
     rounds: x.rounds + y.rounds,
     xp: x.xp + y.xp,
+    perfect: (x.perfect ?? 0) + (y.perfect ?? 0) || undefined,
+    sentences: (x.sentences ?? 0) + (y.sentences ?? 0) || undefined,
+    floors: (x.floors ?? 0) + (y.floors ?? 0) || undefined,
+    bestCombo: Math.max(x.bestCombo ?? 0, y.bestCombo ?? 0) || undefined,
+    quests: [...new Set([...(x.quests ?? []), ...(y.quests ?? [])])],
   }));
   return {
     version: 1,

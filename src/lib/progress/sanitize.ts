@@ -78,7 +78,18 @@ function record<T>(v: unknown, fn: (x: unknown) => T | null, keyOk: (k: string) 
 
 function day(v: unknown): DayStat | null {
   if (!isObj(v)) return null;
-  return { answered: num(v.answered), correct: num(v.correct), rounds: num(v.rounds), xp: num(v.xp) };
+  const opt = (x: unknown) => (typeof x === "number" && x > 0 ? Math.floor(x) : undefined);
+  return {
+    answered: num(v.answered),
+    correct: num(v.correct),
+    rounds: num(v.rounds),
+    xp: num(v.xp),
+    perfect: opt(v.perfect),
+    sentences: opt(v.sentences),
+    floors: opt(v.floors),
+    bestCombo: opt(v.bestCombo),
+    quests: Array.isArray(v.quests) ? [...new Set(v.quests.filter((q): q is string => typeof q === "string"))].slice(0, 10) : undefined,
+  };
 }
 
 function session(v: unknown): SessionLog | null {

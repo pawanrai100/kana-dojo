@@ -35,6 +35,12 @@ export interface DayStat {
   correct: number;
   rounds: number;
   xp: number;
+  // counters for daily quests
+  perfect?: number;
+  sentences?: number;
+  floors?: number;
+  bestCombo?: number;
+  quests?: string[]; // quest ids already paid out today
 }
 
 export interface SessionLog {

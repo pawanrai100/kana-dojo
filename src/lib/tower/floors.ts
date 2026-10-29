@@ -1,4 +1,4 @@
-import { HIRAGANA_ROWS } from "@/lib/kana/hiragana";
+import { BASIC_KANA_LIST, KANA_GROUPS, getRow } from "@/lib/kana/hiragana";
 import type { LengthRange, PracticeMode, TimerPace } from "@/lib/settings/types";
 
 // the tower climbs the hiragana chart. each zone teaches two rows,
@@ -16,7 +16,7 @@ export interface Boss {
 
 // who you fight on a floor. art is keyed by id
 export interface Enemy {
-  id: "obake" | "shisa" | "saru" | "orochi" | "kitsune" | "tako" | "kozo" | "ryu";
+  id: "obake" | "shisa" | "saru" | "orochi" | "kitsune" | "tako" | "kozo" | "ryu" | "kappa" | "tengu" | "oni" | "tanuki" | "kodama" | "kasa";
   name: string;
 }
 
@@ -31,10 +31,16 @@ export interface Zone {
   name: string;
   drills: string[][]; // each inner list = the rows taught on one floor
   boss: Boss;
+  extra?: string[]; // kana mixed in on drill floors (small っ needs something to double)
+  mixName?: string; // shorter name for the zone's mix floor
+  mixMode?: PracticeMode; // ex real words for small っ
 }
 
+export type TowerId = "kana" | "sky";
+
 export interface Floor {
-  id: number; // 1 = ground floor
+  id: number; // 1 = ground floor of the first tower, sky shrine floors start at 101
+  tower: TowerId;
   zone: number;
   kind: FloorKind;
   name: string;
@@ -117,29 +123,48 @@ const BOSS: Tier[] = [
 ];
 const FINAL: Tier = { len: "3-7", pace: "fast", hp: 25, hearts: 3 };
 
-const ROW = new Map(HIRAGANA_ROWS.map((r) => [r.id, r]));
-const rowChars = (ids: string[]) => ids.flatMap((id) => ROW.get(id)!.chars);
-const rowLabel = (id: string) => ROW.get(id)!.label;
+const rowChars = (ids: string[]) => ids.flatMap((id) => getRow(id)!.chars);
+const rowLabel = (id: string) => getRow(id)!.label;
 const drillLabel = (ids: string[]) => (ids.length === 1 ? rowLabel(ids[0]) : ids.map((r) => (r === "nn" ? "ん" : rowLabel(r))).join(" + "));
 const shortLabel = (ids: string[]) => ids.map((r) => (r === "nn" ? "ん" : rowLabel(r).replace("-row", ""))).join("·");
 
-function buildFloors(): Floor[] {
+interface TowerPlan {
+  tower: TowerId;
+  zones: Zone[];
+  final: Boss;
+  finalEnemy: Enemy["id"];
+  startId: number;
+  minions: { drill: Enemy; mix: Enemy };
+  known: string[]; // kana you already have walking in
+  finalMode: PracticeMode;
+  finalHp: number;
+  finalPace: Exclude<TimerPace, "off">;
+  finalBonus: number;
+  bossBonus: number; // per zone
+}
+
+function buildFloors(plan: TowerPlan): Floor[] {
   const out: Floor[] = [];
-  const learned: string[] = [];
-  let id = 1;
+  const learned: string[] = [...plan.known];
+  const ZONES = plan.zones;
+  const MINIONS = plan.minions;
+  const tower = plan.tower;
+  let id = plan.startId;
 
   for (const z of ZONES) {
     // one floor per new row: drill just that row
     for (const d of z.drills) {
-      const chars = rowChars(d);
+      const fresh = rowChars(d);
+      const chars = [...fresh, ...(z.extra ?? [])];
       const t = DRILL[z.id - 1];
       out.push({
+        tower,
         id: id++,
         zone: z.id,
         kind: "floor",
         name: drillLabel(d),
         chars,
-        newChars: chars,
+        newChars: fresh,
         mode: "random",
         lengthRange: t.len,
         pace: t.pace,
@@ -154,13 +179,14 @@ function buildFloors(): Floor[] {
     // mix floor: the zone's rows together, longer words
     const m = MIX[z.id - 1];
     out.push({
+      tower,
       id: id++,
       zone: z.id,
       kind: "floor",
-      name: `${z.drills.map(shortLabel).join(" + ")} mix`,
-      chars: zoneChars,
+      name: z.mixName ?? `${z.drills.map(shortLabel).join(" + ")} mix`,
+      chars: [...zoneChars, ...(z.extra ?? [])],
       newChars: [],
-      mode: "random",
+      mode: z.mixMode ?? "random",
       lengthRange: m.len,
       pace: m.pace,
       enemyHp: m.hp,
@@ -172,6 +198,7 @@ function buildFloors(): Floor[] {
     // boss: everything learned so far, real words where possible
     const b = BOSS[z.id - 1];
     out.push({
+      tower,
       id: id++,
       zone: z.id,
       kind: "boss",
@@ -183,40 +210,161 @@ function buildFloors(): Floor[] {
       pace: b.pace,
       enemyHp: b.hp,
       hearts: b.hearts,
-      bonusXp: 150 * z.id,
+      bonusXp: plan.bossBonus * z.id,
       enemy: { id: z.boss.id as Enemy["id"], name: z.boss.name },
       boss: z.boss,
     });
   }
 
   out.push({
+    tower,
     id: id++,
     zone: ZONES.length + 1,
     kind: "final",
-    name: FINAL_BOSS.name,
+    name: plan.final.name,
     chars: [...learned],
     newChars: [],
-    mode: "mixed",
+    mode: plan.finalMode,
     lengthRange: FINAL.len,
-    pace: FINAL.pace,
-    enemyHp: FINAL.hp,
+    pace: plan.finalPace,
+    enemyHp: plan.finalHp,
     hearts: FINAL.hearts,
-    bonusXp: 1500,
-    enemy: { id: "ryu", name: FINAL_BOSS.name },
-    boss: FINAL_BOSS,
+    bonusXp: plan.finalBonus,
+    enemy: { id: plan.finalEnemy, name: plan.final.name },
+    boss: plan.final,
   });
   return out;
 }
 
-export const FLOORS: Floor[] = buildFloors();
+export const FLOORS: Floor[] = buildFloors({
+  tower: "kana",
+  zones: ZONES,
+  final: FINAL_BOSS,
+  finalEnemy: "ryu",
+  startId: 1,
+  minions: MINIONS,
+  known: [],
+  finalMode: "mixed",
+  finalHp: FINAL.hp,
+  finalPace: FINAL.pace,
+  finalBonus: 1500,
+  bossBonus: 150,
+});
 export const TOP_FLOOR = FLOORS.length;
 
+// the sky shrine: a second tower for dakuten, combos and small っ.
+// opens once you've beaten the dragon or earned your blue belt
+const SOKUON_FRIENDS = [...rowChars(["vowel", "k", "s", "t", "p"])];
+
+export const SKY_ZONES: Zone[] = [
+  {
+    id: 1,
+    name: "Thunder Gate",
+    drills: [["g"], ["z"]],
+    boss: {
+      id: "obake",
+      name: "Basobake the Great",
+      kana: "ばそばけ",
+      title: "Lantern Snuffer",
+      blurb: "The lantern ghost from the first tower got a promotion. Now it guards the gate, and it's grown teeth.",
+    },
+  },
+  {
+    id: 2,
+    name: "Bamboo Dojo",
+    drills: [["d"], ["b", "p"]],
+    boss: {
+      id: "shisa",
+      name: "Shisarr King",
+      kana: "しさきんぐ",
+      title: "Shisa Tamer",
+      blurb: "The little lion-dog grew up. It loves ば and ぱ, and so should you, because it will swap them on you.",
+    },
+  },
+  {
+    id: 3,
+    name: "Moon Bridge",
+    drills: [
+      ["ky", "sh"],
+      ["ch", "ny"],
+    ],
+    mixName: "Combos mix",
+    boss: { id: "kappa", name: "Kawataro", kana: "かわたろう", title: "River Crosser", blurb: "A kappa who guards the bridge. Read the combos as one sound or into the river you go." },
+  },
+  {
+    id: 4,
+    name: "Cloud Garden",
+    drills: [
+      ["hy", "my", "ry"],
+      ["gy", "j", "by", "py"],
+    ],
+    mixName: "Combos mix II",
+    boss: { id: "tengu", name: "Daitengu", kana: "だいてんぐ", title: "Cloud Walker", blurb: "The great tengu of the clouds. Fast, proud, and full of ぎょ and じゅ." },
+  },
+  {
+    id: 5,
+    name: "Storm Peak",
+    drills: [["xtsu"]],
+    extra: SOKUON_FRIENDS,
+    mixName: "Small っ in real words",
+    mixMode: "mixed",
+    boss: { id: "oni", name: "Kaminari Oni", kana: "かみなりおに", title: "Storm Breaker", blurb: "The thunder oni pauses between every strike. So does small っ. Don't miss the beat." },
+  },
+];
+
+export const SKY_FINAL_BOSS: Boss = {
+  id: "tanuki",
+  name: "Bunbuku the Tanuki Shogun",
+  kana: "ぶんぶく",
+  title: "Sky Shogun",
+  blurb: "The shogun of the sky shrine doesn't fight with kana. He fights with whole sentences. Read them, particles and all.",
+};
+
+export const SKY_FLOORS: Floor[] = buildFloors({
+  tower: "sky",
+  zones: SKY_ZONES,
+  final: SKY_FINAL_BOSS,
+  finalEnemy: "tanuki",
+  startId: 101,
+  minions: { drill: { id: "kodama", name: "Kodama" }, mix: { id: "kasa", name: "Kasa-obake" } },
+  known: [...BASIC_KANA_LIST],
+  finalMode: "sentences",
+  finalHp: 12,
+  finalPace: "normal",
+  finalBonus: 2500,
+  bossBonus: 250,
+});
+export const SKY_FIRST = SKY_FLOORS[0].id;
+export const SKY_TOP = SKY_FLOORS[SKY_FLOORS.length - 1].id;
+
+export const ALL_FLOORS: Floor[] = [...FLOORS, ...SKY_FLOORS];
+const BY_ID = new Map(ALL_FLOORS.map((f) => [f.id, f]));
+
 export function getFloor(id: number): Floor | undefined {
-  return FLOORS[id - 1];
+  return BY_ID.get(id);
+}
+
+export function floorsOf(tower: TowerId): Floor[] {
+  return tower === "sky" ? SKY_FLOORS : FLOORS;
 }
 
 export function zoneOf(f: Floor): Zone | undefined {
-  return ZONES.find((z) => z.id === f.zone);
+  return (f.tower === "sky" ? SKY_ZONES : ZONES).find((z) => z.id === f.zone);
 }
 
-export const ALL_BOSSES: Boss[] = [...ZONES.map((z) => z.boss), FINAL_BOSS];
+export const ALL_BOSSES: Boss[] = [...ZONES.map((z) => z.boss), FINAL_BOSS, ...SKY_ZONES.map((z) => z.boss), SKY_FINAL_BOSS];
+
+// sanity: every extra kana is taught somewhere in the sky shrine
+export const SKY_TAUGHT = new Set(SKY_FLOORS.flatMap((f) => f.newChars));
+export const EXTRA_KANA = KANA_GROUPS.filter((g) => g.id !== "basic").flatMap((g) => g.chars);
+
+// how a floor is named to people: sky shrine floors count from 1 again
+export function floorLabel(f: Floor): string {
+  return f.tower === "sky" ? `Sky floor ${f.id - 100}` : `Floor ${f.id}`;
+}
+
+// the next floor in the same tower, if there is one
+export function nextFloor(f: Floor): Floor | undefined {
+  const n = getFloor(f.id + 1);
+  return n && n.tower === f.tower ? n : undefined;
+}

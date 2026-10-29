@@ -130,10 +130,14 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
   const key = dayKey(now);
   const day = next.days[key] ?? { answered: 0, correct: 0, rounds: 0, xp: 0 };
   next.days[key] = {
+    ...day,
     answered: day.answered + answered,
     correct: day.correct + g.correctCount,
     rounds: day.rounds + 1,
     xp: day.xp + g.xpEarned,
+    perfect: (day.perfect ?? 0) + (answered >= 5 && g.correctCount === g.results.length ? 1 : 0),
+    sentences: (day.sentences ?? 0) + tried.filter((r) => r.correct && r.question.kind === "sentence").length,
+    bestCombo: Math.max(day.bestCombo ?? 0, g.maxCombo),
   };
   next.bestStreak = Math.max(next.bestStreak, currentStreak(next, now));
 

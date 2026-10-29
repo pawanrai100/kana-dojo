@@ -15,6 +15,7 @@ import type { BattleState } from "@/lib/tower/battle";
 import { applyBattle, type TowerOutcome } from "@/lib/tower/progress";
 import type { LocalSide, SyncMeta } from "@/lib/sync/types";
 import { withBelt } from "@/lib/progress/belts";
+import { claimQuests } from "@/lib/progress/quests";
 
 // guest data lives under the same keys as before accounts existed, so nobody's
 // old progress moves. a signed in user gets their own "u:<id>:" copy that syncs
@@ -132,7 +133,7 @@ export const actions = {
   // returns any badges this round just earned
   recordRound(graded: GradedRound): Achievement[] {
     const before = ensure().progress;
-    const after = withBelt(applyGradedRound(before, graded, before.gen));
+    const after = withBelt(claimQuests(applyGradedRound(before, graded, before.gen)).progress);
     set({ progress: after, active: null });
     return newlyEarned(before, after);
   },
@@ -141,7 +142,7 @@ export const actions = {
     const before = ensure().progress;
     const practiced = graded ? applyGradedRound(before, graded, before.gen) : before;
     const { progress: battled, outcome } = applyBattle(practiced, battle);
-    const progress = withBelt(battled);
+    const progress = withBelt(claimQuests(battled).progress);
     set({ progress });
     return { outcome, badges: newlyEarned(before, progress) };
   },

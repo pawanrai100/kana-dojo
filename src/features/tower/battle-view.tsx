@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS } from "@/lib/settings/types";
 import { playSound, type SoundName } from "@/lib/sound";
 import type { Achievement } from "@/lib/tower/achievements";
 import { applyAnswer, startBattle, type BattleState } from "@/lib/tower/battle";
-import { TOP_FLOOR, type Enemy, type Floor } from "@/lib/tower/floors";
+import { floorLabel, nextFloor, type Enemy, type Floor } from "@/lib/tower/floors";
 import type { TowerOutcome } from "@/lib/tower/progress";
 import { cn, pct } from "@/lib/utils";
 import { actions } from "@/store/app-store";
@@ -384,7 +384,7 @@ function Hud({ floor, battle, isBoss, fx }: { floor: Floor; battle: BattleState;
           <span className="min-w-0 truncate">
             <span className={cn("block truncate font-extrabold", isBoss && "font-display text-lg")}>{floor.enemy.name}</span>
             <span lang={isBoss ? "ja" : undefined} className={cn("block truncate text-xs font-bold", isBoss ? "opacity-80" : "text-muted")}>
-              {isBoss && floor.boss ? floor.boss.kana : `Floor ${floor.id}: ${floor.name}`}
+              {isBoss && floor.boss ? floor.boss.kana : `${floorLabel(floor)}: ${floor.name}`}
             </span>
           </span>
           <span className={cn("ml-auto shrink-0 text-xs font-extrabold tabular-nums", isBoss ? "opacity-80" : "text-muted")}>
@@ -435,7 +435,7 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
         )}
       >
         <span className={cn("rounded-full px-3 py-1 text-xs font-extrabold", boss ? "bg-sun text-sun-ink" : "bg-primary-soft text-primary")}>
-          {final ? "Final boss" : boss ? "Boss room" : `Floor ${floor.id}`}
+          {final ? "Final boss" : boss ? "Boss room" : floorLabel(floor)}
         </span>
         {boss ? (
           <>
@@ -478,7 +478,7 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
             <Heart className="size-4" aria-hidden /> {floor.hearts} hearts
           </li>
           <li className="flex items-center gap-1.5">
-            <Ruler className="size-4" aria-hidden /> {floor.lengthRange.replace("-", "–")} kana words
+            <Ruler className="size-4" aria-hidden /> {floor.mode === "sentences" ? "Whole sentences" : `${floor.lengthRange.replace("-", "–")} kana words`}
           </li>
           <li className="flex items-center gap-1.5">
             <Zap className="size-4" aria-hidden /> {floor.pace === "fast" ? "Fast" : floor.pace === "normal" ? "Normal" : "Relaxed"} timer
@@ -523,8 +523,8 @@ function Result({
   const nextRef = useRef<HTMLButtonElement>(null);
   const retryRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    (won && floor.id < TOP_FLOOR ? nextRef : retryRef).current?.focus({ preventScroll: true });
-  }, [won, floor.id]);
+    (won && nextFloor(floor) ? nextRef : retryRef).current?.focus({ preventScroll: true });
+  }, [won, floor]);
 
   const headline = won ? (boss ? `${boss.name} defeated!` : "Floor cleared!") : boss ? `${boss.name} wins this time` : "Out of hearts";
   const title = badges.find((b) => b.title)?.title;
@@ -620,7 +620,7 @@ function Result({
         )}
 
         <div className="flex flex-wrap justify-center gap-3 pt-2">
-          {won && floor.id < TOP_FLOOR && (
+          {won && nextFloor(floor) && (
             <Button ref={nextRef} size="lg" onClick={onNext}>
               Next floor <ArrowRight />
             </Button>

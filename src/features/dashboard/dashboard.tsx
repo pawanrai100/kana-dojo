@@ -26,11 +26,13 @@ import { cn, plural } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
 import { useAuth } from "@/features/auth/auth-provider";
 import { SessionList } from "@/features/progress/session-list";
-import { TOP_FLOOR, getFloor } from "@/lib/tower/floors";
+import { TOP_FLOOR, floorLabel, floorsOf, getFloor } from "@/lib/tower/floors";
+import { skyOpen } from "@/lib/tower/gate";
 import { clearedCount, currentFloor } from "@/lib/tower/progress";
 import { CoachCard } from "@/features/coach/coach-card";
 import { BeltProgress } from "@/features/belts/belt";
 import { beltStatus } from "@/lib/progress/belts";
+import { QuestsCard } from "@/features/quests/quests-card";
 
 // a word from the learner's pool that leans on their weakest chars
 function pickPreview(p: Progress, enabled: string[]) {
@@ -179,7 +181,10 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
         </Card>
       </section>
 
-      <CoachCard progress={progress} />
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+        <QuestsCard progress={progress} />
+        <CoachCard progress={progress} />
+      </div>
 
       <TowerCard progress={progress} />
 
@@ -241,9 +246,13 @@ function MiniKanaGrid({ progress }: { progress: Progress }) {
 
 function TowerCard({ progress }: { progress: Progress }) {
   const t = progress.tower;
-  const cleared = clearedCount(t);
-  const next = getFloor(currentFloor(t))!;
-  const done = cleared === TOP_FLOOR;
+  // after the dragon, this card follows the sky shrine instead
+  const sky = skyOpen(progress) && clearedCount(t) === TOP_FLOOR;
+  const tower = sky ? "sky" : "kana";
+  const total = floorsOf(tower).length;
+  const cleared = clearedCount(t, tower);
+  const next = getFloor(currentFloor(t, tower))!;
+  const done = cleared === total;
   return (
     <Link
       href="/tower"
@@ -253,15 +262,17 @@ function TowerCard({ progress }: { progress: Progress }) {
         <Castle className="size-7" />
       </span>
       <span className="min-w-0 flex-1 basis-56">
-        <span className="font-display block text-xl">The Tower</span>
+        <span className="font-display block text-xl">{sky ? "Sky Shrine" : "The Tower"}</span>
         <span className="block text-sm opacity-80">
           {done
-            ? "You beat the dragon. Go back for 3 stars on every floor."
+            ? sky
+              ? "You beat the shogun. Go back for 3 stars on every floor."
+              : "You beat the dragon. Go back for 3 stars on every floor."
             : next.boss
-              ? `Floor ${next.id}: boss room. ${next.boss.name} is waiting.`
-              : `Floor ${next.id}: ${next.name}. ${cleared} of ${TOP_FLOOR} floors cleared.`}
+              ? `${floorLabel(next)}: boss room. ${next.boss.name} is waiting.`
+              : `${floorLabel(next)}: ${next.name}. ${cleared} of ${total} floors cleared.`}
         </span>
-        <ProgressBar value={cleared / TOP_FLOOR} label="Tower progress" className="mt-3 max-w-sm bg-white/15" barClassName="bg-sun" />
+        <ProgressBar value={cleared / total} label="Tower progress" className="mt-3 max-w-sm bg-white/15" barClassName="bg-sun" />
       </span>
       <span className="rounded-2xl bg-sun px-5 py-3 font-extrabold text-sun-ink shadow-[0_4px_0_var(--sun-deep)]">{cleared ? "Keep climbing" : "Enter"}</span>
     </Link>

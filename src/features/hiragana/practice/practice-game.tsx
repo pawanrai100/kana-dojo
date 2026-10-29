@@ -25,6 +25,7 @@ import { actions, useAppState } from "@/store/app-store";
 import { ActiveCard, AnswerFeedback, ResultCard } from "./question-card";
 import { RoundSummary } from "./round-summary";
 import { Petals } from "./petals";
+import { todaysQuests } from "@/lib/progress/quests";
 
 type Current =
   | { kind: "round"; active: ActiveRound; fresh?: GeneratorState }
@@ -162,6 +163,7 @@ interface GradedView {
   promoted?: number;
   isBest: boolean;
   badges: Achievement[];
+  quests: string[]; // quests that paid out this round
 }
 
 // the answer you just checked, shown until you move on
@@ -212,10 +214,14 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     const g = gradeRound(round, final, { durationMs: Date.now() - initial.startedAt });
     const prevBest = actions.getState().progress.bestRoundPoints;
     const beltBefore = beltStatus(actions.getState().progress).index;
+    const paidBefore = new Set(todaysQuests(actions.getState().progress).filter((q) => q.done).map((q) => q.quest.id));
     const badges = actions.recordRound(g);
     const beltAfter = beltStatus(actions.getState().progress).index;
+    const quests = todaysQuests(actions.getState().progress)
+      .filter((q) => q.done && !paidBefore.has(q.quest.id))
+      .map((q) => q.quest.label);
     setAnswers(final);
-    setView({ graded: g, promoted: beltAfter > beltBefore ? beltAfter : undefined, isBest: g.totalPoints > prevBest, badges });
+    setView({ graded: g, promoted: beltAfter > beltBefore ? beltAfter : undefined, isBest: g.totalPoints > prevBest, badges, quests });
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
@@ -452,6 +458,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
           graded={view.graded}
           belt={belt}
           promoted={view.promoted}
+          quests={view.quests}
           isBest={view.isBest}
           badges={view.badges}
           shortcuts={settings.shortcuts}
