@@ -1,8 +1,9 @@
-import { isBasicHiragana, splitKana, toRomaji } from "@/lib/kana/hiragana";
+import { isBasicHiragana, isKnownKana, splitKana, toRomaji } from "@/lib/kana/hiragana";
+import { EXTRA_RAW } from "./extra-words";
 import type { VocabCategory, VocabWord } from "./types";
 
-// real words written only with the 46 basic hiragana.
-// no dakuten, no small kana. romaji is generated from the kana table
+// real words written only with the 46 basic hiragana. words that need
+// dakuten, combos or small っ live in extra-words.ts. romaji comes from the kana table
 const RAW: Record<VocabCategory, [string, string][]> = {
   animals: [
     ["ねこ", "cat"],
@@ -382,11 +383,20 @@ const RAW: Record<VocabCategory, [string, string][]> = {
 function buildVocab(): VocabWord[] {
   const out: VocabWord[] = [];
   const byKana = new Map<string, VocabWord>();
-  for (const [category, list] of Object.entries(RAW) as [VocabCategory, [string, string][]][]) {
+  const lists = [
+    ...(Object.entries(RAW) as [VocabCategory, [string, string][]][]).map(([c, l]) => [c, l, false] as const),
+    ...(Object.entries(EXTRA_RAW) as [VocabCategory, [string, string][]][]).map(([c, l]) => [c, l, true] as const),
+  ];
+  for (const [category, list, extra] of lists) {
     for (const [kana, meaning] of list) {
       // fail loud so a bad entry never reaches the quiz
-      if (!splitKana(kana).every(isBasicHiragana)) {
-        throw new Error(`vocab entry uses non-basic kana: ${kana}`);
+      const units = splitKana(kana);
+      if (!units.every(extra ? isKnownKana : isBasicHiragana)) {
+        throw new Error(`vocab entry uses kana we don't teach: ${kana}`);
+      }
+      // extra words must actually need an extra kana, or they'd leak into basic rounds
+      if (extra && units.every(isBasicHiragana)) {
+        throw new Error(`extra vocab entry only uses basic kana: ${kana}`);
       }
       const existing = byKana.get(kana);
       if (existing) {

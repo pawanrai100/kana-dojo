@@ -1,4 +1,4 @@
-import { isBasicHiragana } from "@/lib/kana/hiragana";
+import { isKnownKana } from "@/lib/kana/hiragana";
 import { sanitizeTower } from "@/lib/tower/progress";
 import { emptyProgress, type CharStat, type DayStat, type Progress, type RoundLog, type SessionLog, type WordStat } from "./types";
 
@@ -95,13 +95,13 @@ export function sanitizeProgress(raw: unknown): Progress {
     bestCombo: num(raw.bestCombo),
     bestRoundPoints: num(raw.bestRoundPoints),
     bestStreak: num(raw.bestStreak),
-    chars: record(raw.chars, charStat, isBasicHiragana),
+    chars: record(raw.chars, charStat, isKnownKana),
     words: record(raw.words, wordStat),
     days: record(raw.days, day, (k) => /^\d{4}-\d{2}-\d{2}$/.test(k)),
     sessions: Array.isArray(raw.sessions) ? raw.sessions.map(session).filter((s): s is SessionLog => !!s) : [],
     roundLog: Array.isArray(raw.roundLog) ? raw.roundLog.map(roundLog).filter((r): r is RoundLog => !!r) : [],
     gen: {
-      deck: strArr(gen.deck).filter(isBasicHiragana),
+      deck: strArr(gen.deck).filter(isKnownKana),
       usedWords: strArr(gen.usedWords),
       recentCombos: strArr(gen.recentCombos),
     },

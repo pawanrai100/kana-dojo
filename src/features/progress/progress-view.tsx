@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/misc";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { BASIC_KANA_LIST, getKana } from "@/lib/kana/hiragana";
+import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS, readingOf } from "@/lib/kana/hiragana";
 import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
 import {
   accuracy,
@@ -26,6 +26,9 @@ import { useAppState } from "@/store/app-store";
 import { BarChart, LineChart } from "./charts";
 import { SessionList } from "./session-list";
 
+// dakuten, combos and small っ, counted apart from the basic 46
+const EXTRAS = ALL_KANA_LIST.filter((k) => !BASIC_KANA_LIST.includes(k));
+
 const VOCAB = new Map(HIRAGANA_VOCAB.map((w) => [w.id, w]));
 
 export function ProgressView() {
@@ -38,6 +41,8 @@ function ProgressBody({ p }: { p: Progress }) {
   const acc = accuracy(p.totalCorrect, p.totalAnswered);
   const mastered = masteredChars(p);
   const encountered = encounteredChars(p);
+  const extrasSeen = encounteredChars(p, EXTRAS).length;
+  const extrasMastered = masteredChars(p, EXTRAS).length;
   const lvl = levelInfo(p.xp);
 
   // rolling 5-round accuracy smooths out noisy rounds
@@ -91,8 +96,12 @@ function ProgressBody({ p }: { p: Progress }) {
         <Tile label="Rounds completed" value={String(p.roundsCompleted)} sub={`${plural(p.sessions.length, "session")}, ${p.roundsSkipped} skipped`} />
         <Tile label="Current streak" value={plural(currentStreak(p), "day")} sub={`Best ${plural(p.bestStreak, "day")}`} />
         <Tile label="Level" value={String(lvl.level)} sub={`${p.xp.toLocaleString()} XP total`} />
-        <Tile label="Characters seen" value={`${encountered.length}/46`} sub={encountered.length === 46 ? "Full coverage" : `${46 - encountered.length} still to meet`} />
-        <Tile label="Characters mastered" value={`${mastered.length}/46`} sub="3+ rounds, recent reads right" />
+        <Tile
+          label="Characters seen"
+          value={`${encountered.length}/46`}
+          sub={extrasSeen ? `+${extrasSeen} of ${EXTRAS.length} extras` : encountered.length === 46 ? "Full coverage" : `${46 - encountered.length} still to meet`}
+        />
+        <Tile label="Characters mastered" value={`${mastered.length}/46`} sub={extrasMastered ? `+${extrasMastered} extras mastered` : "3+ rounds, recent reads right"} />
         <Tile label="Real words learned" value={String(wordsLearned(p))} sub={`${plural(wordsPracticed(p), "word")} practiced`} />
         <Tile label="Best combo" value={`×${p.bestCombo}`} sub={`Best round ${p.bestRoundPoints.toLocaleString()} pts`} />
       </section>
@@ -158,8 +167,15 @@ function ProgressBody({ p }: { p: Progress }) {
           <CardDescription>Darker means more confident. Hover or focus a character for its accuracy.</CardDescription>
         </CardHeader>
         <CardContent>
+          {KANA_GROUPS.filter((g) => g.id === "basic" || g.chars.some((k) => p.chars[k]?.seen)).map((g) => (
+            <div key={g.id} className="mb-4">
+              {g.id !== "basic" && (
+                <p lang="ja" className="mb-2 text-xs font-extrabold text-muted">
+                  {g.label}
+                </p>
+              )}
           <div className="grid grid-cols-8 gap-1.5 sm:grid-cols-12 lg:grid-cols-[repeat(16,minmax(0,1fr))]">
-            {BASIC_KANA_LIST.map((k) => {
+            {g.chars.map((k) => {
               const s = p.chars[k];
               const m = isMastered(s);
               const a = charAccuracy(s);
@@ -168,10 +184,11 @@ function ProgressBody({ p }: { p: Progress }) {
                 <div
                   key={k}
                   tabIndex={0}
-                  title={`${k} (${getKana(k)!.romaji[0]}): ${label}`}
-                  aria-label={`${k} ${getKana(k)!.romaji[0]}: ${label}`}
+                  title={`${k} (${readingOf(k)}): ${label}`}
+                  aria-label={`${k} ${readingOf(k)}: ${label}`}
                   className={cn(
-                    "font-kana grid aspect-square place-items-center rounded-lg text-lg",
+                    "font-kana grid aspect-square place-items-center rounded-lg",
+                    k.length > 1 ? "text-sm sm:text-base" : "text-lg",
                     !s?.seen && "bg-surface-2 text-muted",
                     s?.seen && !m && a < 0.6 && "bg-primary-soft text-primary",
                     s?.seen && !m && a >= 0.6 && "bg-primary/45 text-primary-foreground",
@@ -183,6 +200,8 @@ function ProgressBody({ p }: { p: Progress }) {
               );
             })}
           </div>
+            </div>
+          ))}
           <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted">
             <Legend className="bg-surface-2" text="Not seen" />
             <Legend className="bg-primary-soft" text="Under 60%" />
@@ -206,7 +225,7 @@ function ProgressBody({ p }: { p: Progress }) {
                 {weak.map((w) => (
                   <li key={w.kana} className="flex items-center gap-3">
                     <span lang="ja" className="font-kana w-8 text-2xl">{w.kana}</span>
-                    <span className="w-9 text-xs text-muted">{getKana(w.kana)!.romaji[0]}</span>
+                    <span className="w-9 text-xs text-muted">{readingOf(w.kana)}</span>
                     <ProgressBar value={w.accuracy} label={`${w.kana} accuracy`} className="flex-1" barClassName="bg-bad" />
                     <span className="w-24 text-right text-xs text-muted">
                       {pct(w.accuracy)}, {w.misses} missed

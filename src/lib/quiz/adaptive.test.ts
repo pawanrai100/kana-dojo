@@ -114,3 +114,45 @@ describe("kana font setting", () => {
     expect(sanitizeSettings({ kanaFont: "textbook" }).kanaFont).toBe("textbook");
   });
 });
+
+describe("second chances and finishing early", () => {
+  it("builds a retry question that has the kana you missed", async () => {
+    const { makeRetryQuestion } = await import("./generate");
+    for (const mode of ["mixed", "random", "words"] as const) {
+      for (let seed = 1; seed <= 15; seed++) {
+        const q = makeRetryQuestion({
+          missed: ["ね"],
+          settings: { ...DEFAULT_SETTINGS, mode },
+          chars: {},
+          avoid: new Set(["ねこ"]),
+          rng: mulberry32(seed),
+        });
+        expect(q, `${mode} ${seed}`).not.toBeNull();
+        expect(q!.chars).toContain("ね");
+        expect(q!.retry).toBe(true);
+        expect(q!.kana).not.toBe("ねこ");
+      }
+    }
+  });
+
+  it("cards you never reached don't count as misses", async () => {
+    const { gradeRound, emptyAnswer } = await import("./grade");
+    const { applyGradedRound } = await import("@/lib/progress/update");
+    const { emptyProgress } = await import("@/lib/progress/types");
+    const r = generateRound({ settings: { ...DEFAULT_SETTINGS, mode: "random", questionsPerRound: 5 }, chars: {}, words: {}, gen: EMPTY_GEN_STATE, rng: mulberry32(9), now: NOW });
+    if (!r.ok) throw new Error(r.message);
+    const qs = r.round.questions;
+    // answer the first two (one right, one wrong), finish before the rest
+    const answers = qs.map(emptyAnswer);
+    answers[0] = { value: qs[0].romaji, locked: true, timedOut: false, timeUsedMs: 1000 };
+    answers[1] = { value: "zz", locked: true, timedOut: false, timeUsedMs: 1000 };
+    const g = gradeRound(r.round, answers, { durationMs: 5000 });
+    expect(g.results.filter((x) => x.unanswered)).toHaveLength(3);
+    const p = applyGradedRound(emptyProgress(), g, r.gen, NOW);
+    expect(p.totalAnswered).toBe(2);
+    const seen = new Set([...qs[0].chars, ...qs[1].chars]);
+    for (const k of qs.slice(2).flatMap((q) => q.chars)) {
+      if (!seen.has(k)) expect(p.chars[k], k).toBeUndefined();
+    }
+  });
+});

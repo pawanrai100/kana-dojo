@@ -41,7 +41,10 @@ describe("generateRound", () => {
   });
 
   it("strips disallowed chars from settings", () => {
-    expect(resolveEnabled(["が", "ぱ", "ゃ", "か", "か"])).toEqual(["か"]);
+    expect(resolveEnabled(["カ", "日", "ゃ", "か", "か", "が"])).toEqual(["か", "が"]);
+    // small っ alone has nothing to double, so it's dropped
+    expect(resolveEnabled(["っ", "あ"])).toEqual(["あ"]);
+    expect(resolveEnabled(["っ", "か"])).toEqual(["か", "っ"]);
   });
 
   it("words mode gives only real words with meanings", () => {
@@ -168,5 +171,30 @@ describe("generateRound", () => {
     const long = run(base({ mode: "random", lengthRange: "3-7", questionsPerRound: 20 }, 4)).round.questions;
     const byLen = [...long].sort((x, y) => x.chars.length - y.chars.length);
     expect(byLen[byLen.length - 1].timeLimitSec!).toBeGreaterThan(byLen[0].timeLimitSec!);
+  });
+});
+
+describe("new kana in random rounds", () => {
+  it("never puts small っ at the start, the end, or before a sound it can't double", async () => {
+    const { ALL_KANA_LIST, SMALL_TSU, canFollowSokuon, isKnownKana } = await import("@/lib/kana/hiragana");
+    for (let seed = 1; seed <= 60; seed++) {
+      const r = run(base({ mode: "random", enabledChars: [...ALL_KANA_LIST], lengthRange: "2-5", questionsPerRound: 20 }, seed));
+      for (const q of r.round.questions) {
+        expect(q.chars.every(isKnownKana)).toBe(true);
+        q.chars.forEach((k, i) => {
+          if (k !== SMALL_TSU) return;
+          expect(i, q.kana).toBeGreaterThan(0);
+          expect(i, q.kana).toBeLessThan(q.chars.length - 1);
+          expect(canFollowSokuon(q.chars[i + 1]), q.kana).toBe(true);
+        });
+        expect(q.romaji).toBe(toRomaji(q.kana));
+      }
+    }
+  });
+
+  it("can drill just the dakuten group", () => {
+    const daku = ["が", "ぎ", "ぐ", "げ", "ご", "ぱ", "ぴ", "ぷ", "ぺ", "ぽ"];
+    const r = run(base({ mode: "random", enabledChars: daku }));
+    for (const q of r.round.questions) expect(q.chars.every((k) => daku.includes(k))).toBe(true);
   });
 });

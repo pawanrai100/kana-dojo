@@ -9,7 +9,7 @@ import { Segmented } from "@/components/ui/misc";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { HIRAGANA_ROWS } from "@/lib/kana/hiragana";
+import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS } from "@/lib/kana/hiragana";
 import type { Settings } from "@/lib/settings/types";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
@@ -99,34 +99,48 @@ function SettingsBody({ s }: { s: Settings }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {HIRAGANA_ROWS.map((row) => {
-              const on = row.chars.every((k) => enabled.has(k));
-              const some = !on && row.chars.some((k) => enabled.has(k));
-              return (
-                <button
-                  key={row.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => {
-                    const next = on ? s.enabledChars.filter((k) => !row.chars.includes(k)) : [...s.enabledChars, ...row.chars];
-                    if (next.length) set({ enabledChars: next });
-                  }}
-                  className={cn(
-                    "press rounded-2xl border-2 px-3.5 py-2 text-sm font-bold transition-colors",
-                    on ? "border-primary bg-primary-soft text-primary" : some ? "border-primary/50 border-dashed" : "border-border hover:bg-surface-2",
-                  )}
-                >
-                  <span lang="ja" className="font-kana mr-1.5 text-base">{row.chars[0]}</span>
-                  {row.label}
-                </button>
-              );
-            })}
+          <div className="space-y-4">
+            {KANA_GROUPS.map((g) => (
+              <div key={g.id}>
+                <p lang="ja" className="mb-2 text-xs font-extrabold text-muted">
+                  {g.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {g.rows.map((row) => {
+                    const on = row.chars.every((k) => enabled.has(k));
+                    const some = !on && row.chars.some((k) => enabled.has(k));
+                    return (
+                      <button
+                        key={row.id}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => {
+                          const next = on ? s.enabledChars.filter((k) => !row.chars.includes(k)) : [...s.enabledChars, ...row.chars];
+                          if (next.length) set({ enabledChars: next });
+                        }}
+                        className={cn(
+                          "press rounded-2xl border-2 px-3.5 py-2 text-sm font-bold transition-colors",
+                          on ? "border-primary bg-primary-soft text-primary" : some ? "border-primary/50 border-dashed" : "border-border hover:bg-surface-2",
+                        )}
+                      >
+                        <span lang="ja" className="font-kana mr-1.5 text-base">
+                          {row.chars[0]}
+                        </span>
+                        {row.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="mt-3 flex items-center gap-3 text-sm text-muted">
-            {s.enabledChars.length} of 46 enabled
-            <Button size="sm" variant="ghost" onClick={() => set({ enabledChars: HIRAGANA_ROWS.flatMap((r) => r.chars) })}>
-              Enable all
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted">
+            {s.enabledChars.length} of {ALL_KANA_LIST.length} enabled
+            <Button size="sm" variant="ghost" onClick={() => set({ enabledChars: [...BASIC_KANA_LIST] })}>
+              Basic 46 only
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => set({ enabledChars: [...ALL_KANA_LIST] })}>
+              Enable everything
             </Button>
           </div>
         </CardContent>

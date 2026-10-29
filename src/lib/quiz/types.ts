@@ -13,6 +13,7 @@ export interface Question {
   wordId?: string;
   difficulty: Difficulty;
   timeLimitSec: number | null; // null = no timer (zen)
+  retry?: boolean; // a second shot at kana you just missed
 }
 
 export interface Round {
@@ -41,6 +42,7 @@ export interface GradedQuestion {
   timeUsedMs: number;
   points: number;
   comboAfter: number;
+  unanswered?: boolean; // never reached before you finished early, doesn't count as a miss
 }
 
 export interface GradedRound {

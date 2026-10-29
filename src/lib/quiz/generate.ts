@@ -1,4 +1,4 @@
-import { BASIC_KANA_LIST, isBasicHiragana, splitKana, toRomaji, usesOnly } from "@/lib/kana/hiragana";
+import { ALL_KANA_LIST, SMALL_TSU, canFollowSokuon, isKnownKana, splitKana, toRomaji, usesOnly } from "@/lib/kana/hiragana";
 import type { CharStat, WordStat } from "@/lib/progress/types";
 import { LENGTH_BOUNDS, type Settings } from "@/lib/settings/types";
 import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
@@ -24,10 +24,29 @@ export type GenerateResult =
 
 const VOCAB_BY_KANA = new Map(HIRAGANA_VOCAB.map((w) => [w.kana, w]));
 
-// v1 hard rule: only the 46 basic hiragana, whatever settings say
+// only kana we actually teach, in chart order. small っ needs something it can double
 export function resolveEnabled(enabled: string[]): string[] {
-  const set = new Set(enabled.filter(isBasicHiragana));
-  return BASIC_KANA_LIST.filter((k) => set.has(k));
+  const set = new Set(enabled.filter(isKnownKana));
+  if (set.has(SMALL_TSU) && ![...set].some(canFollowSokuon)) set.delete(SMALL_TSU);
+  return ALL_KANA_LIST.filter((k) => set.has(k));
+}
+
+// small っ can't start or end a word and only goes before k/s/t/ch/p sounds.
+// fix any bad spots in a random combo by swapping chars around
+export function fixSokuon(ks: string[], enabled: string[], rng: Rng): string[] {
+  const out = [...ks];
+  const plain = enabled.filter((k) => k !== SMALL_TSU);
+  const followers = enabled.filter(canFollowSokuon);
+  const pick = (list: string[]) => list[randInt(rng, 0, list.length - 1)];
+  for (let i = 0; i < out.length; i++) {
+    if (out[i] !== SMALL_TSU) continue;
+    if (i === 0 || i === out.length - 1 || out[i - 1] === SMALL_TSU || !followers.length) {
+      out[i] = pick(plain);
+    } else if (!canFollowSokuon(out[i + 1])) {
+      out[i + 1] = pick(followers);
+    }
+  }
+  return out;
 }
 
 export function wordsForChars(enabled: string[], vocab = HIRAGANA_VOCAB): VocabWord[] {
@@ -161,12 +180,14 @@ export function generateRound(input: GenerateInput): GenerateResult {
       }
       ks.push(k);
     }
-    let combo = ks.join("");
+    let fixed = enabled.includes(SMALL_TSU) ? fixSokuon(ks, enabled, rng) : ks;
+    let combo = fixed.join("");
     // dodge repeats from this round / recent rounds by nudging one char
     let tries = 0;
     while ((taken.has(combo) || recent.has(combo)) && tries < 10 && enabled.length > 1) {
-      ks[randInt(rng, 0, ks.length - 1)] = enabled[randInt(rng, 0, enabled.length - 1)];
-      combo = ks.join("");
+      fixed[randInt(rng, 0, fixed.length - 1)] = enabled[randInt(rng, 0, enabled.length - 1)];
+      if (enabled.includes(SMALL_TSU)) fixed = fixSokuon(fixed, enabled, rng);
+      combo = fixed.join("");
       tries++;
     }
     taken.add(combo);
@@ -246,4 +267,53 @@ export function withFocus(deck: string[], focus: string[], rng: Rng): string[] {
   for (const k of early) out.push(k, ...rest.splice(0, 1));
   out.push(...late);
   return [...out, ...rest];
+}
+
+export interface RetryInput {
+  missed: string[];
+  settings: GenerateInput["settings"];
+  chars: Record<string, CharStat>;
+  avoid: Set<string>; // kana already in this round
+  vocab?: VocabWord[];
+  rng?: Rng;
+}
+
+// a fresh question built around kana you just missed, for later in the same round.
+// a real word when one fits, otherwise a short combo with the missed kana in it
+export function makeRetryQuestion(input: RetryInput): Omit<Question, "id"> | null {
+  const { settings, chars, avoid } = input;
+  const rng = input.rng ?? Math.random;
+  const vocab = input.vocab ?? HIRAGANA_VOCAB;
+  const enabled = resolveEnabled(settings.enabledChars);
+  const missed = [...new Set(input.missed)].filter((k) => enabled.includes(k));
+  if (!missed.length) return null;
+  const [minLen, maxLen] = LENGTH_BOUNDS[settings.lengthRange];
+
+  if (settings.mode !== "random") {
+    const pool = wordsForChars(enabled, vocab).filter((w) => !avoid.has(w.kana) && splitKana(w.kana).some((k) => missed.includes(k)));
+    const fit = pool.filter((w) => {
+      const n = splitKana(w.kana).length;
+      return n >= minLen && n <= maxLen;
+    });
+    const list = fit.length ? fit : pool;
+    if (list.length) {
+      const w = list[randInt(rng, 0, list.length - 1)];
+      return { ...makeQuestion(w.kana, "word", w, settings, chars), retry: true };
+    }
+    if (settings.mode === "words") return null;
+  }
+
+  const plain = enabled.filter((k) => k !== SMALL_TSU);
+  if (!plain.length) return null;
+  const len = Math.max(minLen, Math.min(maxLen, missed.length + 1));
+  for (let tries = 0; tries < 8; tries++) {
+    const ks = missed.slice(0, len);
+    while (ks.length < len) ks.push(plain[randInt(rng, 0, plain.length - 1)]);
+    let combo = shuffle(ks, rng);
+    if (combo.includes(SMALL_TSU)) combo = fixSokuon(combo, enabled, rng);
+    const kana = combo.join("");
+    if (avoid.has(kana) && tries < 7) continue;
+    return { ...makeQuestion(kana, "random", VOCAB_BY_KANA.get(kana), settings, chars), retry: true };
+  }
+  return null;
 }

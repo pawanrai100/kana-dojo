@@ -1,4 +1,4 @@
-import { BASIC_KANA_LIST, isBasicHiragana } from "@/lib/kana/hiragana";
+import { ALL_KANA_LIST, BASIC_KANA_LIST, isKnownKana } from "@/lib/kana/hiragana";
 
 export type PracticeMode = "mixed" | "words" | "random";
 // 2-4 is only used by tower floors, settings still offer the three below
@@ -53,9 +53,9 @@ export function sanitizeSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== "object") return { ...d, enabledChars: [...d.enabledChars] };
   const r = raw as Record<string, unknown>;
   let enabled = Array.isArray(r.enabledChars)
-    ? r.enabledChars.filter((k): k is string => typeof k === "string" && isBasicHiragana(k))
+    ? r.enabledChars.filter((k): k is string => typeof k === "string" && isKnownKana(k))
     : [...d.enabledChars];
-  enabled = BASIC_KANA_LIST.filter((k) => enabled.includes(k)); // dedupe + keep chart order
+  enabled = ALL_KANA_LIST.filter((k) => enabled.includes(k)); // dedupe + keep chart order
   if (enabled.length === 0) enabled = [...d.enabledChars];
   return {
     questionsPerRound: pick(r.questionsPerRound, [5, 10, 15, 20] as const, d.questionsPerRound),

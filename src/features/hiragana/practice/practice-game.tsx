@@ -6,7 +6,8 @@ import { AlertCircle, Check, Flag, Info, RotateCcw, SkipForward, Timer } from "l
 import { Button } from "@/components/ui/button";
 import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
-import { generateRound } from "@/lib/quiz/generate";
+import { describeSelection } from "@/lib/kana/hiragana";
+import { generateRound, makeRetryQuestion } from "@/lib/quiz/generate";
 import { emptyAnswer, gradeRound } from "@/lib/quiz/grade";
 import { checkAnswer } from "@/lib/quiz/validate";
 import type { ActiveRound } from "@/lib/quiz/session";
@@ -108,7 +109,7 @@ function PracticeSession({ settings }: { settings: Settings }) {
           <Segmented label="Timer pace" value={settings.timerPace} options={PACE_OPTIONS} onChange={(timerPace) => changeSetting({ timerPace })} />
         </span>
         <span className="ml-auto flex items-center gap-2">
-          <Badge tone="primary">{settings.enabledChars.length === 46 ? "All 46 hiragana" : `${settings.enabledChars.length} of 46 characters`}</Badge>
+          <Badge tone="primary">{describeSelection(settings.enabledChars)}</Badge>
           <Link href="/chart" className="text-xs font-extrabold text-primary hover:underline">
             Change
           </Link>
@@ -176,7 +177,8 @@ function nextOpen(answers: AnswerState[], from: number): number {
 }
 
 function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
-  const { round } = initial;
+  // the round can change mid-play: a missed kana swaps itself into a later card
+  const [round, setRound] = useState(initial.round);
   const total = round.questions.length;
   const timed = round.questions.some((q) => q.timeLimitSec != null);
 
@@ -209,6 +211,24 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
+  // swap a card you haven't reached for one with the kana you just missed (max 3 a round)
+  const secondChance = (i: number, missed: string[], next: AnswerState[]) => {
+    if (round.questions.filter((qq) => qq.retry).length >= 3) return;
+    const open = (j: number) => !next[j].locked && !next[j].value.trim() && !round.questions[j].retry;
+    const later = round.questions.map((_, j) => j).filter((j) => j > i + 1 && open(j));
+    const slot = later.find((j) => j > i + 2) ?? later[0];
+    if (slot === undefined) return;
+    const s = actions.getState();
+    const nq = makeRetryQuestion({
+      missed,
+      settings: s.settings,
+      chars: s.progress.chars,
+      avoid: new Set(round.questions.map((qq) => qq.kana)),
+    });
+    if (!nq) return;
+    setRound((r) => ({ ...r, questions: r.questions.map((qq, j) => (j === slot ? { ...nq, id: `${r.id}-r${j}` } : qq)) }));
+  };
+
   // enter (or the clock running out) locks the answer and shows right/wrong straight away
   const lock = (i: number, timedOut: boolean) => {
     if (checked || answers[i].locked) return;
@@ -220,6 +240,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     setChecked({ i, correct: res.correct, missedIdx: res.missedIdx, timedOut });
     checkedAt.current = Date.now();
     sfx(res.correct ? "correct" : timedOut ? "timeout" : "wrong");
+    if (!res.correct) secondChance(i, res.missedIdx.length ? res.missedIdx.map((x) => q.chars[x]) : q.chars, next);
   };
 
   const advance = () => {
@@ -293,8 +314,8 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   // keep the unfinished round saved so it survives a refresh
   useEffect(() => {
     if (view) return;
-    actions.saveActive({ ...initial, answers, activeIndex });
-  }, [answers, activeIndex, view, initial]);
+    actions.saveActive({ ...initial, round, answers, activeIndex });
+  }, [answers, activeIndex, view, initial, round]);
 
   // focus the card that just got dealt
   useEffect(() => {

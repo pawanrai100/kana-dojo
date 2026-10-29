@@ -1,4 +1,4 @@
-import { isBasicHiragana, splitKana, toRomaji } from "@/lib/kana/hiragana";
+import { isKnownKana, splitKana, toRomaji } from "@/lib/kana/hiragana";
 import type { AnswerState, Question, Round } from "./types";
 
 // an unfinished round we can resume after a refresh
@@ -15,8 +15,8 @@ const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.i
 function question(v: unknown): Question | null {
   if (!isObj(v) || typeof v.kana !== "string" || typeof v.id !== "string") return null;
   const chars = splitKana(v.kana);
-  // reject anything outside the v1 set, never trust stored data
-  if (chars.length === 0 || !chars.every(isBasicHiragana)) return null;
+  // reject anything we don't teach, never trust stored data
+  if (chars.length === 0 || !chars.every(isKnownKana)) return null;
   const difficulty = ["easy", "medium", "hard"].includes(v.difficulty as string)
     ? (v.difficulty as Question["difficulty"])
     : "medium";
@@ -30,6 +30,7 @@ function question(v: unknown): Question | null {
     wordId: typeof v.wordId === "string" ? v.wordId : undefined,
     difficulty,
     timeLimitSec: typeof v.timeLimitSec === "number" && v.timeLimitSec > 0 ? v.timeLimitSec : null,
+    retry: v.retry === true ? true : undefined,
   };
 }
 
@@ -61,7 +62,7 @@ export function sanitizeActiveRound(raw: unknown): ActiveRound | null {
       mode,
       questions: questions as Question[],
       notice: typeof r.notice === "string" ? r.notice : undefined,
-      focus: Array.isArray(r.focus) ? r.focus.filter((k): k is string => typeof k === "string" && isBasicHiragana(k)).slice(0, 8) : undefined,
+      focus: Array.isArray(r.focus) ? r.focus.filter((k): k is string => typeof k === "string" && isKnownKana(k)).slice(0, 8) : undefined,
     },
     answers: answers.slice(0, questions.length),
     activeIndex,

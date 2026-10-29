@@ -47,3 +47,35 @@ describe("checkAnswer", () => {
     expect(checkAnswer("ねこ", "neko").missedIdx).toEqual([]);
   });
 });
+
+describe("dakuten, combos and small っ", () => {
+  it("accepts both common spellings", () => {
+    for (const [kana, typed] of [
+      ["じてんしゃ", "jitensha"],
+      ["じてんしゃ", "zitensya"],
+      ["ちゃいろ", "chairo"],
+      ["ちゃいろ", "tyairo"],
+      ["まっちゃ", "matcha"],
+      ["まっちゃ", "maccha"],
+      ["ちょっと", "chotto"],
+      ["がっこう", "gakkou"],
+      ["はっぴゃく", "happyaku"],
+      ["ざっし", "zasshi"],
+      ["ざっし", "zassi"],
+      ["つづく", "tsuzuku"],
+      ["つづく", "tsuduku"],
+    ]) {
+      expect(checkAnswer(kana, typed).correct, `${kana} ${typed}`).toBe(true);
+    }
+  });
+
+  it("points at the small っ when you skip the double", () => {
+    expect(checkAnswer("きって", "kite")).toMatchObject({ correct: false, missedIdx: [1] });
+  });
+
+  it("points at the combo when you read it as two kana", () => {
+    const r = checkAnswer("きゃく", "kiyaku");
+    expect(r.correct).toBe(false);
+    expect(r.missedIdx).toContain(0);
+  });
+});

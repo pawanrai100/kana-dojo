@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Check, CircleDot, Play, Sparkles } from "lucide-react";
+import { Check, CircleDot, Play, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/misc";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { BASIC_KANA_LIST, HIRAGANA_ROWS, LOOKALIKES, getKana } from "@/lib/kana/hiragana";
+import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS, LOOKALIKES, SMALL_TSU, getKana, getRow, readingOf, type KanaGroup } from "@/lib/kana/hiragana";
 import { wordsForChars } from "@/lib/quiz/generate";
 import { charAccuracy, isMastered } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
@@ -31,6 +31,8 @@ const LAYOUT: Record<string, (string | null)[]> = {
   nn: ["ん", null, null, null, null],
 };
 
+const reading = readingOf;
+
 export function KanaChart() {
   const state = useAppState();
   if (!state) return <PageSkeleton />;
@@ -44,7 +46,7 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
   const selected = new Set(draft);
 
   const commit = (next: string[]) => {
-    const ordered = BASIC_KANA_LIST.filter((k) => next.includes(k));
+    const ordered = ALL_KANA_LIST.filter((k) => next.includes(k));
     setDraft(ordered);
     // an empty selection isn't saved, the quiz always needs at least one char
     if (ordered.length) actions.updateSettings({ enabledChars: ordered });
@@ -57,6 +59,8 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
   };
 
   const practice = (chars?: string[]) => {
+    // small っ on its own can't make a word, so bring the basics along
+    if (chars?.every((k) => k === SMALL_TSU)) chars = [...BASIC_KANA_LIST, ...chars];
     if (chars) commit(chars);
     actions.clearActive();
     router.push("/practice");
@@ -68,12 +72,15 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
     <div className="space-y-6">
       <PageHeader
         title="Hiragana chart"
-        description="All 46 basic characters. Tick the ones you want in your rounds, or open one to see how you're doing with it."
+        description="The basic 46, then dakuten, combos and small っ. Tick the ones you want in your rounds, or open one to see how you're doing with it."
       />
 
       <div className="sticky top-[4.5rem] z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-surface/95 shadow-[0_4px_0_var(--border)] p-3 shadow-card backdrop-blur lg:top-4">
         <Button variant="secondary" size="sm" onClick={() => commit([...BASIC_KANA_LIST])}>
-          Select all
+          Basic 46
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => commit([...ALL_KANA_LIST])}>
+          Everything
         </Button>
         <Button variant="ghost" size="sm" onClick={() => setDraft([])}>
           Clear
@@ -97,25 +104,85 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-[var(--radius-card)] bg-surface p-3 shadow-card sm:p-5">
-        <table className="w-full min-w-[520px] border-separate border-spacing-1.5">
-          <caption className="sr-only">Basic hiragana chart</caption>
+      {KANA_GROUPS.map((g) => (
+        <GroupTable
+          key={g.id}
+          group={g}
+          selected={selected}
+          progress={progress}
+          onToggle={toggle}
+          onToggleRow={toggleRow}
+          onOpen={setOpen}
+          onPractice={() => practice(g.chars)}
+        />
+      ))}
+      <div className="flex flex-wrap gap-4 px-2 text-xs text-muted">
+        <span className="flex items-center gap-1.5"><CircleDot className="size-3.5 text-primary" /> practiced</span>
+        <span className="flex items-center gap-1.5"><Sparkles className="size-3.5 text-sun-deep" /> mastered</span>
+      </div>
+
+      <CharDetail kana={open} progress={progress} onClose={() => setOpen(null)} onPracticeRow={(chars) => practice(chars)} />
+    </div>
+  );
+}
+
+function GroupTable({
+  group,
+  selected,
+  progress,
+  onToggle,
+  onToggleRow,
+  onOpen,
+  onPractice,
+}: {
+  group: KanaGroup;
+  selected: Set<string>;
+  progress: Progress;
+  onToggle: (k: string) => void;
+  onToggleRow: (chars: string[]) => void;
+  onOpen: (k: string) => void;
+  onPractice: () => void;
+}) {
+  const all = group.chars.every((k) => selected.has(k));
+  const cols = Math.max(...group.rows.map((r) => (LAYOUT[r.id] ?? r.chars).length));
+  return (
+    <section aria-labelledby={`group-${group.id}`} className="rounded-[var(--radius-card)] bg-surface p-3 shadow-card sm:p-5">
+      <div className="mb-3 flex flex-wrap items-start gap-3 px-2">
+        <div className="min-w-0 flex-1 basis-64">
+          <h2 id={`group-${group.id}`} className="font-display text-xl">
+            <span lang="ja">{group.label}</span>
+          </h2>
+          <p className="text-sm text-muted">{group.blurb}</p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant={all ? "outline" : "secondary"} onClick={() => onToggleRow(group.chars)} aria-pressed={all}>
+            {all ? <Check /> : <Plus />} {all ? "In practice" : "Add to practice"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onPractice}>
+            <Play /> Just these
+          </Button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className={cn("border-separate border-spacing-1.5", cols >= 5 ? "w-full min-w-[520px]" : cols >= 3 ? "w-full min-w-[300px]" : "w-auto")}>
+          <caption className="sr-only">{group.label}</caption>
           <tbody>
-            {HIRAGANA_ROWS.map((row) => {
+            {group.rows.map((row) => {
               const rowAll = row.chars.every((k) => selected.has(k));
               const rowSome = row.chars.some((k) => selected.has(k));
+              const cells = LAYOUT[row.id] ?? row.chars;
               return (
                 <tr key={row.id}>
                   <th scope="row" className="w-24 pr-2 text-left align-middle">
                     <button
                       type="button"
-                      onClick={() => toggleRow(row.chars)}
+                      onClick={() => onToggleRow(row.chars)}
                       aria-pressed={rowAll}
                       className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-muted hover:bg-surface-2"
                     >
                       <span
                         className={cn(
-                          "grid size-4 place-items-center rounded border",
+                          "grid size-4 shrink-0 place-items-center rounded border",
                           rowAll ? "border-primary bg-primary text-primary-foreground" : rowSome ? "border-primary" : "border-border",
                         )}
                       >
@@ -124,10 +191,10 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
                       {row.label}
                     </button>
                   </th>
-                  {LAYOUT[row.id].map((k, i) =>
+                  {cells.map((k, i) =>
                     k ? (
-                      <td key={k} className="p-0">
-                        <KanaCell kana={k} selected={selected.has(k)} progress={progress} onToggle={() => toggle(k)} onOpen={() => setOpen(k)} />
+                      <td key={k} className={cn("p-0", cols < 3 && "w-28")}>
+                        <KanaCell kana={k} selected={selected.has(k)} progress={progress} onToggle={() => onToggle(k)} onOpen={() => onOpen(k)} />
                       </td>
                     ) : (
                       <td key={`gap-${i}`} aria-hidden />
@@ -138,15 +205,8 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
             })}
           </tbody>
         </table>
-        <div className="mt-4 flex flex-wrap gap-4 px-2 text-xs text-muted">
-          <span className="flex items-center gap-1.5"><CircleDot className="size-3.5 text-primary" /> practiced</span>
-          <span className="flex items-center gap-1.5"><Sparkles className="size-3.5 text-sun-deep" /> mastered</span>
-          <span>Dakuten (が, ぱ) and small kana arrive in a later module.</span>
-        </div>
       </div>
-
-      <CharDetail kana={open} progress={progress} onClose={() => setOpen(null)} onPracticeRow={(chars) => practice(chars)} />
-    </div>
+    </section>
   );
 }
 
@@ -163,7 +223,6 @@ function KanaCell({
   onToggle: () => void;
   onOpen: () => void;
 }) {
-  const c = getKana(kana)!;
   const s = progress.chars[kana];
   const mastered = isMastered(s);
   return (
@@ -173,9 +232,9 @@ function KanaCell({
         selected ? "border-primary/40 bg-primary-soft/50" : "border-border bg-background opacity-60",
       )}
     >
-      <button type="button" onClick={onOpen} className="flex w-full flex-col items-center rounded-xl px-1 pb-2 pt-3" aria-label={`${kana}, ${c.romaji[0]}. Open details`}>
-        <span lang="ja" className="font-kana text-3xl sm:text-4xl">{kana}</span>
-        <span className="mt-1 text-xs text-muted">{c.romaji[0]}</span>
+      <button type="button" onClick={onOpen} className="flex w-full flex-col items-center rounded-xl px-1 pb-2 pt-3" aria-label={`${kana}, ${reading(kana)}. Open details`}>
+        <span lang="ja" className={cn("font-kana whitespace-nowrap text-3xl sm:text-4xl", kana.length > 1 && "kana-combo")}>{kana}</span>
+        <span className="mt-1 text-xs text-muted">{reading(kana)}</span>
       </button>
       <span className="absolute left-1.5 top-1.5 flex gap-0.5">
         {mastered ? (
@@ -208,7 +267,7 @@ function CharDetail({
 }) {
   const c = kana ? getKana(kana) : undefined;
   const s = kana ? progress.chars[kana] : undefined;
-  const row = c ? HIRAGANA_ROWS.find((r) => r.id === c.row)! : undefined;
+  const row = c ? getRow(c.row) : undefined;
   const examples = kana ? HIRAGANA_VOCAB.filter((w) => w.kana.includes(kana)).slice(0, 5) : [];
   const confused = kana ? LOOKALIKES.find((g) => g.includes(kana))?.filter((k) => k !== kana) ?? [] : [];
 
@@ -218,15 +277,21 @@ function CharDetail({
         {c && row && (
           <div className="space-y-4">
             <div className="flex items-center gap-5">
-              <span lang="ja" className="font-kana grid size-24 place-items-center rounded-2xl bg-primary-soft text-6xl text-primary">
+              <span lang="ja" className={cn("font-kana grid h-24 min-w-24 place-items-center rounded-2xl bg-primary-soft px-2 text-primary", c.kana.length > 1 ? "text-5xl" : "text-6xl")}>
                 {c.kana}
               </span>
               <div className="space-y-1">
-                <DialogTitle className="text-2xl">{c.romaji[0]}</DialogTitle>
+                <DialogTitle className="text-2xl">{c.kana === SMALL_TSU ? "small tsu" : c.romaji[0]}</DialogTitle>
                 <DialogDescription>
-                  {row.label}
-                  {c.romaji.length > 1 && `, also typed as ${c.romaji.slice(1).join(", ")}`}
-                  {c.kana === "ん" && ", type n, nn or n'"}
+                  {c.kana === SMALL_TSU ? (
+                    "No sound of its own. It doubles the next consonant: きって = kitte, まっちゃ = matcha."
+                  ) : (
+                    <>
+                      {row.label}
+                      {c.romaji.length > 1 && `, also typed as ${c.romaji.slice(1).join(", ")}`}
+                      {c.kana === "ん" && ", type n, nn or n'"}
+                    </>
+                  )}
                 </DialogDescription>
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {isMastered(s) ? <Badge tone="sun">Mastered</Badge> : s?.seen ? <Badge tone="primary">Practiced</Badge> : <Badge>Not seen yet</Badge>}
@@ -254,7 +319,7 @@ function CharDetail({
                 Easy to mix up with{" "}
                 {confused.map((k, i) => (
                   <span key={k}>
-                    <span lang="ja" className="font-kana text-lg text-foreground">{k}</span> ({getKana(k)!.romaji[0]}){i < confused.length - 1 ? ", " : ""}
+                    <span lang="ja" className="font-kana text-lg text-foreground">{k}</span> ({reading(k)}){i < confused.length - 1 ? ", " : ""}
                   </span>
                 ))}
               </p>
@@ -276,7 +341,7 @@ function CharDetail({
             )}
 
             <Button className="w-full" onClick={() => onPracticeRow(row.chars)}>
-              <Play /> Practice the {row.label}
+              <Play /> Practice {c.kana === SMALL_TSU ? "small っ" : `the ${row.label}`}
             </Button>
           </div>
         )}

@@ -112,7 +112,15 @@ body {
   font-family: var(--font-kana);
   font-weight: var(--kana-weight, 700);
   line-height: 1.15;
-  letter-spacing: 0.04em;
+}
+/* a gap between sounds, not between letters, so きゃ stays glued together */
+.kana-unit + .kana-unit {
+  margin-left: 0.06em;
+}
+/* small ゃ ゅ ょ sit in a full-width box, so pull them in to read as one sound */
+.kana-combo {
+  letter-spacing: -0.18em;
+  padding-right: 0.1em;
 }
 :root[data-kana="textbook"] {
   --font-kana: "Klee One", "Hiragino Mincho ProN", serif;

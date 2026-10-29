@@ -1,4 +1,4 @@
-import { getKana, splitKana } from "@/lib/kana/hiragana";
+import { SMALL_TSU, getKana, sokuonSpellings, splitKana } from "@/lib/kana/hiragana";
 
 export interface AnswerCheck {
   correct: boolean;
@@ -25,7 +25,8 @@ export function acceptedSpellings(kana: string, next?: string): string[] {
     // n, nn and n' are all standard ways to type ん
     return ["n'", "nn", "n"];
   }
-  void next;
+  // small っ doubles whatever consonant comes next
+  if (kana === SMALL_TSU) return sokuonSpellings(next);
   return c.romaji;
 }
 

@@ -31,7 +31,8 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
   const leveledUp = lvl.level > before.level;
   const total = graded.results.length;
   // every char you slipped on this round, in the order you met them
-  const missed = [...new Set(graded.results.flatMap((r) => (r.correct ? [] : r.missedChars)))];
+  const missed = [...new Set(graded.results.flatMap((r) => (r.correct || r.unanswered ? [] : r.missedChars)))];
+  const notReached = graded.results.filter((r) => r.unanswered).length;
 
   return (
     <section
@@ -57,6 +58,7 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
           <h2 className="font-display text-2xl sm:text-3xl">{graded.correctCount === total ? "Perfect round!" : HEADLINES[graded.stars]}</h2>
           <p className="text-sm text-muted">
             You read <strong className="text-foreground">{graded.correctCount}</strong> of {total} correctly
+            {notReached > 0 && <> ({notReached} not reached, those don&apos;t count against you)</>}
             {isBest && graded.totalPoints > 0 && <span className="ml-2 rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold text-sun-ink">New best score</span>}
           </p>
         </div>

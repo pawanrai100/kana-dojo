@@ -61,7 +61,9 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
   }
 
   const roundId = g.round.id;
-  for (const r of g.results) {
+  // cards you never got to (finished early) don't count for or against you
+  const tried = g.results.filter((r) => !r.unanswered);
+  for (const r of tried) {
     const missed = new Set(r.missedChars);
     for (const k of new Set(r.question.chars)) {
       const ok = r.correct || !missed.has(k);
@@ -72,7 +74,7 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
     }
   }
 
-  const answered = g.results.length;
+  const answered = tried.length;
   next.totalAnswered += answered;
   next.totalCorrect += g.correctCount;
   next.roundsCompleted++;
@@ -118,7 +120,7 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
   }
   next.sessions = next.sessions.slice(-MAX_SESSIONS);
 
-  const totalMs = g.results.reduce((s, r) => s + r.timeUsedMs, 0);
+  const totalMs = tried.reduce((s, r) => s + r.timeUsedMs, 0);
   next.roundLog.push({
     at: now,
     answered,

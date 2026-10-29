@@ -4,7 +4,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowRight, Crown, Heart, Map as MapIcon, RotateCcw, Ruler, Star, Swords, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/misc";
-import { generateRound } from "@/lib/quiz/generate";
+import { generateRound, makeRetryQuestion } from "@/lib/quiz/generate";
 import { gradeRound } from "@/lib/quiz/grade";
 import { EMPTY_GEN_STATE, type AnswerState, type GeneratorState, type Question } from "@/lib/quiz/types";
 import { checkAnswer } from "@/lib/quiz/validate";
@@ -71,18 +71,20 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     if (settings.sound) playSound(n);
   };
 
+  const floorSettings = {
+    ...DEFAULT_SETTINGS,
+    mode: floor.mode,
+    enabledChars: floor.chars,
+    lengthRange: floor.lengthRange,
+    timerPace: floor.pace,
+    questionsPerRound: 10 as const,
+  };
+
   // a fresh batch of questions using only this floor's kana
   const batch = (): Question[] => {
     const p = actions.getState().progress;
     const r = generateRound({
-      settings: {
-        ...DEFAULT_SETTINGS,
-        mode: floor.mode,
-        enabledChars: floor.chars,
-        lengthRange: floor.lengthRange,
-        timerPace: floor.pace,
-        questionsPerRound: 10,
-      },
+      settings: floorSettings,
       chars: p.chars,
       words: p.words,
       gen: gen.current,
@@ -115,6 +117,16 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     log.current.push({ q, a: { value, locked: true, timedOut, timeUsedMs: used } });
     setBattle((b) => applyAnswer(b, check.correct));
     setFx((f) => ({ kind: check.correct ? "hit" : "miss", n: f.n + 1 }));
+    // a miss comes back three cards later as a second chance
+    if (!check.correct) {
+      const nq = makeRetryQuestion({
+        missed: check.missedIdx.length ? check.missedIdx.map((x) => q.chars[x]) : q.chars,
+        settings: floorSettings,
+        chars: actions.getState().progress.chars,
+        avoid: new Set(queue.slice(idx).map((x) => x.kana)),
+      });
+      if (nq) setQueue((qs) => [...qs.slice(0, idx + 3), { ...nq, id: `${q.id}-again` }, ...qs.slice(idx + 3)]);
+    }
     setFb({ q, correct: check.correct, missedIdx: check.missedIdx, answer: value, timedOut });
     lockedAt.current = Date.now();
     setPhase("feedback");

@@ -114,10 +114,10 @@ describe("progress tracking", () => {
 
 describe("storage safety", () => {
   it("recovers from junk progress", () => {
-    for (const junk of [null, 5, "x", [], { totalAnswered: -3, chars: { "が": {}, "ね": { seen: "a" } }, days: { bad: 1 } }]) {
+    for (const junk of [null, 5, "x", [], { totalAnswered: -3, chars: { "カ": {}, "ね": { seen: "a" } }, days: { bad: 1 } }]) {
       const p = sanitizeProgress(junk);
       expect(p.totalAnswered).toBeGreaterThanOrEqual(0);
-      expect(p.chars["が"]).toBeUndefined();
+      expect(p.chars["カ"]).toBeUndefined();
     }
     const p = sanitizeProgress({ totalAnswered: 5, totalCorrect: 9 });
     expect(p.totalCorrect).toBe(5);
@@ -125,15 +125,15 @@ describe("storage safety", () => {
 
   it("recovers from junk settings", () => {
     expect(sanitizeSettings("nope")).toEqual(DEFAULT_SETTINGS);
-    const s = sanitizeSettings({ questionsPerRound: 7, enabledChars: ["が", "か", 3], mode: "words" });
+    const s = sanitizeSettings({ questionsPerRound: 7, enabledChars: ["カ", "か", 3], mode: "words" });
     expect(s.questionsPerRound).toBe(10);
     expect(s.enabledChars).toEqual(["か"]);
     expect(s.mode).toBe("words");
-    expect(sanitizeSettings({ enabledChars: ["が"] }).enabledChars).toHaveLength(46);
+    expect(sanitizeSettings({ enabledChars: ["カ"] }).enabledChars).toHaveLength(46);
   });
 
   it("drops stored rounds containing excluded kana", () => {
-    expect(sanitizeActiveRound({ round: { id: "x", questions: [{ id: "a", kana: "がっこう" }] } })).toBeNull();
+    expect(sanitizeActiveRound({ round: { id: "x", questions: [{ id: "a", kana: "カタカナ" }] } })).toBeNull();
     const ok = sanitizeActiveRound({ round: { id: "x", questions: [{ id: "a", kana: "ねこ" }] }, answers: [] });
     expect(ok?.answers).toHaveLength(1);
     expect(ok?.round.questions[0].romaji).toBe("neko");

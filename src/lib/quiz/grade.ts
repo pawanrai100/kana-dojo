@@ -27,6 +27,7 @@ export function gradeRound(
       timedOut: a.timedOut,
       timeUsedMs: a.timeUsedMs,
       comboAfter: combo,
+      unanswered: !a.locked && !a.timedOut && !a.value.trim(),
       points: questionPoints({
         difficulty: q.difficulty,
         correct: check.correct,

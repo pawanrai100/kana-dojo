@@ -73,6 +73,7 @@ export function ActiveCard({ q, index, total, showNumber, answer, timeLeftSec, t
         <div className="flex w-full items-center justify-between gap-3">
           <span className="flex items-center gap-2">
             <span className={cn("rounded-full px-3 py-1 text-xs font-extrabold", DIFF_TONE[q.difficulty])}>{DIFF_LABEL[q.difficulty]}</span>
+            {q.retry && <span className="rounded-full bg-sun-soft px-3 py-1 text-xs font-extrabold text-warn">Again</span>}
             {showNumber && (
               <span className="text-sm font-bold text-muted">
                 {index + 1} of {total}
@@ -87,7 +88,11 @@ export function ActiveCard({ q, index, total, showNumber, answer, timeLeftSec, t
         </div>
 
         <p lang="ja" className={cn("font-kana break-all text-center", kanaSize(q.chars.length))} aria-label={`Hiragana: ${q.kana}`}>
-          {q.kana}
+          {q.chars.map((k, i) => (
+            <span key={i} className={cn("kana-unit inline-block", k.length > 1 && "kana-combo")}>
+              {k}
+            </span>
+          ))}
         </p>
 
         <label htmlFor={inputId} className="sr-only">
@@ -201,7 +206,7 @@ export function AnswerFeedback({
         </span>
         <p lang="ja" className={cn("font-kana break-all", kanaSize(q.chars.length))}>
           {q.chars.map((k, i) => (
-            <span key={i} className={cn(missed.has(i) && !correct && "text-bad underline decoration-4 underline-offset-[12px]")}>
+            <span key={i} className={cn("kana-unit inline-block", k.length > 1 && "kana-combo", missed.has(i) && !correct && "text-bad underline decoration-4 underline-offset-[12px]")}>
               {k}
             </span>
           ))}
