@@ -14,7 +14,7 @@ import { playSound, type SoundName } from "@/lib/sound";
 import type { Achievement } from "@/lib/tower/achievements";
 import { applyAnswer, startBattle, type BattleState } from "@/lib/tower/battle";
 import { floorLabel, nextFloor, type Floor } from "@/lib/tower/floors";
-import type { TowerOutcome } from "@/lib/tower/progress";
+import { emptyTower, type TowerOutcome } from "@/lib/tower/progress";
 import { cn, pct } from "@/lib/utils";
 import { actions } from "@/store/app-store";
 import { ActiveCard, AnswerFeedback } from "@/features/hiragana/practice/question-card";
@@ -22,6 +22,8 @@ import { Petals } from "@/features/hiragana/practice/petals";
 import { Medal } from "./medal";
 import { Hearts, Sprite, type Fx } from "./battle-parts";
 import { YokaiArt } from "./yokai-art";
+import { CardDrop } from "./boss-card";
+import { cardFor, tierFor } from "@/lib/tower/cards";
 import { BossArena, BossEntrance, BossFelled } from "./boss-arena";
 import { BELTS, beltStatus } from "@/lib/progress/belts";
 import { BeltPromotion } from "@/features/belts/belt";
@@ -477,6 +479,9 @@ function Result({
 
   const headline = won ? (boss ? `${boss.name} defeated!` : "Floor cleared!") : boss ? `${boss.name} wins this time` : "Out of hearts";
   const title = badges.find((b) => b.title)?.title;
+  // a boss win that beat your best drops (or upgrades) its card
+  const base = won && boss && outcome.newBest ? cardFor(emptyTower(), floor.id) : undefined;
+  const drop = base && { ...base, tier: tierFor(outcome.stars) };
 
   return (
     <div className="mx-auto max-w-[620px] space-y-5">
@@ -508,7 +513,9 @@ function Result({
           {battle.correct} of {battle.answered} read right ({pct(battle.answered ? battle.correct / battle.answered : 0)}), best combo ×{battle.bestCombo}
         </p>
 
-        {(outcome.bonusXp > 0 || title || badges.length > 0 || (won && outcome.newBest && !outcome.firstClear)) && (
+        {drop && <CardDrop card={drop} upgraded={!outcome.firstClear} />}
+
+        {(outcome.bonusXp > 0 || title || badges.length > 0 || (won && !boss && outcome.newBest && !outcome.firstClear)) && (
           <div className="w-full space-y-3 rounded-2xl bg-sun-soft p-4 text-left">
             <p className="flex items-center gap-2 text-sm font-extrabold text-warn">
               <Crown className="size-4" aria-hidden /> Rewards
@@ -520,7 +527,7 @@ function Result({
                   +{outcome.bonusXp} XP {boss ? "boss bounty" : "floor bonus"}
                 </li>
               )}
-              {won && outcome.newBest && !outcome.firstClear && (
+              {won && !boss && outcome.newBest && !outcome.firstClear && (
                 <li className="flex items-center gap-3 font-bold">
                   <span className="grid size-11 place-items-center rounded-full bg-sun text-sun-ink">
                     <Star className="size-5" aria-hidden />

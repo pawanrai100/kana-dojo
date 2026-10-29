@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Cloud, Crown, Lock, Star, Trophy } from "lucide-react";
+import { Check, Cloud, Crown, Layers, Lock, Star, Trophy } from "lucide-react";
 import { PageSkeleton } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/misc";
@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { useAppState } from "@/store/app-store";
 import { BattleView } from "./battle-view";
 import { BadgeCard } from "./medal";
+import { CardGallery } from "./boss-card";
+import { bossCards } from "@/lib/tower/cards";
 import { YokaiArt } from "./yokai-art";
 
 const TOWERS: Record<TowerId, { name: string; blurb: string; summit: string; zones: typeof ZONES; final: typeof FINAL_BOSS }> = {
@@ -37,13 +39,13 @@ const TOWERS: Record<TowerId, { name: string; blurb: string; summit: string; zon
 export function TowerView() {
   const state = useAppState();
   const [playing, setPlaying] = useState<number | null>(null);
-  const [tab, setTab] = useState<TowerId | null>(null);
+  const [tab, setTab] = useState<TowerId | "cards" | null>(null);
   if (!state) return <PageSkeleton />;
 
   const open = skyOpen(state.progress);
   const unlocked = (id: number) => isUnlocked(state.progress.tower, id, open);
   // once the first tower is done, land on the sky shrine
-  const shown: TowerId = tab ?? (open && isCleared(state.progress.tower, TOP_FLOOR) ? "sky" : "kana");
+  const shown: TowerId | "cards" = tab ?? (open && isCleared(state.progress.tower, TOP_FLOOR) ? "sky" : "kana");
 
   const floor = playing ? getFloor(playing) : undefined;
   if (floor && unlocked(floor.id)) {
@@ -59,7 +61,7 @@ export function TowerView() {
   return (
     <div className="space-y-6">
       <div role="tablist" aria-label="Towers" className="inline-flex gap-1 rounded-2xl bg-surface-2 p-1">
-        {(["kana", "sky"] as const).map((id) => (
+        {(["kana", "sky", "cards"] as const).map((id) => (
           <button
             key={id}
             role="tab"
@@ -72,12 +74,19 @@ export function TowerView() {
             )}
           >
             {id === "sky" && (open ? <Cloud className="size-4" aria-hidden /> : <Lock className="size-3.5" aria-hidden />)}
-            {TOWERS[id].name}
+            {id === "cards" && <Layers className="size-4" aria-hidden />}
+            {id === "cards" ? "Cards" : TOWERS[id].name}
           </button>
         ))}
       </div>
-      {shown === "sky" && !open ? <SkyGate progress={state.progress} /> : <TowerMap progress={state.progress} tower={shown} unlocked={unlocked} onPlay={setPlaying} />}
-      <Trophies progress={state.progress} />
+      {shown === "cards" ? (
+        <CardGallery cards={bossCards(state.progress.tower)} />
+      ) : shown === "sky" && !open ? (
+        <SkyGate progress={state.progress} />
+      ) : (
+        <TowerMap progress={state.progress} tower={shown} unlocked={unlocked} onPlay={setPlaying} />
+      )}
+      {shown !== "cards" && <Trophies progress={state.progress} />}
     </div>
   );
 }

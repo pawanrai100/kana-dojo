@@ -10,7 +10,7 @@ import { Hearts, Sprite, type Fx } from "./battle-parts";
 // health bar along the bottom (damage drains in yellow a beat after the hit),
 // claw marks and screen shake when it hits you, and a rage phase at half health
 
-function theme(floor: Floor) {
+export function theme(floor: Floor) {
   if (floor.kind === "final") return { sky: "#120c05", glow: "#ffb02e", fog: "rgb(255 176 46 / 0.18)" };
   if (floor.tower === "sky") return { sky: "#140f2e", glow: "#8b6bff", fog: "rgb(139 107 255 / 0.2)" };
   return { sky: "#1c0b0e", glow: "#ff4b4b", fog: "rgb(255 75 75 / 0.16)" };
