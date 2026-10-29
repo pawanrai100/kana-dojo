@@ -271,7 +271,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         <div key={fx.n} aria-hidden className="animate-hurt pointer-events-none fixed inset-0 z-50 shadow-[inset_0_0_110px_40px_rgb(229_72_77/0.6)]" />
       )}
       {phase === "entrance" && <BossEntrance floor={floor} onDone={() => setPhase("answer")} />}
-      {isBoss ? <BossArena floor={floor} battle={battle} fx={fx} /> : <Hud floor={floor} battle={battle} isBoss={false} fx={fx} />}
+      {isBoss ? <BossArena floor={floor} battle={battle} fx={fx} /> : <Hud floor={floor} battle={battle} fx={fx} />}
 
       {phase === "answer" && q && (
         <>
@@ -325,55 +325,44 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   );
 }
 
-function Hud({ floor, battle, isBoss, fx }: { floor: Floor; battle: BattleState; isBoss: boolean; fx: Fx }) {
+// regular floors: no art, just who you're fighting and how much fight it has left
+function Hud({ floor, battle, fx }: { floor: Floor; battle: BattleState; fx: Fx }) {
   const hpPct = battle.enemyHp / battle.maxEnemyHp;
   return (
-    <div
-      className={cn(
-        "mx-auto flex w-full max-w-[620px] items-center gap-3 rounded-[var(--radius-card)] p-3 sm:gap-5 sm:p-5",
-        floor.kind === "final"
-          ? "bg-foreground text-background shadow-[0_6px_0_var(--sun-deep)]"
-          : isBoss
-            ? "bg-bad text-white shadow-[0_6px_0_var(--bad-deep)]"
-            : "bg-surface shadow-[0_6px_0_var(--border)]",
-      )}
-    >
-      <Sprite enemy={floor.enemy} fx={fx} down={battle.status === "won"} className={isBoss ? "size-24 sm:size-28" : "size-20 sm:size-24"} />
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex items-baseline gap-2">
-          <span className="min-w-0 truncate">
-            <span className={cn("block truncate font-extrabold", isBoss && "font-display text-lg")}>{floor.enemy.name}</span>
-            <span lang={isBoss ? "ja" : undefined} className={cn("block truncate text-xs font-bold", isBoss ? "opacity-80" : "text-muted")}>
-              {isBoss && floor.boss ? floor.boss.kana : `${floorLabel(floor)}: ${floor.name}`}
-            </span>
+    <div className="mx-auto w-full max-w-[620px] space-y-2 rounded-[var(--radius-card)] bg-surface p-3 shadow-[0_6px_0_var(--border)] sm:p-5">
+      <div className="flex items-baseline gap-2">
+        <span className="relative min-w-0">
+          <span key={fx.n} className={cn("block truncate font-display text-xl", fx.kind === "hit" && "animate-name-hit")}>
+            {floor.enemy.name}
           </span>
-          <span className={cn("ml-auto shrink-0 text-xs font-extrabold tabular-nums", isBoss ? "opacity-80" : "text-muted")}>
-            HP {battle.enemyHp}/{battle.maxEnemyHp}
-          </span>
-        </div>
-        <div
-          role="progressbar"
-          aria-label="Enemy health"
-          aria-valuemin={0}
-          aria-valuemax={battle.maxEnemyHp}
-          aria-valuenow={battle.enemyHp}
-          className={cn("h-4 overflow-hidden rounded-full", isBoss ? "bg-black/25" : "bg-surface-2")}
-        >
-          <div
-            className={cn("h-full rounded-full transition-[width] duration-300", isBoss ? "bg-sun" : "bg-primary")}
-            style={{ width: `${hpPct * 100}%` }}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={cn("rounded-xl", isBoss && "bg-white px-2 py-1")}>
-            <Hearts n={battle.hearts} max={battle.maxHearts} breaking={fx.kind === "miss" ? battle.hearts : -1} fxKey={fx.n} />
-          </span>
-          {battle.combo >= 2 && (
-            <span key={battle.combo} className="animate-pop rounded-full bg-sun px-2.5 py-1 text-xs font-extrabold text-sun-ink">
-              Combo ×{battle.combo}
+          {fx.kind === "hit" && (
+            <span key={`d${fx.n}`} aria-hidden className="animate-dmg pointer-events-none absolute left-full top-0 ml-8 font-display text-2xl text-sun [-webkit-text-stroke:2px_#1a1d3a] [paint-order:stroke_fill]">
+              -1
             </span>
           )}
-        </div>
+          <span className="block truncate text-xs font-bold text-muted">{`${floorLabel(floor)}: ${floor.name}`}</span>
+        </span>
+        <span className="ml-auto shrink-0 text-xs font-extrabold tabular-nums text-muted">
+          HP {battle.enemyHp}/{battle.maxEnemyHp}
+        </span>
+      </div>
+      <div
+        role="progressbar"
+        aria-label="Enemy health"
+        aria-valuemin={0}
+        aria-valuemax={battle.maxEnemyHp}
+        aria-valuenow={battle.enemyHp}
+        className="h-4 overflow-hidden rounded-full bg-surface-2"
+      >
+        <div className="h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${hpPct * 100}%` }} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Hearts n={battle.hearts} max={battle.maxHearts} breaking={fx.kind === "miss" ? battle.hearts : -1} fxKey={fx.n} />
+        {battle.combo >= 2 && (
+          <span key={battle.combo} className="animate-pop rounded-full bg-sun px-2.5 py-1 text-xs font-extrabold text-sun-ink">
+            Combo ×{battle.combo}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -412,7 +401,7 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
           <>
             <h1 className="font-display text-3xl">{floor.name}</h1>
             <p className="flex items-center gap-2 text-sm font-bold text-muted">
-              <Sprite enemy={floor.enemy} className="size-12" /> Guarded by {floor.enemy.name}
+              <Swords className="size-4" aria-hidden /> Guarded by {/^[AEIOU]/.test(floor.enemy.name) ? "an" : "a"} {floor.enemy.name}
             </p>
             {floor.newChars.length > 0 ? (
               <>
@@ -493,13 +482,11 @@ function Result({
     <div className="mx-auto max-w-[620px] space-y-5">
       {won && boss && <Petals count={40} />}
       <section aria-label="Battle result" className="animate-pop flex flex-col items-center gap-4 rounded-[var(--radius-card)] bg-surface p-7 text-center shadow-[0_8px_0_var(--border)] sm:p-9">
-        <div className={cn("relative", boss ? "size-28" : "size-20")} aria-hidden>
-          {won ? (
-            <YokaiArt id={floor.enemy.id} className="yokai-down size-full" />
-          ) : (
-            <Sprite enemy={floor.enemy} className="size-full" />
-          )}
-        </div>
+        {boss && (
+          <div className="relative size-28" aria-hidden>
+            {won ? <YokaiArt id={floor.enemy.id} className="yokai-down size-full" /> : <Sprite enemy={floor.enemy} className="size-full" />}
+          </div>
+        )}
         {won ? (
           <div className="flex gap-1.5" aria-label={`${outcome.stars} of 3 stars`}>
             {[1, 2, 3].map((s) => (

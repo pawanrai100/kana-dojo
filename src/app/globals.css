@@ -185,37 +185,84 @@ body {
 .petal { animation: petal var(--dur) linear var(--delay) both; }
 
 /* tower battle fx */
-@keyframes yokai-bob {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50% { transform: translateY(-6px) rotate(2deg); }
+@keyframes name-hit {
+  0% { transform: translateX(0); color: inherit; }
+  15% { transform: translateX(-6px); color: var(--bad); }
+  40% { transform: translateX(5px); }
+  65% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
 }
-.animate-yokai-bob { animation: yokai-bob 2.4s ease-in-out infinite; }
-
-@keyframes yokai-hit {
-  0% { transform: translateX(0) scale(1); filter: brightness(1); }
-  10% { transform: translateX(-8px) scale(0.92); filter: brightness(2.4) saturate(0.2); }
-  30% { transform: translateX(7px) scale(0.96); filter: brightness(1.6); }
-  50% { transform: translateX(-5px); filter: brightness(1); }
-  70% { transform: translateX(3px); }
-  100% { transform: translateX(0) scale(1); }
-}
-.animate-yokai-hit { animation: yokai-hit 420ms ease-out both; }
-
-@keyframes yokai-attack {
-  0% { transform: translateY(0) scale(1); }
-  35% { transform: translateY(14px) scale(1.22); }
-  60% { transform: translateY(6px) scale(1.12); }
-  100% { transform: translateY(0) scale(1); }
-}
-.animate-yokai-attack { animation: yokai-attack 420ms cubic-bezier(.3,1.6,.5,1) both; }
-
-@keyframes yokai-down {
-  0% { transform: translateX(0) rotate(0) scale(1); filter: none; }
-  15% { transform: translateX(-6px) rotate(-8deg) scale(0.95); filter: brightness(2.4); }
-  100% { transform: translate(10px, 18px) rotate(78deg) scale(0.9); filter: grayscale(0.85) brightness(0.9); opacity: 0.85; }
-}
-.animate-yokai-down { animation: yokai-down 800ms cubic-bezier(.5,0,.7,1) both; }
+.animate-name-hit { animation: name-hit 420ms ease-out both; }
 .yokai-down { transform: translate(10px, 18px) rotate(78deg) scale(0.9); filter: grayscale(0.85) brightness(0.9); opacity: 0.85; }
+
+/* boss body language */
+@keyframes boss-breathe {
+  0%, 100% { transform: scale(1, 1) rotate(0); }
+  30% { transform: scale(0.985, 1.035) rotate(-0.8deg); }
+  55% { transform: scale(1, 1) rotate(0); }
+  /* leans in at you for a beat */
+  72% { transform: scale(1.05) translateY(6px) rotate(1deg); }
+  82% { transform: scale(1.05) translateY(6px) rotate(1deg); }
+}
+.animate-boss-breathe { animation: boss-breathe 4.2s ease-in-out infinite; }
+
+@keyframes boss-breathe-rage {
+  0%, 100% { transform: scale(1, 1) translateX(0); }
+  10% { transform: scale(1.01, 1.04) translateX(-1.5px); }
+  20% { transform: scale(1.01, 1.04) translateX(1.5px); }
+  30% { transform: scale(1.02, 1.05) translateX(-1px); }
+  50% { transform: scale(1.06) translateY(5px); }
+  70% { transform: scale(1, 1.02) translateX(1px); }
+}
+.animate-boss-breathe-rage { animation: boss-breathe-rage 1.7s ease-in-out infinite; }
+
+@keyframes boss-hit {
+  0% { transform: none; filter: none; }
+  8% { transform: translateY(-10px) scale(0.9) skewX(-6deg); filter: brightness(3) saturate(0); }
+  25% { transform: translateY(-6px) scale(0.94) skewX(4deg); filter: brightness(1.6) hue-rotate(-20deg); }
+  45% { transform: translateY(-2px) scale(0.98) skewX(-2deg); filter: none; }
+  100% { transform: none; filter: none; }
+}
+.animate-boss-hit { animation: boss-hit 480ms cubic-bezier(.2,.8,.3,1) both; }
+
+@keyframes boss-attack {
+  0% { transform: none; filter: none; }
+  /* wind up */
+  30% { transform: translateY(-14px) scale(0.9) rotate(-4deg); filter: brightness(0.55); }
+  /* lunge at the screen */
+  48% { transform: translateY(26px) scale(1.42) rotate(2deg); filter: brightness(1.15) drop-shadow(0 0 22px rgb(255 30 30 / 0.9)); }
+  62% { transform: translateY(20px) scale(1.36); }
+  100% { transform: none; filter: none; }
+}
+.animate-boss-attack { animation: boss-attack 700ms cubic-bezier(.4,0,.2,1) both; }
+
+@keyframes boss-dissolve {
+  0% { transform: none; filter: none; opacity: 1; }
+  15% { transform: scale(1.04) translateX(-4px); filter: brightness(2.6) saturate(0); }
+  30% { transform: scale(1.02) translateX(3px); filter: brightness(1.8) sepia(1) saturate(3) hue-rotate(-15deg); }
+  100% { transform: translateY(-26px) scale(1.08); filter: brightness(3) sepia(1) blur(10px); opacity: 0; }
+}
+.animate-boss-dissolve { animation: boss-dissolve 2s ease-in both; }
+
+@keyframes spark {
+  0% { transform: rotate(var(--a)) translateX(0) scale(1.4); opacity: 1; }
+  100% { transform: rotate(var(--a)) translateX(var(--d)) scale(0.2); opacity: 0; }
+}
+.animate-spark { animation: spark 520ms cubic-bezier(.1,.7,.3,1) both; }
+
+@keyframes ember {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 0; }
+  20% { opacity: 1; transform: translate(calc(var(--x) * 0.3), -20px) scale(1); }
+  100% { transform: translate(var(--x), -150px) scale(0.3); opacity: 0; }
+}
+.animate-ember { animation: ember 2.2s ease-out both; }
+
+@keyframes claw {
+  0% { transform: rotate(32deg) scaleX(0); opacity: 0; }
+  30% { transform: rotate(32deg) scaleX(1); opacity: 1; }
+  100% { transform: rotate(32deg) scaleX(1); opacity: 0; }
+}
+.animate-claw { animation: claw 620ms ease-out both; transform-origin: left center; }
 
 @keyframes dmg-float {
   0% { transform: translate(-50%, 6px) scale(0.6); opacity: 0; }

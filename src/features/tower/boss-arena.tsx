@@ -8,7 +8,7 @@ import { Hearts, Sprite, type Fx } from "./battle-parts";
 
 // the boss fight: a dark arena with the boss looming over you, a long thin
 // health bar along the bottom (damage drains in yellow a beat after the hit),
-// screen shake when it hits you, and a rage phase at half health
+// claw marks and screen shake when it hits you, and a rage phase at half health
 
 function theme(floor: Floor) {
   if (floor.kind === "final") return { sky: "#120c05", glow: "#ffb02e", fog: "rgb(255 176 46 / 0.18)" };
@@ -73,11 +73,24 @@ export function BossArena({ floor, battle, fx }: { floor: Floor; battle: BattleS
       <div className="relative z-0 flex h-52 items-end justify-center sm:h-64">
         <div aria-hidden className="absolute bottom-3 h-6 w-48 rounded-[50%] bg-black/60 blur-md" />
         <div className={cn("relative", raging && !down && "animate-rage")}>
-          <Sprite enemy={floor.enemy} fx={fx} down={down} className="size-48 sm:size-60" />
+          <Sprite enemy={floor.enemy} fx={fx} down={down} rage={raging} className="size-48 sm:size-60" />
           {fx.kind === "hit" && !down && (
             <span key={`slash-${fx.n}`} aria-hidden className="animate-slash pointer-events-none absolute left-[8%] top-1/2 h-1.5 w-[84%] rounded-full bg-white shadow-[0_0_18px_6px_rgb(255_255_255/0.7)]" />
           )}
         </div>
+        {fx.kind === "miss" && (
+          // it got you: three claw marks rip across the arena
+          <span key={`claw-${fx.n}`} aria-hidden className="pointer-events-none absolute inset-0 z-20">
+            <span className="animate-hurt absolute inset-0" style={{ background: "radial-gradient(70% 70% at 50% 50%, transparent 40%, rgb(200 0 0 / 0.55))" }} />
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="animate-claw absolute h-1.5 w-[70%] rounded-full bg-[#ff3b3b] shadow-[0_0_14px_4px_rgb(255_40_40/0.75)]"
+                style={{ left: `${12 + i * 7}%`, top: `${14 + i * 16}%`, animationDelay: `${180 + i * 60}ms` }}
+              />
+            ))}
+          </span>
+        )}
         {rageShown && (
           <div aria-live="polite" className="animate-banner pointer-events-none absolute inset-x-0 top-1/3 z-20 py-2 text-center" style={{ background: "linear-gradient(90deg, transparent, rgb(150 0 0 / 0.85), transparent)" }}>
             <span className="font-display text-xl tracking-wider sm:text-2xl">{floor.enemy.name.split(",")[0]} is enraged!</span>
