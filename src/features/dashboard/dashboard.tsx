@@ -26,6 +26,7 @@ import type { Progress } from "@/lib/progress/types";
 import { cn, plural } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
 import { useAuth } from "@/features/auth/auth-provider";
+import { LeaderboardCard } from "@/features/leaderboard/leaderboard";
 import { SessionList } from "@/features/progress/session-list";
 import { TOP_FLOOR, floorLabel, floorsOf, getFloor } from "@/lib/tower/floors";
 import { skyOpen } from "@/lib/tower/gate";
@@ -188,6 +189,7 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
       </div>
 
       <TowerCard progress={progress} />
+      <LeaderboardCard />
 
       <section aria-label="Coming next">
         <h2 className="mb-3 text-sm font-extrabold text-muted">Coming next</h2>

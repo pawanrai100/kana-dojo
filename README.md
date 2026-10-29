@@ -42,6 +42,7 @@ Optional. With no Supabase keys the site runs guest-only, exactly as before. Set
 - Each signed in user gets their own local copy (`kana-dojo:v1:u:<id>:...`) that syncs to one `user_progress` row. Saves happen locally first, then upload about 1.5 s later. It works offline and catches up when back online.
 - Two devices editing at once can't overwrite each other: every save carries a `rev` number, and a stale save is rejected, merged and retried (`src/lib/sync/`).
 - Database rules live in `supabase/migrations/`. Row Level Security limits every user to their own rows. `supabase/tests/` has the SQL tests used to check it.
+- `/leaderboard`: weekly board of correct answers, for signed in users. `0002_leaderboard.sql` adds a `weekly_leaderboard()` function that reads each user's synced day log and returns only name, belt and score, so progress stays private. Users can hide themselves in Settings.
 
 Where things live:
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,9 @@ import { Segmented } from "@/components/ui/misc";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
+import { useAuth } from "@/features/auth/auth-provider";
+import { getShowOnBoard, setShowOnBoard } from "@/lib/leaderboard";
+import { getSupabase } from "@/lib/supabase/client";
 import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS } from "@/lib/kana/hiragana";
 import type { Settings } from "@/lib/settings/types";
 import { cn } from "@/lib/utils";
@@ -175,6 +178,8 @@ function SettingsBody({ s }: { s: Settings }) {
         </CardContent>
       </Card>
 
+      <LeaderboardSetting />
+
       <Card>
         <CardHeader>
           <CardTitle>Data</CardTitle>
@@ -240,5 +245,49 @@ function ToggleRow({ label, hint, checked, onChange }: { label: string; hint?: s
       </div>
       <Switch id={id} checked={checked} onCheckedChange={onChange} />
     </div>
+  );
+}
+
+// signed in only: the show-me switch lives on your profile in the cloud, not in local settings
+function LeaderboardSetting() {
+  const { status, user } = useAuth();
+  const [show, setShow] = useState<boolean | null>(null);
+  const [failed, setFailed] = useState(false);
+  const uid = status === "signed-in" ? user?.id : undefined;
+
+  useEffect(() => {
+    const sb = getSupabase();
+    if (!uid || !sb) return;
+    let live = true;
+    void getShowOnBoard(sb, uid).then((v) => live && setShow(v));
+    return () => {
+      live = false;
+    };
+  }, [uid]);
+
+  if (!uid || show === null) return null;
+  const change = async (v: boolean) => {
+    const sb = getSupabase();
+    if (!sb) return;
+    setShow(v);
+    setFailed(false);
+    if (!(await setShowOnBoard(sb, uid, v))) {
+      setShow(!v);
+      setFailed(true);
+    }
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Leaderboard</CardTitle>
+        <CardDescription>
+          The <Link href="/leaderboard" className="font-bold text-primary hover:underline">weekly leaderboard</Link> shows your name, belt and how many you got right this week. Nothing else.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ToggleRow label="Show me on the leaderboard" hint="Turn this off to hide from everyone else. You'll still see the board." checked={show} onChange={(v) => void change(v)} />
+        {failed && <p className="mt-2 text-xs font-bold text-bad">Couldn&apos;t save that. Try again.</p>}
+      </CardContent>
+    </Card>
   );
 }
