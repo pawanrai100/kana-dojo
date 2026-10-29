@@ -122,14 +122,6 @@ body {
   letter-spacing: -0.18em;
   padding-right: 0.1em;
 }
-:root[data-kana="textbook"] {
-  --font-kana: "Klee One", "Hiragino Mincho ProN", serif;
-  --kana-weight: 600;
-}
-:root[data-kana="rounded"] {
-  --font-kana: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", sans-serif;
-  --kana-weight: 800;
-}
 
 .font-display {
   font-family: var(--font-display);

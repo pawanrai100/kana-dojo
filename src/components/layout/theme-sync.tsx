@@ -3,14 +3,9 @@
 import { useEffect } from "react";
 import { useAppState } from "@/store/app-store";
 
-// keeps the html .dark class and kana font in line with settings
+// keeps the html .dark class in line with settings
 export function ThemeSync() {
   const theme = useAppState()?.settings.theme;
-  const kanaFont = useAppState()?.settings.kanaFont;
-
-  useEffect(() => {
-    if (kanaFont) document.documentElement.dataset.kana = kanaFont;
-  }, [kanaFont]);
 
   useEffect(() => {
     if (!theme) return;

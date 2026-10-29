@@ -107,11 +107,9 @@ describe("missed things come back", () => {
   });
 });
 
-describe("kana font setting", () => {
-  it("defaults to the clear font and rejects junk", () => {
-    expect(sanitizeSettings({}).kanaFont).toBe("clear");
-    expect(sanitizeSettings({ kanaFont: "comic-sans" }).kanaFont).toBe("clear");
-    expect(sanitizeSettings({ kanaFont: "textbook" }).kanaFont).toBe("textbook");
+describe("kana font", () => {
+  it("drops the old font setting from saved settings", () => {
+    expect("kanaFont" in sanitizeSettings({ kanaFont: "textbook" })).toBe(false);
   });
 });
 
