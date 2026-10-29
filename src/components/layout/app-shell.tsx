@@ -22,6 +22,7 @@ const SHORT: Record<string, string> = {
   "/tower": "Tower",
   "/chart": "Chart",
   "/progress": "Stats",
+  "/leaderboard": "Leaders",
   "/settings": "Settings",
 };
 
@@ -41,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Kana Dojo home">
             <LogoMark size={40} />
-            <span className="font-display hidden text-xl sm:inline">Kana Dojo</span>
+            <span className="font-display hidden text-xl sm:inline lg:hidden xl:inline">Kana Dojo</span>
           </Link>
 
           <nav aria-label="Main" className="ml-4 hidden items-center gap-1 lg:flex">
@@ -88,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
       >
         {MAIN_NAV.map((item) => {
           const active = isActive(pathname, item.href);
@@ -99,7 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               aria-current={active ? "page" : undefined}
               className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] font-extrabold sm:text-[11px]", active ? "text-primary" : "text-muted")}
             >
-              <span className={cn("grid h-8 w-11 place-items-center rounded-full", active && "bg-primary-soft")}>
+              <span className={cn("grid h-8 w-10 place-items-center rounded-full sm:w-11", active && "bg-primary-soft")}>
                 <item.icon className="size-5" />
               </span>
               {SHORT[item.href] ?? item.label}

@@ -170,7 +170,7 @@ export function LeaderboardView() {
   if (status === "loading") return <PageSkeleton />;
   return (
     <div>
-      <PageHeader title="Leaderboard" description={`Who read the most kana right this week. ${resetsIn()}`} />
+      <PageHeader title="Leaderboard" description="Who read the most kana right this week. Resets every Monday." />
       <Card>
         <CardContent className="pt-6">
           {status === "disabled" ? (
@@ -188,7 +188,10 @@ export function LeaderboardView() {
           ) : !res.ok ? (
             <Problem reason={res.reason} />
           ) : (
-            <BoardList rows={res.rows} />
+            <>
+              <p className="mb-3 text-xs font-bold text-muted">{resetsIn()}</p>
+              <BoardList rows={res.rows} />
+            </>
           )}
         </CardContent>
       </Card>
