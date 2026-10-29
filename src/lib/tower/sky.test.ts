@@ -20,14 +20,23 @@ const win = (id: number) => {
 };
 
 describe("sky shrine", () => {
-  it("is a separate tower of 5 zones plus a sentence-reading shogun", () => {
+  it("is a separate tower of 6 zones plus a sentence-reading yokai lord", () => {
     expect(FLOORS).toHaveLength(21); // the first tower didn't change
     expect(SKY_FIRST).toBe(101);
-    expect(SKY_FLOORS.filter((f) => f.kind === "boss")).toHaveLength(5);
+    expect(SKY_FLOORS.filter((f) => f.kind === "boss")).toHaveLength(6);
     expect(getFloor(SKY_TOP)!.kind).toBe("final");
     expect(getFloor(SKY_TOP)!.mode).toBe("sentences");
     expect(floorLabel(getFloor(102)!)).toBe("Sky floor 2");
     expect(nextFloor(getFloor(TOP_FLOOR)!)).toBeUndefined(); // the dragon doesn't lead into the sky
+  });
+
+  it("only bosses have names, regular floors fight plain monsters", async () => {
+    const { ALL_FLOORS } = await import("./floors");
+    const friendy = /saru|orochi|kitsune|tako|kozo|ryu|shikappa|alekoni|stellatsune|minjimata|ayutengu|pramirei|basarihyon/;
+    for (const f of ALL_FLOORS) {
+      if (f.kind === "floor") expect(friendy.test(f.enemy.id), `${f.id} ${f.enemy.name}`).toBe(false);
+      else expect(f.enemy.name).toBe(f.boss!.name);
+    }
   });
 
   it("teaches every dakuten, combo and small っ exactly once", () => {
@@ -70,10 +79,10 @@ describe("sky shrine", () => {
 
   it("has badges for the new bosses, kana and quests", () => {
     const ids = ACHIEVEMENTS.map((a) => a.id);
-    for (const id of ["sky-open", "boss-kappa", "boss-tanuki", "marks", "combos", "small-tsu", "particle-pro", "quest-day", "black-belt"]) expect(ids).toContain(id);
-    expect(ACHIEVEMENTS.find((a) => a.id === "boss-kappa")!.how).toMatch(/sky floor/);
+    for (const id of ["sky-open", "boss-shikappa", "boss-basarihyon", "marks", "combos", "small-tsu", "particle-pro", "quest-day", "black-belt"]) expect(ids).toContain(id);
+    expect(ACHIEVEMENTS.find((a) => a.id === "boss-shikappa")!.how).toMatch(/sky floor/);
     const p = applyBattle(applyBattle(emptyProgress(), win(TOP_FLOOR)).progress, win(SKY_FIRST + 3)).progress;
     expect(earnedIds(p).has("sky-open")).toBe(true);
-    expect(earnedIds(p).has("boss-obake")).toBe(true);
+    expect(earnedIds(p).has("boss-shikappa")).toBe(true);
   });
 });

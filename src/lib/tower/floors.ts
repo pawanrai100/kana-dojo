@@ -16,15 +16,52 @@ export interface Boss {
 
 // who you fight on a floor. art is keyed by id
 export interface Enemy {
-  id: "obake" | "shisa" | "saru" | "orochi" | "kitsune" | "tako" | "kozo" | "ryu" | "kappa" | "tengu" | "oni" | "tanuki" | "kodama" | "kasa";
+  id:
+    | "obake"
+    | "shisa"
+    | "goblin"
+    | "skeleton"
+    | "kodama"
+    | "kasa"
+    | "saru"
+    | "orochi"
+    | "kitsune"
+    | "tako"
+    | "kozo"
+    | "ryu"
+    | "shikappa"
+    | "alekoni"
+    | "stellatsune"
+    | "minjimata"
+    | "ayutengu"
+    | "pramirei"
+    | "basarihyon";
   name: string;
 }
 
-// regular floors: lantern ghosts guard the drills, shisa lion-dogs guard the mixes
+// regular floors get plain monsters, never anyone's name. only bosses are friends.
+// they take turns zone by zone so the climb doesn't feel samey
 export const MINIONS = {
-  drill: { id: "obake", name: "Basobake" },
-  mix: { id: "shisa", name: "Shisarr" },
-} as const satisfies Record<string, Enemy>;
+  drill: [
+    { id: "goblin", name: "Goblin" },
+    { id: "obake", name: "Lantern Ghost" },
+  ],
+  mix: [
+    { id: "skeleton", name: "Skeleton" },
+    { id: "shisa", name: "Shisa Guard" },
+  ],
+} satisfies Record<string, Enemy[]>;
+
+const SKY_MINIONS = {
+  drill: [
+    { id: "kodama", name: "Kodama" },
+    { id: "goblin", name: "Sky Goblin" },
+  ],
+  mix: [
+    { id: "kasa", name: "Umbrella Ghost" },
+    { id: "skeleton", name: "Bone Samurai" },
+  ],
+} satisfies Record<string, Enemy[]>;
 
 export interface Zone {
   id: number;
@@ -134,7 +171,7 @@ interface TowerPlan {
   final: Boss;
   finalEnemy: Enemy["id"];
   startId: number;
-  minions: { drill: Enemy; mix: Enemy };
+  minions: { drill: Enemy[]; mix: Enemy[] };
   known: string[]; // kana you already have walking in
   finalMode: PracticeMode;
   finalHp: number;
@@ -156,7 +193,7 @@ function buildFloors(plan: TowerPlan): Floor[] {
     for (const d of z.drills) {
       const fresh = rowChars(d);
       const chars = [...fresh, ...(z.extra ?? [])];
-      const t = DRILL[z.id - 1];
+      const t = DRILL[Math.min(z.id, DRILL.length) - 1];
       out.push({
         tower,
         id: id++,
@@ -171,13 +208,13 @@ function buildFloors(plan: TowerPlan): Floor[] {
         enemyHp: t.hp,
         hearts: t.hearts,
         bonusXp: 40 + 10 * (z.id - 1),
-        enemy: MINIONS.drill,
+        enemy: MINIONS.drill[(z.id - 1) % MINIONS.drill.length],
       });
     }
     const zoneRows = z.drills.flat();
     const zoneChars = rowChars(zoneRows);
     // mix floor: the zone's rows together, longer words
-    const m = MIX[z.id - 1];
+    const m = MIX[Math.min(z.id, MIX.length) - 1];
     out.push({
       tower,
       id: id++,
@@ -192,11 +229,11 @@ function buildFloors(plan: TowerPlan): Floor[] {
       enemyHp: m.hp,
       hearts: m.hearts,
       bonusXp: 60 + 15 * (z.id - 1),
-      enemy: MINIONS.mix,
+      enemy: MINIONS.mix[(z.id - 1) % MINIONS.mix.length],
     });
     learned.push(...zoneChars);
     // boss: everything learned so far, real words where possible
-    const b = BOSS[z.id - 1];
+    const b = BOSS[Math.min(z.id, BOSS.length) - 1];
     out.push({
       tower,
       id: id++,
@@ -262,24 +299,18 @@ export const SKY_ZONES: Zone[] = [
     name: "Thunder Gate",
     drills: [["g"], ["z"]],
     boss: {
-      id: "obake",
-      name: "Basobake the Great",
-      kana: "ばそばけ",
-      title: "Lantern Snuffer",
-      blurb: "The lantern ghost from the first tower got a promotion. Now it guards the gate, and it's grown teeth.",
+      id: "shikappa",
+      name: "Shikappa",
+      kana: "しかっぱ",
+      title: "River Wrestler",
+      blurb: "A grumpy kappa with a dish of water on his head. Read fast enough and he'll spill it.",
     },
   },
   {
     id: 2,
     name: "Bamboo Dojo",
     drills: [["d"], ["b", "p"]],
-    boss: {
-      id: "shisa",
-      name: "Shisarr King",
-      kana: "しさきんぐ",
-      title: "Shisa Tamer",
-      blurb: "The little lion-dog grew up. It loves ば and ぱ, and so should you, because it will swap them on you.",
-    },
+    boss: { id: "alekoni", name: "Alekoni", kana: "あれこに", title: "Oni Breaker II", blurb: "A one-horned, one-dark-horned oni who swaps ば for ぱ just to watch you squirm." },
   },
   {
     id: 3,
@@ -289,44 +320,51 @@ export const SKY_ZONES: Zone[] = [
       ["ch", "ny"],
     ],
     mixName: "Combos mix",
-    boss: { id: "kappa", name: "Kawataro", kana: "かわたろう", title: "River Crosser", blurb: "A kappa who guards the bridge. Read the combos as one sound or into the river you go." },
+    boss: { id: "stellatsune", name: "Stellatsune", kana: "すてらつね", title: "Fox Charmer", blurb: "A shrine fox with a smug grin. She blends kana together and dares you to keep up." },
   },
   {
     id: 4,
-    name: "Cloud Garden",
-    drills: [
-      ["hy", "my", "ry"],
-      ["gy", "j", "by", "py"],
-    ],
+    name: "Cat Alley",
+    drills: [["hy", "my"], ["ry"]],
     mixName: "Combos mix II",
-    boss: { id: "tengu", name: "Daitengu", kana: "だいてんぐ", title: "Cloud Walker", blurb: "The great tengu of the clouds. Fast, proud, and full of ぎょ and じゅ." },
+    boss: { id: "minjimata", name: "Minjimata", kana: "みんじまた", title: "Cat Whisperer", blurb: "A nekomata with a ghost flame at her side. Nine lives, zero patience for slow readers." },
   },
   {
     id: 5,
+    name: "Cloud Garden",
+    drills: [
+      ["gy", "j"],
+      ["by", "py"],
+    ],
+    mixName: "Combos mix III",
+    boss: { id: "ayutengu", name: "Ayutengu", kana: "あゆてんぐ", title: "Cloud Walker", blurb: "A long-nosed tengu who rules the clouds. Proud, fast, and full of ぎょ and じゅ." },
+  },
+  {
+    id: 6,
     name: "Storm Peak",
     drills: [["xtsu"]],
     extra: SOKUON_FRIENDS,
     mixName: "Small っ in real words",
     mixMode: "mixed",
-    boss: { id: "oni", name: "Kaminari Oni", kana: "かみなりおに", title: "Storm Breaker", blurb: "The thunder oni pauses between every strike. So does small っ. Don't miss the beat." },
+    boss: { id: "pramirei", name: "Pramirei", kana: "ぷらみれい", title: "Ghost Seer", blurb: "A quiet yūrei who drifts between beats. Small っ is a pause, and she lives in the pauses." },
   },
 ];
 
 export const SKY_FINAL_BOSS: Boss = {
-  id: "tanuki",
-  name: "Bunbuku the Tanuki Shogun",
-  kana: "ぶんぶく",
-  title: "Sky Shogun",
-  blurb: "The shogun of the sky shrine doesn't fight with kana. He fights with whole sentences. Read them, particles and all.",
+  id: "basarihyon",
+  name: "Basarihyon, Lord of Yokai",
+  kana: "ばさりひょん",
+  title: "Yokai Lord Slayer",
+  blurb: "The bald old ruler of every yokai in the shrine. He doesn't fight with kana. He fights with whole sentences.",
 };
 
 export const SKY_FLOORS: Floor[] = buildFloors({
   tower: "sky",
   zones: SKY_ZONES,
   final: SKY_FINAL_BOSS,
-  finalEnemy: "tanuki",
+  finalEnemy: "basarihyon",
   startId: 101,
-  minions: { drill: { id: "kodama", name: "Kodama" }, mix: { id: "kasa", name: "Kasa-obake" } },
+  minions: SKY_MINIONS,
   known: [...BASIC_KANA_LIST],
   finalMode: "sentences",
   finalHp: 12,

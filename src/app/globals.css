@@ -239,6 +239,87 @@ body {
 }
 .animate-heart-break { animation: heart-break 500ms ease-out both; }
 
+/* boss fights */
+@keyframes boss-rise {
+  0% { transform: translateY(40px) scale(0.75); filter: blur(10px) brightness(0); opacity: 0; }
+  55% { filter: blur(0) brightness(0.35); opacity: 1; }
+  100% { transform: translateY(0) scale(1); filter: none; opacity: 1; }
+}
+.animate-boss-rise { animation: boss-rise 1.6s cubic-bezier(.2,.7,.2,1) both; }
+
+@keyframes title-in {
+  0% { letter-spacing: 0.5em; opacity: 0; filter: blur(6px); }
+  100% { letter-spacing: 0.04em; opacity: 1; filter: blur(0); }
+}
+.animate-title-in { animation: title-in 1.1s ease-out both; }
+
+@keyframes line-grow {
+  0% { transform: scaleX(0); opacity: 0; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+.animate-line-grow { animation: line-grow 0.9s ease-out both; }
+
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-9px, 4px) rotate(-0.6deg); }
+  30% { transform: translate(8px, -5px) rotate(0.5deg); }
+  45% { transform: translate(-6px, 3px); }
+  60% { transform: translate(5px, -2px); }
+  80% { transform: translate(-2px, 1px); }
+}
+@keyframes screen-shake-b {
+  0%, 100% { transform: translate(0, 0); }
+  15% { transform: translate(-9px, 4px) rotate(-0.6deg); }
+  30% { transform: translate(8px, -5px) rotate(0.5deg); }
+  45% { transform: translate(-6px, 3px); }
+  60% { transform: translate(5px, -2px); }
+  80% { transform: translate(-2px, 1px); }
+}
+.animate-screen-shake { animation: screen-shake 450ms ease-out both; }
+.animate-screen-shake-b { animation: screen-shake-b 450ms ease-out both; }
+
+@keyframes slash {
+  0% { transform: rotate(-28deg) scaleX(0); opacity: 1; }
+  40% { transform: rotate(-28deg) scaleX(1); opacity: 1; }
+  100% { transform: rotate(-28deg) scaleX(1.05); opacity: 0; }
+}
+.animate-slash { animation: slash 420ms ease-out both; transform-origin: left center; }
+
+@keyframes rage-glow {
+  0%, 100% { filter: drop-shadow(0 0 10px rgb(255 40 40 / 0.55)); }
+  50% { filter: drop-shadow(0 0 26px rgb(255 40 40 / 0.95)); }
+}
+.animate-rage { animation: rage-glow 1.4s ease-in-out infinite; }
+
+@keyframes fog-drift {
+  0%, 100% { transform: translateX(-6%); }
+  50% { transform: translateX(6%); }
+}
+.animate-fog { animation: fog-drift 9s ease-in-out infinite; }
+
+@keyframes banner-sweep {
+  0% { transform: translateX(-30%); opacity: 0; }
+  20% { transform: translateX(0); opacity: 1; }
+  80% { transform: translateX(0); opacity: 1; }
+  100% { transform: translateX(30%); opacity: 0; }
+}
+.animate-banner { animation: banner-sweep 2.2s ease-in-out both; }
+
+@keyframes felled {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  78% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+.animate-felled { animation: felled 2.8s ease-in-out both; }
+
+@keyframes felled-text {
+  0% { transform: scale(1.25); filter: blur(8px); opacity: 0; }
+  30% { transform: scale(1); filter: blur(0); opacity: 1; }
+  100% { transform: scale(1.04); }
+}
+.animate-felled-text { animation: felled-text 2.8s ease-out both; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

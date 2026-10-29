@@ -13,18 +13,20 @@ import { DEFAULT_SETTINGS } from "@/lib/settings/types";
 import { playSound, type SoundName } from "@/lib/sound";
 import type { Achievement } from "@/lib/tower/achievements";
 import { applyAnswer, startBattle, type BattleState } from "@/lib/tower/battle";
-import { floorLabel, nextFloor, type Enemy, type Floor } from "@/lib/tower/floors";
+import { floorLabel, nextFloor, type Floor } from "@/lib/tower/floors";
 import type { TowerOutcome } from "@/lib/tower/progress";
 import { cn, pct } from "@/lib/utils";
 import { actions } from "@/store/app-store";
 import { ActiveCard, AnswerFeedback } from "@/features/hiragana/practice/question-card";
 import { Petals } from "@/features/hiragana/practice/petals";
 import { Medal } from "./medal";
+import { Hearts, Sprite, type Fx } from "./battle-parts";
 import { YokaiArt } from "./yokai-art";
+import { BossArena, BossEntrance, BossFelled } from "./boss-arena";
 import { BELTS, beltStatus } from "@/lib/progress/belts";
 import { BeltPromotion } from "@/features/belts/belt";
 
-type Phase = "intro" | "answer" | "feedback" | "result";
+type Phase = "intro" | "entrance" | "answer" | "feedback" | "result";
 
 interface Feedback {
   q: Question;
@@ -32,12 +34,6 @@ interface Feedback {
   missedIdx: number[];
   answer: string;
   timedOut: boolean;
-}
-
-// what the enemy sprite should be doing. n bumps every answer to replay the animation
-interface Fx {
-  kind: "hit" | "miss" | null;
-  n: number;
 }
 
 interface Logged {
@@ -109,7 +105,8 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     setFb(null);
     setResult(null);
     setFx({ kind: null, n: 0 });
-    setPhase("answer");
+    // bosses get a proper entrance first
+    setPhase(isBoss ? "entrance" : "answer");
   };
 
   const q = queue[idx];
@@ -251,7 +248,9 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
 
   if (phase === "result" && result) {
     return (
-      <Result
+      <>
+        {isBoss && <BossFelled won={result.outcome.won} name={floor.enemy.name.split(",")[0]} />}
+        <Result
         floor={floor}
         battle={battle}
         outcome={result.outcome}
@@ -262,6 +261,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         onNext={() => onPlay(floor.id + 1)}
         onExit={onExit}
       />
+      </>
     );
   }
 
@@ -270,7 +270,8 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       {phase === "feedback" && fx.kind === "miss" && (
         <div key={fx.n} aria-hidden className="animate-hurt pointer-events-none fixed inset-0 z-50 shadow-[inset_0_0_110px_40px_rgb(229_72_77/0.6)]" />
       )}
-      <Hud floor={floor} battle={battle} isBoss={isBoss} fx={fx} />
+      {phase === "entrance" && <BossEntrance floor={floor} onDone={() => setPhase("answer")} />}
+      {isBoss ? <BossArena floor={floor} battle={battle} fx={fx} /> : <Hud floor={floor} battle={battle} isBoss={false} fx={fx} />}
 
       {phase === "answer" && q && (
         <>
@@ -320,47 +321,6 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
           Leave the floor
         </button>
       </div>
-    </div>
-  );
-}
-
-function Hearts({ n, max, breaking, fxKey }: { n: number; max: number; breaking: number; fxKey: number }) {
-  return (
-    <span className="flex gap-1" role="img" aria-label={`${n} of ${max} hearts left`}>
-      {Array.from({ length: max }, (_, i) => (
-        <Heart
-          key={i === breaking ? `b${fxKey}` : i}
-          aria-hidden
-          className={cn(
-            "size-6 transition-transform",
-            i < n ? "fill-bad text-bad" : "fill-surface-2 text-border scale-90",
-            i === breaking && "animate-heart-break",
-          )}
-        />
-      ))}
-    </span>
-  );
-}
-
-// the enemy: bobs while idle, flinches when hit, lunges when you miss, falls when beaten
-export function Sprite({ enemy, fx, down, className }: { enemy: Enemy; fx?: Fx; down?: boolean; className?: string }) {
-  const act = down ? "" : fx?.kind === "hit" ? "animate-yokai-hit" : fx?.kind === "miss" ? "animate-yokai-attack" : "";
-  return (
-    <div className={cn("relative shrink-0", className)}>
-      <div className={cn("size-full", down ? "animate-yokai-down" : "animate-yokai-bob")}>
-        <div key={fx?.n ?? 0} className={cn("size-full", act)}>
-          <YokaiArt id={enemy.id} className="size-full drop-shadow-[0_4px_0_rgb(0_0_0/0.18)]" />
-        </div>
-      </div>
-      {fx?.kind === "hit" && (
-        <span
-          key={`d${fx.n}`}
-          aria-hidden
-          className="animate-dmg pointer-events-none absolute left-1/2 top-0 font-display text-3xl text-sun [-webkit-text-stroke:2px_#1a1d3a] [paint-order:stroke_fill]"
-        >
-          -1
-        </span>
-      )}
     </div>
   );
 }
