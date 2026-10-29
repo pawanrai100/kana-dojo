@@ -31,7 +31,6 @@ export function SessionList({ sessions, empty }: { sessions: SessionLog[]; empty
               </p>
             </div>
             <div className="text-right text-xs text-muted">
-              <p className="font-extrabold text-primary">+{s.xp} XP</p>
               {s.bestCombo > 1 && <p>combo ×{s.bestCombo}</p>}
             </div>
           </li>

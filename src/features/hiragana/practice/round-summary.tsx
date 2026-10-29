@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { Flame, RotateCcw, ScrollText, Star, Target, Trophy, Zap } from "lucide-react";
+import { Flame, RotateCcw, ScrollText, Star, Target, Snowflake, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/misc";
 import type { GradedRound } from "@/lib/quiz/types";
@@ -10,7 +10,6 @@ import { Medal } from "@/features/tower/medal";
 import { BELTS, type BeltStatus } from "@/lib/progress/belts";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { cn } from "@/lib/utils";
-import { QUEST_XP } from "@/lib/progress/quests";
 
 const HEADLINES = ["Keep going!", "Getting there!", "Nice reading!", "Brilliant round!"];
 
@@ -19,6 +18,7 @@ interface Props {
   belt: BeltStatus;
   promoted?: number; // belt index you just earned
   quests?: string[]; // daily quests this round finished
+  freezeEarned?: boolean; // finished all 3 quests and banked a streak freeze
   isBest: boolean;
   badges?: Achievement[];
   nextLabel: string;
@@ -27,7 +27,7 @@ interface Props {
 }
 
 export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundSummary(
-  { graded, belt, promoted, quests = [], isBest, badges = [], nextLabel, shortcuts, onNext },
+  { graded, belt, promoted, quests = [], freezeEarned, isBest, badges = [], nextLabel, shortcuts, onNext },
   ref,
 ) {
   const total = graded.results.length;
@@ -100,9 +100,14 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
         <ul className="mt-5 flex flex-wrap gap-2">
           {quests.map((q) => (
             <li key={q} className="animate-stamp flex items-center gap-2 rounded-full bg-good-soft px-3 py-1.5 text-sm font-extrabold text-good">
-              <ScrollText className="size-4" aria-hidden /> Quest done: {q} (+{QUEST_XP} XP)
+              <ScrollText className="size-4" aria-hidden /> Quest done: {q}
             </li>
           ))}
+          {freezeEarned && (
+            <li className="animate-stamp flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1.5 text-sm font-extrabold text-primary">
+              <Snowflake className="size-4" aria-hidden /> All 3 quests done: streak freeze earned
+            </li>
+          )}
         </ul>
       )}
 
@@ -114,9 +119,6 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
 
       <div className="mt-6 flex flex-col gap-4 border-t-2 border-surface-2 pt-5 sm:flex-row sm:items-center">
         <div className="flex-1 space-y-2">
-          <p className="flex items-center gap-1 text-xs font-bold text-muted">
-            <Zap className="size-3.5 text-primary" />+{graded.xpEarned} XP
-          </p>
           <BeltProgress status={belt} />
         </div>
         <div className="flex items-center gap-3">

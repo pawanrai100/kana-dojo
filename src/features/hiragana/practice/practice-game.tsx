@@ -26,6 +26,7 @@ import { ActiveCard, AnswerFeedback, ResultCard } from "./question-card";
 import { RoundSummary } from "./round-summary";
 import { Petals } from "./petals";
 import { todaysQuests } from "@/lib/progress/quests";
+import { streakInfo } from "@/lib/progress/stats";
 
 type Current =
   | { kind: "round"; active: ActiveRound; fresh?: GeneratorState }
@@ -164,6 +165,7 @@ interface GradedView {
   isBest: boolean;
   badges: Achievement[];
   quests: string[]; // quests that paid out this round
+  freezeEarned: boolean;
 }
 
 // the answer you just checked, shown until you move on
@@ -214,14 +216,16 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
     const g = gradeRound(round, final, { durationMs: Date.now() - initial.startedAt });
     const prevBest = actions.getState().progress.bestRoundPoints;
     const beltBefore = beltStatus(actions.getState().progress).index;
+    const freezesBefore = streakInfo(actions.getState().progress).freezes;
     const paidBefore = new Set(todaysQuests(actions.getState().progress).filter((q) => q.done).map((q) => q.quest.id));
     const badges = actions.recordRound(g);
     const beltAfter = beltStatus(actions.getState().progress).index;
     const quests = todaysQuests(actions.getState().progress)
       .filter((q) => q.done && !paidBefore.has(q.quest.id))
       .map((q) => q.quest.label);
+    const freezeEarned = streakInfo(actions.getState().progress).freezes > freezesBefore;
     setAnswers(final);
-    setView({ graded: g, promoted: beltAfter > beltBefore ? beltAfter : undefined, isBest: g.totalPoints > prevBest, badges, quests });
+    setView({ graded: g, promoted: beltAfter > beltBefore ? beltAfter : undefined, isBest: g.totalPoints > prevBest, badges, quests, freezeEarned });
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
@@ -459,6 +463,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
           belt={belt}
           promoted={view.promoted}
           quests={view.quests}
+          freezeEarned={view.freezeEarned}
           isBest={view.isBest}
           badges={view.badges}
           shortcuts={settings.shortcuts}

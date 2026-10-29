@@ -3,7 +3,7 @@ import { gradeRound } from "@/lib/quiz/grade";
 import type { AnswerState, Question, Round } from "@/lib/quiz/types";
 import { toRomaji } from "@/lib/kana/hiragana";
 import { sanitizeProgress } from "./sanitize";
-import { currentStreak, dayKey, encounteredChars, isMastered, levelInfo, masteredChars, weakChars, wordsLearned } from "./stats";
+import { currentStreak, dayKey, streakInfo, encounteredChars, isMastered, masteredChars, weakChars, wordsLearned } from "./stats";
 import { emptyProgress } from "./types";
 import { applyGradedRound } from "./update";
 import { sanitizeSettings, DEFAULT_SETTINGS } from "@/lib/settings/types";
@@ -105,10 +105,22 @@ describe("progress tracking", () => {
     expect(p.roundsSkipped).toBe(1);
   });
 
-  it("levels up with xp", () => {
-    expect(levelInfo(0).level).toBe(1);
-    expect(levelInfo(100).level).toBe(2);
-    expect(levelInfo(5000).level).toBeGreaterThan(5);
+  it("streak freezes come from finishing all 3 quests and cover missed days", () => {
+    const day = (quests = 0) => ({ answered: 10, correct: 10, rounds: 1, xp: 0, quests: ["a", "b", "c"].slice(0, quests) });
+    const at = (k: string) => new Date(`${k}T12:00:00`).getTime();
+    const p = emptyProgress();
+    // played 1st and 2nd (all quests on the 2nd), missed the 3rd, played the 4th
+    p.days = { "2026-03-01": day(), "2026-03-02": day(3), "2026-03-04": day() };
+    expect(streakInfo(p, at("2026-03-04"))).toEqual({ streak: 3, freezes: 0, frozen: ["2026-03-03"] });
+    // without the quests the gap breaks it
+    p.days["2026-03-02"] = day(2);
+    expect(streakInfo(p, at("2026-03-04")).streak).toBe(1);
+    // not playing yet today doesn't break it, and it caps at 2 banked
+    p.days = { "2026-03-01": day(3), "2026-03-02": day(3), "2026-03-03": day(3) };
+    expect(streakInfo(p, at("2026-03-04"))).toEqual({ streak: 3, freezes: 2, frozen: [] });
+    // gone 3 days: 2 freezes cover 2, the 3rd breaks the streak
+    expect(streakInfo(p, at("2026-03-07")).streak).toBe(0);
+    expect(currentStreak(p, at("2026-03-06"))).toBe(3);
   });
 });
 

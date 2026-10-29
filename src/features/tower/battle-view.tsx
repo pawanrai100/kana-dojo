@@ -515,18 +515,12 @@ function Result({
 
         {drop && <CardDrop card={drop} upgraded={!outcome.firstClear} />}
 
-        {(outcome.bonusXp > 0 || title || badges.length > 0 || (won && !boss && outcome.newBest && !outcome.firstClear)) && (
+        {(title || badges.length > 0 || (won && !boss && outcome.newBest && !outcome.firstClear)) && (
           <div className="w-full space-y-3 rounded-2xl bg-sun-soft p-4 text-left">
             <p className="flex items-center gap-2 text-sm font-extrabold text-warn">
               <Crown className="size-4" aria-hidden /> Rewards
             </p>
             <ul className="space-y-2.5">
-              {outcome.bonusXp > 0 && (
-                <li className="flex items-center gap-3 font-bold">
-                  <span className="grid size-11 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">XP</span>
-                  +{outcome.bonusXp} XP {boss ? "boss bounty" : "floor bonus"}
-                </li>
-              )}
               {won && !boss && outcome.newBest && !outcome.firstClear && (
                 <li className="flex items-center gap-3 font-bold">
                   <span className="grid size-11 place-items-center rounded-full bg-sun text-sun-ink">

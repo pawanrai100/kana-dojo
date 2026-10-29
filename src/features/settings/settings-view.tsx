@@ -206,7 +206,7 @@ function SettingsBody({ s }: { s: Settings }) {
         <DialogContent>
           <DialogTitle>Reset all progress?</DialogTitle>
           <DialogDescription className="mt-2">
-            This deletes your stats, streaks, XP and mastery from this browser. It can&apos;t be undone.
+            This deletes your stats, streaks, Tower progress and mastery from this browser. It can&apos;t be undone.
           </DialogDescription>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirmReset(false)}>

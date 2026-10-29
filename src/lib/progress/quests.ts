@@ -2,7 +2,8 @@ import { dayKey } from "./stats";
 import type { DayStat, Progress } from "./types";
 
 // three small goals a day, the same for everyone on the same date.
-// finishing one pays out once, straight into your xp
+// finishing all 3 banks a streak freeze (see streakInfo). xp is still tracked
+// quietly in the background but isn't shown anywhere
 
 export interface Quest {
   id: string;

@@ -23,7 +23,7 @@ export function GuestImportDialog({
         <DialogTitle>Add your guest progress to this account?</DialogTitle>
         <DialogDescription className="mt-2">
           This device has {answers} answer{answers === 1 ? "" : "s"} of practice from before you signed in. Adding it
-          keeps your streak, XP and character mastery, and syncs it to your other devices.
+          keeps your streak, belt, Tower progress and character mastery, and syncs it to your other devices.
         </DialogDescription>
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button variant="ghost" onClick={onKeepSeparate}>

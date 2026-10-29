@@ -10,6 +10,7 @@ import {
   accuracy,
   charAccuracy,
   currentStreak,
+  streakInfo,
   dayKey,
   difficultWords,
   encounteredChars,
@@ -96,8 +97,8 @@ function ProgressBody({ p }: { p: Progress }) {
       <section aria-label="Totals" className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Tile label="Overall accuracy" value={p.totalAnswered ? pct(acc) : "No data"} sub={`${p.totalCorrect}/${p.totalAnswered} correct`} />
         <Tile label="Rounds completed" value={String(p.roundsCompleted)} sub={`${plural(p.sessions.length, "session")}, ${p.roundsSkipped} skipped`} />
-        <Tile label="Current streak" value={plural(currentStreak(p), "day")} sub={`Best ${plural(p.bestStreak, "day")}`} />
-        <Tile label="Belt" value={shortName(belt.belt)} sub={`${p.xp.toLocaleString()} XP total`} />
+        <Tile label="Current streak" value={plural(currentStreak(p), "day")} sub={`Best ${plural(p.bestStreak, "day")}, ${plural(streakInfo(p).freezes, "freeze")}`} />
+        <Tile label="Belt" value={shortName(belt.belt)} sub={belt.needsReview ? "needs review" : belt.next ? `next: ${shortName(belt.next)}` : "top rank"} />
         <Tile
           label="Characters seen"
           value={`${encountered.length}/46`}

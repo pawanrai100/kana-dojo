@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { accuracy, currentStreak, masteredChars, wordsLearned } from "@/lib/progress/stats";
+import { bossCards, CARD_COUNT } from "@/lib/tower/cards";
+import { accuracy, currentStreak, streakInfo, masteredChars, wordsLearned } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn, pct, plural } from "@/lib/utils";
@@ -38,10 +39,10 @@ function StatGrid({ progress }: { progress: Progress }) {
   const belt = beltStatus(progress);
   const tiles = [
     { label: "Belt", value: shortName(belt.belt), sub: belt.needsReview ? "needs review" : belt.next ? `next: ${shortName(belt.next)}` : "top rank" },
-    { label: "Total XP", value: progress.xp.toLocaleString(), sub: "from every round you play" },
+    { label: "Boss cards", value: `${bossCards(progress.tower).filter((c) => c.tier).length}/${CARD_COUNT}`, sub: "from the Tower" },
     { label: "Accuracy", value: progress.totalAnswered ? pct(accuracy(progress.totalCorrect, progress.totalAnswered)) : "No data", sub: plural(progress.totalAnswered, "answer") },
     { label: "Mastered", value: `${masteredChars(progress).length}/46`, sub: "hiragana" },
-    { label: "Streak", value: plural(currentStreak(progress), "day"), sub: `Best ${plural(progress.bestStreak, "day")}` },
+    { label: "Streak", value: plural(currentStreak(progress), "day"), sub: `Best ${plural(progress.bestStreak, "day")}, ${plural(streakInfo(progress).freezes, "freeze")}` },
     { label: "Words learned", value: String(wordsLearned(progress)), sub: plural(progress.roundsCompleted, "round") },
   ];
   return (

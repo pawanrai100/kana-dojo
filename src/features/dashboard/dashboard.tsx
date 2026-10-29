@@ -16,6 +16,7 @@ import { UPCOMING_MODULES } from "@/lib/modules";
 import {
   accuracy,
   currentStreak,
+  streakInfo,
   encounteredChars,
   isMastered,
   masteredChars,
@@ -154,7 +155,7 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
         <Stat icon={<Target />} tone="bg-primary-soft text-primary" label="Mastered" value={`${mastered}/46`} sub={`${seen} of 46 seen`} />
         <Stat icon={<BookOpenText />} tone="bg-good-soft text-good" label="Words practiced" value={String(wordsPracticed(progress))} sub={plural(progress.totalAnswered, "answer")} />
         <Stat icon={<Trophy />} tone="bg-sun-soft text-warn" label="Accuracy" value={progress.totalAnswered ? `${Math.round(acc * 100)}%` : "No data"} sub={plural(progress.roundsCompleted, "round")} />
-        <Stat icon={<Flame />} tone="bg-bad-soft text-bad" label="Streak" value={plural(streak, "day")} sub={`Best ${plural(progress.bestStreak, "day")}`} />
+        <Stat icon={<Flame />} tone="bg-bad-soft text-bad" label="Streak" value={plural(streak, "day")} sub={`Best ${plural(progress.bestStreak, "day")}, ${plural(streakInfo(progress).freezes, "freeze")}`} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
