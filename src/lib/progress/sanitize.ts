@@ -136,5 +136,6 @@ export function sanitizeProgress(raw: unknown): Progress {
     tower: sanitizeTower(raw.tower),
     confusions: confusions(raw.confusions),
     skills: record(raw.skills, skillStat, (k) => k in SKILLS),
+    belt: Math.min(Math.floor(num(raw.belt)), 20),
   };
 }

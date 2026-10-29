@@ -16,7 +16,8 @@ import { checkQuestion } from "@/lib/quiz/validate";
 import type { ActiveRound } from "@/lib/quiz/session";
 import type { AnswerState, GeneratorState, GradedRound } from "@/lib/quiz/types";
 import type { PracticeMode, Settings, TimerPace } from "@/lib/settings/types";
-import { levelInfo } from "@/lib/progress/stats";
+import { beltStatus } from "@/lib/progress/belts";
+import { BeltIcon } from "@/features/belts/belt";
 import type { Achievement } from "@/lib/tower/achievements";
 import { playSound, type SoundName } from "@/lib/sound";
 import { cn } from "@/lib/utils";
@@ -158,7 +159,7 @@ interface PlayerProps {
 
 interface GradedView {
   graded: GradedRound;
-  xpAfter: number;
+  promoted?: number;
   isBest: boolean;
   badges: Achievement[];
 }
@@ -210,9 +211,11 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const finish = (final: AnswerState[]) => {
     const g = gradeRound(round, final, { durationMs: Date.now() - initial.startedAt });
     const prevBest = actions.getState().progress.bestRoundPoints;
+    const beltBefore = beltStatus(actions.getState().progress).index;
     const badges = actions.recordRound(g);
+    const beltAfter = beltStatus(actions.getState().progress).index;
     setAnswers(final);
-    setView({ graded: g, xpAfter: actions.getState().progress.xp, isBest: g.totalPoints > prevBest, badges });
+    setView({ graded: g, promoted: beltAfter > beltBefore ? beltAfter : undefined, isBest: g.totalPoints > prevBest, badges });
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
@@ -417,7 +420,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   };
 
   const done = answers.filter((a) => a.locked || a.value.trim()).length;
-  const lvl = levelInfo(actions.getState().progress.xp);
+  const belt = beltStatus(actions.getState().progress);
   const results = view?.graded.results;
 
   const chipTone = (i: number) => {
@@ -447,7 +450,8 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
         <RoundSummary
           ref={nextBtn}
           graded={view.graded}
-          xpAfter={view.xpAfter}
+          belt={belt}
+          promoted={view.promoted}
           isBest={view.isBest}
           badges={view.badges}
           shortcuts={settings.shortcuts}
@@ -505,8 +509,10 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
           ))}
         </ol>
         <span className="ml-auto flex items-center gap-2 text-xs font-extrabold text-muted sm:ml-0">
-          Lv {lvl.level}
-          <ProgressBar value={lvl.pct} label="Level progress" className="h-2.5 w-24" />
+          <BeltIcon belt={belt.belt} review={belt.needsReview} className="h-4 w-7" />
+          {belt.next && belt.nextStep && (
+            <ProgressBar value={belt.nextStep.have / belt.nextStep.need} label={`Progress to ${belt.next.name}`} className="h-2.5 w-24" />
+          )}
         </span>
       </div>
 

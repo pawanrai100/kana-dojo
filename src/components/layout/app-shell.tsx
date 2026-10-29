@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Flame } from "lucide-react";
 import { MAIN_NAV } from "@/lib/modules";
-import { currentStreak, levelInfo } from "@/lib/progress/stats";
+import { currentStreak } from "@/lib/progress/stats";
 import { cn } from "@/lib/utils";
 import { useAppState } from "@/store/app-store";
 import { AccountChip } from "./account-chip";
 import { LogoMark } from "./logo";
 import { ThemeSync } from "./theme-sync";
+import { BeltChip } from "@/features/belts/belt";
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -28,7 +29,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const state = useAppState();
   const streak = state ? currentStreak(state.progress) : 0;
-  const lvl = state ? levelInfo(state.progress.xp).level : 1;
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -64,9 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2.5">
-            <span className="hidden rounded-full bg-surface px-3 py-1.5 text-sm font-extrabold text-primary shadow-[0_3px_0_var(--border)] sm:inline">
-              Lv {lvl}
-            </span>
+            {state && <BeltChip progress={state.progress} />}
             <span
               className="flex items-center gap-1.5 rounded-full bg-sun px-3 py-1.5 text-sm font-extrabold text-sun-ink shadow-[0_3px_0_var(--sun-deep)]"
               aria-label={`${streak} day streak`}

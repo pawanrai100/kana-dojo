@@ -6,10 +6,9 @@ import { useState } from "react";
 import { CloudUpload, Crown, Download, LogOut, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/misc";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { accuracy, currentStreak, levelInfo, masteredChars, rankTitle, wordsLearned } from "@/lib/progress/stats";
+import { accuracy, currentStreak, masteredChars, wordsLearned } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
 import { getSupabase } from "@/lib/supabase/client";
 import { cn, pct, plural } from "@/lib/utils";
@@ -22,6 +21,8 @@ import { Medal } from "@/features/tower/medal";
 import { ACHIEVEMENTS, currentTitle, earnedIds } from "@/lib/tower/achievements";
 import { clearedCount } from "@/lib/tower/progress";
 import { TOP_FLOOR } from "@/lib/tower/floors";
+import { BeltProgress, shortName } from "@/features/belts/belt";
+import { beltStatus } from "@/lib/progress/belts";
 
 const AVATAR_KANA = ["か", "さ", "た", "な", "は", "ま", "や", "ら", "わ", "ね", "の", "ゆ", "そ", "ほ", "み", "ん"];
 
@@ -34,10 +35,10 @@ export function ProfileView() {
 }
 
 function StatGrid({ progress }: { progress: Progress }) {
-  const lvl = levelInfo(progress.xp);
+  const belt = beltStatus(progress);
   const tiles = [
-    { label: "Level", value: String(lvl.level), sub: rankTitle(lvl.level) },
-    { label: "Total XP", value: progress.xp.toLocaleString(), sub: `${lvl.needed - lvl.intoLevel} to next level` },
+    { label: "Belt", value: shortName(belt.belt), sub: belt.needsReview ? "needs review" : belt.next ? `next: ${shortName(belt.next)}` : "top rank" },
+    { label: "Total XP", value: progress.xp.toLocaleString(), sub: "from every round you play" },
     { label: "Accuracy", value: progress.totalAnswered ? pct(accuracy(progress.totalCorrect, progress.totalAnswered)) : "No data", sub: plural(progress.totalAnswered, "answer") },
     { label: "Mastered", value: `${masteredChars(progress).length}/46`, sub: "hiragana" },
     { label: "Streak", value: plural(currentStreak(progress), "day"), sub: `Best ${plural(progress.bestStreak, "day")}` },
@@ -54,15 +55,7 @@ function StatGrid({ progress }: { progress: Progress }) {
           </div>
         ))}
       </div>
-      <div className="mt-4">
-        <div className="mb-1.5 flex justify-between text-xs text-muted">
-          <span>Level {lvl.level}</span>
-          <span>
-            {lvl.intoLevel}/{lvl.needed} XP
-          </span>
-        </div>
-        <ProgressBar value={lvl.pct} label="Level progress" />
-      </div>
+      <BeltProgress status={belt} className="mt-4" />
     </div>
   );
 }

@@ -87,6 +87,7 @@ export function mergeDiverged(local: Progress, remote: Progress): Progress {
     tower: mergeTower(local.tower, remote.tower),
     confusions: mergeConfusions(local.confusions, remote.confusions),
     skills: pickBy(local.skills, remote.skills, moreSeen),
+    belt: Math.max(local.belt, remote.belt),
   };
 }
 
@@ -143,5 +144,6 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     tower: mergeTower(account.tower, guest.tower, true),
     confusions: mergeConfusions(account.confusions, guest.confusions, true),
     skills: pickBy(account.skills, guest.skills, addSkill),
+    belt: Math.max(account.belt, guest.belt),
   };
 }

@@ -18,9 +18,7 @@ import {
   currentStreak,
   encounteredChars,
   isMastered,
-  levelInfo,
   masteredChars,
-  rankTitle,
   wordsPracticed,
 } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
@@ -31,6 +29,8 @@ import { SessionList } from "@/features/progress/session-list";
 import { TOP_FLOOR, getFloor } from "@/lib/tower/floors";
 import { clearedCount, currentFloor } from "@/lib/tower/progress";
 import { CoachCard } from "@/features/coach/coach-card";
+import { BeltProgress } from "@/features/belts/belt";
+import { beltStatus } from "@/lib/progress/belts";
 
 // a word from the learner's pool that leans on their weakest chars
 function pickPreview(p: Progress, enabled: string[]) {
@@ -73,7 +73,7 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
   const seen = encounteredChars(progress).length;
   const acc = accuracy(progress.totalCorrect, progress.totalAnswered);
   const streak = currentStreak(progress);
-  const lvl = levelInfo(progress.xp);
+  const belt = beltStatus(progress);
   const isNew = progress.totalAnswered === 0;
 
   const start = () => {
@@ -87,23 +87,15 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
         <div className="flex flex-col justify-center gap-4 rounded-[var(--radius-card)] bg-primary p-6 text-white shadow-[0_8px_0_var(--primary-deep)] sm:p-8">
           <p className="text-sm font-bold text-white/80">{hello}</p>
           <h1 className="font-display text-3xl leading-tight sm:text-[2.6rem]">
-            {isNew ? "Read hiragana like a game." : `${rankTitle(lvl.level)}`}
+            {isNew ? "Read hiragana like a game." : belt.belt.name}
           </h1>
           <p className="max-w-prose font-medium text-white/85">
             {isNew
               ? "Real Japanese words and random kana against the clock. Rounds never end, and the game keeps serving the ones you miss."
-              : `Level ${lvl.level}. ${mastered} of 46 characters mastered. ${streak > 0 ? `${plural(streak, "day")} in a row.` : "Play today to start a streak."}`}
+              : `${mastered} of 46 basic kana mastered. ${streak > 0 ? `${plural(streak, "day")} in a row.` : "Play today to start a streak."}`}
           </p>
           {!isNew && (
-            <div className="max-w-sm">
-              <div className="mb-1.5 flex justify-between text-xs font-bold text-white/80">
-                <span>Level {lvl.level}</span>
-                <span>
-                  {lvl.intoLevel}/{lvl.needed} XP
-                </span>
-              </div>
-              <ProgressBar value={lvl.pct} label="Level progress" className="bg-white/20" barClassName="bg-sun" />
-            </div>
+            <BeltProgress status={belt} light className="max-w-sm" />
           )}
           <div className="flex flex-wrap gap-3 pt-1">
             <Button size="lg" variant="sun" onClick={start}>

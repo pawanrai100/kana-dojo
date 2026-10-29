@@ -78,6 +78,7 @@ export interface Progress {
   // kana shown -> kana you read it as -> how strongly (fades as you get it right)
   confusions: Record<string, Record<string, number>>;
   skills: Record<string, SkillStat>;
+  belt: number; // highest belt ever earned (index into BELTS), never goes down
 }
 
 export function emptyProgress(): Progress {
@@ -100,5 +101,6 @@ export function emptyProgress(): Progress {
     tower: emptyTower(),
     confusions: {},
     skills: {},
+    belt: 0,
   };
 }

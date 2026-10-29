@@ -14,7 +14,6 @@ import {
   difficultWords,
   encounteredChars,
   isMastered,
-  levelInfo,
   masteredChars,
   weakChars,
   wordsLearned,
@@ -26,6 +25,8 @@ import { useAppState } from "@/store/app-store";
 import { BarChart, LineChart } from "./charts";
 import { SessionList } from "./session-list";
 import { CoachCard } from "@/features/coach/coach-card";
+import { BeltLadder, BeltProgress, shortName } from "@/features/belts/belt";
+import { beltStatus } from "@/lib/progress/belts";
 
 // dakuten, combos and small っ, counted apart from the basic 46
 const EXTRAS = ALL_KANA_LIST.filter((k) => !BASIC_KANA_LIST.includes(k));
@@ -44,7 +45,7 @@ function ProgressBody({ p }: { p: Progress }) {
   const encountered = encounteredChars(p);
   const extrasSeen = encounteredChars(p, EXTRAS).length;
   const extrasMastered = masteredChars(p, EXTRAS).length;
-  const lvl = levelInfo(p.xp);
+  const belt = beltStatus(p);
 
   // rolling 5-round accuracy smooths out noisy rounds
   const rounds = p.roundLog.slice(-40);
@@ -96,7 +97,7 @@ function ProgressBody({ p }: { p: Progress }) {
         <Tile label="Overall accuracy" value={p.totalAnswered ? pct(acc) : "No data"} sub={`${p.totalCorrect}/${p.totalAnswered} correct`} />
         <Tile label="Rounds completed" value={String(p.roundsCompleted)} sub={`${plural(p.sessions.length, "session")}, ${p.roundsSkipped} skipped`} />
         <Tile label="Current streak" value={plural(currentStreak(p), "day")} sub={`Best ${plural(p.bestStreak, "day")}`} />
-        <Tile label="Level" value={String(lvl.level)} sub={`${p.xp.toLocaleString()} XP total`} />
+        <Tile label="Belt" value={shortName(belt.belt)} sub={`${p.xp.toLocaleString()} XP total`} />
         <Tile
           label="Characters seen"
           value={`${encountered.length}/46`}
@@ -106,6 +107,17 @@ function ProgressBody({ p }: { p: Progress }) {
         <Tile label="Real words learned" value={String(wordsLearned(p))} sub={`${plural(wordsPracticed(p), "word")} practiced`} />
         <Tile label="Best combo" value={`×${p.bestCombo}`} sub={`Best round ${p.bestRoundPoints.toLocaleString()} pts`} />
       </section>
+
+      <Card id="belts" className="scroll-mt-24">
+        <CardHeader>
+          <CardTitle>Belts</CardTitle>
+          <CardDescription>Earned by what you can actually read, not by how long you play. Once earned, a belt is yours to keep.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+          <BeltProgress status={belt} />
+          <BeltLadder progress={p} />
+        </CardContent>
+      </Card>
 
       <div id="coach" className="scroll-mt-24">
         <CoachCard progress={p} full />

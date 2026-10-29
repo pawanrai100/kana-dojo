@@ -21,6 +21,8 @@ import { ActiveCard, AnswerFeedback } from "@/features/hiragana/practice/questio
 import { Petals } from "@/features/hiragana/practice/petals";
 import { Medal } from "./medal";
 import { YokaiArt } from "./yokai-art";
+import { BELTS, beltStatus } from "@/lib/progress/belts";
+import { BeltPromotion } from "@/features/belts/belt";
 
 type Phase = "intro" | "answer" | "feedback" | "result";
 
@@ -58,7 +60,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   const [elapsed, setElapsed] = useState(0);
   const [fx, setFx] = useState<Fx>({ kind: null, n: 0 });
   const [blankTry, setBlankTry] = useState(0);
-  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[] } | null>(null);
+  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; promoted?: number } | null>(null);
 
   const gen = useRef<GeneratorState>(EMPTY_GEN_STATE);
   const log = useRef<Logged[]>([]);
@@ -154,13 +156,15 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       questions: items.map((l, i) => ({ ...l.q, id: `${l.q.id}-${i}` })),
     };
     const graded = items.length ? gradeRound(round, items.map((l) => l.a), { durationMs: Date.now() - startedAt.current }) : null;
+    const beltBefore = beltStatus(actions.getState().progress).index;
     const { outcome, badges } = actions.recordBattle(graded, final);
+    const beltAfter = beltStatus(actions.getState().progress).index;
     const seen = new Set<string>();
     const misses = items
       .filter((l) => !checkQuestion(l.q, l.a.value).correct)
       .map((l) => l.q)
       .filter((m) => (seen.has(m.kana) ? false : (seen.add(m.kana), true)));
-    setResult({ outcome, badges, misses });
+    setResult({ outcome, badges, misses, promoted: beltAfter > beltBefore ? beltAfter : undefined });
     setPhase("result");
     sfx(final.status === "won" ? "fanfare" : "wrong");
   };
@@ -253,6 +257,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         outcome={result.outcome}
         badges={result.badges}
         misses={result.misses}
+        promoted={result.promoted}
         onRetry={begin}
         onNext={() => onPlay(floor.id + 1)}
         onExit={onExit}
@@ -498,6 +503,7 @@ function Result({
   outcome,
   badges,
   misses,
+  promoted,
   onRetry,
   onNext,
   onExit,
@@ -507,6 +513,7 @@ function Result({
   outcome: TowerOutcome;
   badges: Achievement[];
   misses: Question[];
+  promoted?: number;
   onRetry: () => void;
   onNext: () => void;
   onExit: () => void;
@@ -589,6 +596,12 @@ function Result({
                 </li>
               )}
             </ul>
+          </div>
+        )}
+
+        {promoted !== undefined && (
+          <div className="w-full text-left">
+            <BeltPromotion belt={BELTS[promoted]} />
           </div>
         )}
 

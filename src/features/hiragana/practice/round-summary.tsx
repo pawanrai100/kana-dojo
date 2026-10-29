@@ -3,18 +3,20 @@
 import { forwardRef } from "react";
 import { Flame, RotateCcw, Star, Target, Trophy, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Kbd, ProgressBar } from "@/components/ui/misc";
+import { Kbd } from "@/components/ui/misc";
 import type { GradedRound } from "@/lib/quiz/types";
 import type { Achievement } from "@/lib/tower/achievements";
 import { Medal } from "@/features/tower/medal";
-import { levelInfo, rankTitle } from "@/lib/progress/stats";
+import { BELTS, type BeltStatus } from "@/lib/progress/belts";
+import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { cn } from "@/lib/utils";
 
 const HEADLINES = ["Keep going!", "Getting there!", "Nice reading!", "Brilliant round!"];
 
 interface Props {
   graded: GradedRound;
-  xpAfter: number;
+  belt: BeltStatus;
+  promoted?: number; // belt index you just earned
   isBest: boolean;
   badges?: Achievement[];
   nextLabel: string;
@@ -23,12 +25,9 @@ interface Props {
 }
 
 export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundSummary(
-  { graded, xpAfter, isBest, badges = [], nextLabel, shortcuts, onNext },
+  { graded, belt, promoted, isBest, badges = [], nextLabel, shortcuts, onNext },
   ref,
 ) {
-  const lvl = levelInfo(xpAfter);
-  const before = levelInfo(xpAfter - graded.xpEarned);
-  const leveledUp = lvl.level > before.level;
   const total = graded.results.length;
   // every char you slipped on this round, in the order you met them
   const missed = [...new Set(graded.results.flatMap((r) => (r.correct || r.unanswered ? [] : r.missedChars)))];
@@ -95,18 +94,18 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
           ))}
         </ul>
       )}
+      {promoted !== undefined && (
+        <div className="mt-5">
+          <BeltPromotion belt={BELTS[promoted]} />
+        </div>
+      )}
+
       <div className="mt-6 flex flex-col gap-4 border-t-2 border-surface-2 pt-5 sm:flex-row sm:items-center">
-        <div className="flex-1">
-          <div className="mb-1.5 flex items-center justify-between text-xs text-muted">
-            <span className="flex items-center gap-1">
-              <Zap className="size-3.5 text-primary" />+{graded.xpEarned} XP
-              {leveledUp && <strong className="ml-1 rounded-full bg-sun px-2 py-0.5 text-sun-ink">Level up! {rankTitle(lvl.level)}</strong>}
-            </span>
-            <span>
-              Level {lvl.level}, {lvl.intoLevel}/{lvl.needed}
-            </span>
-          </div>
-          <ProgressBar value={lvl.pct} label="Level progress" />
+        <div className="flex-1 space-y-2">
+          <p className="flex items-center gap-1 text-xs font-bold text-muted">
+            <Zap className="size-3.5 text-primary" />+{graded.xpEarned} XP
+          </p>
+          <BeltProgress status={belt} />
         </div>
         <div className="flex items-center gap-3">
           {shortcuts && (
