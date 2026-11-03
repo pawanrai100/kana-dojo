@@ -6,6 +6,7 @@ import { useStartDrill } from "@/features/coach/coach-card";
 import type { Debrief, Trick } from "@/lib/coach/debrief";
 import type { Floor } from "@/lib/tower/floors";
 import { cn } from "@/lib/utils";
+import { YokaiArt } from "./yokai-art";
 
 function Kana({ k, className }: { k: string; className?: string }) {
   return (
@@ -57,23 +58,12 @@ function TrickCard({ t, i }: { t: Trick; i: number }) {
   );
 }
 
-// a short taunt so losing to a boss stings a little (in a fun way)
-function taunt(floor: Floor, d: Debrief): string | undefined {
-  if (!floor.boss) return undefined;
-  const name = floor.boss.name.split(",")[0];
-  const k = d.tricks[0]?.kana;
-  if (d.cause === "clock") return `${name}: "Too slow! Read faster next time."`;
-  if (k) return `${name}: "Come back when you can read ${k}."`;
-  return `${name}: "Is that all you've got?"`;
-}
-
 // shown after you lose a floor: what went wrong and how to fix it
-export function DebriefPanel({ floor, d }: { floor: Floor; d: Debrief }) {
+export function DebriefPanel({ floor, d, said }: { floor: Floor; d: Debrief; said?: string }) {
   const startDrill = useStartDrill();
-  const line = taunt(floor, d);
   return (
     <section aria-label="How to win next time" className="w-full space-y-4 rounded-2xl bg-sun-soft p-4 text-left sm:p-5">
-      {line && <p className="animate-pop rounded-xl bg-foreground px-3 py-2 text-center text-sm font-extrabold text-background">{line}</p>}
+      {said && <BossSpeech floor={floor} text={said} />}
       <div>
         <p className="flex items-center gap-2 text-sm font-extrabold text-warn">
           <ScrollText className="size-4" aria-hidden /> Sensei&apos;s notes
@@ -120,5 +110,20 @@ export function DebriefPanel({ floor, d }: { floor: Floor; d: Debrief }) {
         </div>
       )}
     </section>
+  );
+}
+
+// the boss talking to you, with its face in the corner
+export function BossSpeech({ floor, text, className }: { floor: Floor; text: string; className?: string }) {
+  return (
+    <figure className={cn("animate-pop flex items-end gap-2 text-left", className)}>
+      <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground" aria-hidden>
+        <YokaiArt id={floor.enemy.id} className="size-[115%] translate-y-1" />
+      </span>
+      <blockquote className="relative min-w-0 flex-1 rounded-2xl rounded-bl-sm bg-foreground px-3.5 py-2.5 text-background">
+        <figcaption className="text-[11px] font-extrabold uppercase tracking-widest opacity-60">{floor.enemy.name.split(",")[0]}</figcaption>
+        <p className="text-sm font-bold">&ldquo;{text}&rdquo;</p>
+      </blockquote>
+    </figure>
   );
 }

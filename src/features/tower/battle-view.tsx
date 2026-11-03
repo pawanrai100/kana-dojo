@@ -23,7 +23,8 @@ import { Medal } from "./medal";
 import { Hearts, Sprite, type Fx } from "./battle-parts";
 import { YokaiArt } from "./yokai-art";
 import { CardDrop } from "./boss-card";
-import { DebriefPanel } from "./debrief-panel";
+import { BossSpeech, DebriefPanel } from "./debrief-panel";
+import { bossLine, bossSlowLine } from "@/lib/tower/dialogue";
 import { debrief, type Debrief } from "@/lib/coach/debrief";
 import { cardFor, tierFor } from "@/lib/tower/cards";
 import { BossArena, BossEntrance, BossFelled } from "./boss-arena";
@@ -60,7 +61,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   const [elapsed, setElapsed] = useState(0);
   const [fx, setFx] = useState<Fx>({ kind: null, n: 0 });
   const [blankTry, setBlankTry] = useState(0);
-  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; notes?: Debrief; promoted?: number } | null>(null);
+  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; notes?: Debrief; said?: string; promoted?: number } | null>(null);
 
   const gen = useRef<GeneratorState>(EMPTY_GEN_STATE);
   const log = useRef<Logged[]>([]);
@@ -166,7 +167,17 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       .map((l) => l.q)
       .filter((m) => (seen.has(m.kana) ? false : (seen.add(m.kana), true)));
     const notes = final.status === "won" ? undefined : debrief(items.map((l) => ({ q: l.q, value: l.a.value, timedOut: l.a.timedOut })));
-    setResult({ outcome, badges, misses, notes, promoted: beltAfter > beltBefore ? beltAfter : undefined });
+    // the boss gets the last word. attempts rotate the lines so rematches feel different
+    const seed = actions.getState().progress.tower.floors[floor.id]?.attempts ?? 0;
+    const id = floor.boss?.id ?? "";
+    const said = !floor.boss
+      ? undefined
+      : final.status === "won"
+        ? bossLine(id, "win", seed)
+        : notes?.cause === "clock"
+          ? bossSlowLine(id)
+          : bossLine(id, "lose", seed, notes?.tricks[0]?.kana);
+    setResult({ outcome, badges, misses, notes, said, promoted: beltAfter > beltBefore ? beltAfter : undefined });
     setPhase("result");
     sfx(final.status === "won" ? "fanfare" : "wrong");
   };
@@ -262,6 +273,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         badges={result.badges}
         misses={result.misses}
         notes={result.notes}
+        said={result.said}
         promoted={result.promoted}
         onRetry={begin}
         onNext={() => onPlay(floor.id + 1)}
@@ -459,6 +471,7 @@ function Result({
   badges,
   misses,
   notes,
+  said,
   promoted,
   onRetry,
   onNext,
@@ -470,6 +483,7 @@ function Result({
   badges: Achievement[];
   misses: Question[];
   notes?: Debrief;
+  said?: string;
   promoted?: number;
   onRetry: () => void;
   onNext: () => void;
@@ -519,6 +533,8 @@ function Result({
           {battle.correct} of {battle.answered} read right ({pct(battle.answered ? battle.correct / battle.answered : 0)}), best combo ×{battle.bestCombo}
         </p>
 
+        {won && said && <BossSpeech floor={floor} text={said} className="w-full max-w-md" />}
+
         {drop && <CardDrop card={drop} upgraded={!outcome.firstClear} />}
 
         {(title || badges.length > 0 || (won && !boss && outcome.newBest && !outcome.firstClear)) && (
@@ -559,7 +575,7 @@ function Result({
           </div>
         )}
 
-        {notes && <DebriefPanel floor={floor} d={notes} />}
+        {notes && <DebriefPanel floor={floor} d={notes} said={said} />}
 
         {misses.length > 0 && !notes && (
           <div className="w-full text-left">

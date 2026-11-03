@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { BattleState } from "@/lib/tower/battle";
 import { zoneOf, type Floor } from "@/lib/tower/floors";
 import { cn } from "@/lib/utils";
+import { bossIntro } from "@/lib/tower/dialogue";
 import { Hearts, Sprite, type Fx } from "./battle-parts";
 
 // the boss fight: a dark arena with the boss looming over you, a long thin
@@ -128,13 +129,15 @@ export function BossArena({ floor, battle, fx }: { floor: Floor; battle: BattleS
 // the cinematic entrance before a boss fight. enter or a click skips it
 export function BossEntrance({ floor, onDone }: { floor: Floor; onDone: () => void }) {
   const t = theme(floor);
+  const intro = bossIntro(floor.boss?.id ?? "");
   const done = useRef(onDone);
   useEffect(() => {
     done.current = onDone;
   });
   useEffect(() => {
     const finish = () => done.current();
-    const id = window.setTimeout(finish, 3000);
+    // a bit longer when there's a line to read
+    const id = window.setTimeout(finish, bossIntro(floor.boss?.id ?? "") ? 4500 : 3000);
     const key = (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
         e.preventDefault();
@@ -167,6 +170,11 @@ export function BossEntrance({ floor, onDone }: { floor: Floor; onDone: () => vo
       <p className="animate-title-in font-bold text-white/80" style={{ animationDelay: "1300ms" }}>
         {bossTitle(floor)}
       </p>
+      {intro && (
+        <p className="animate-title-in max-w-md text-sm font-medium italic text-white/70" style={{ animationDelay: "1900ms" }}>
+          &ldquo;{intro}&rdquo;
+        </p>
+      )}
       <p className="animate-title-in absolute bottom-8 text-xs font-bold text-white/40" style={{ animationDelay: "1800ms" }}>
         Press Enter or tap to skip
       </p>
