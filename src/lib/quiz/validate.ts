@@ -1,4 +1,4 @@
-import { SMALL_TSU, getKana, sokuonSpellings, splitKana } from "@/lib/kana/hiragana";
+import { LONG_MARK, getKana, isSmallTsu, longVowelOf, sokuonSpellings, splitKana } from "@/lib/kana/hiragana";
 import { particleInfo } from "./tokens";
 import type { Question } from "./types";
 
@@ -11,26 +11,33 @@ export interface AnswerCheck {
   typed: string[];
 }
 
-// lowercase, strip spaces/dashes, unify apostrophes
-export function normalizeAnswer(input: string): string {
+// lowercase, strip spaces/dashes, unify apostrophes.
+// keepDash: the word has a ー, so a typed - (or ー) counts as the long vowel
+export function normalizeAnswer(input: string, keepDash = false): string {
   return input
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[’‘`´]/g, "'")
-    .replace(/[\s\-_.・]/g, "")
+    .replace(/[ー－—–]/g, "-")
+    .replace(keepDash ? /[\s_.・]/g : /[\s\-_.・]/g, "")
     .trim();
 }
 
 // every spelling we accept for one kana unit, given what comes next
-export function acceptedSpellings(kana: string, next?: string): string[] {
+export function acceptedSpellings(kana: string, next?: string, prev?: string): string[] {
   const c = getKana(kana);
   if (!c) throw new Error(`unknown kana: ${kana}`);
-  if (kana === "ん") {
+  if (kana === "ん" || kana === "ン") {
     // n, nn and n' are all standard ways to type ん
     return ["n'", "nn", "n"];
   }
   // small っ doubles whatever consonant comes next
-  if (kana === SMALL_TSU) return sokuonSpellings(next);
+  if (isSmallTsu(kana)) return sokuonSpellings(next);
+  // ー repeats the vowel before it. a dash works too (ko-hi-)
+  if (kana === LONG_MARK) {
+    const v = longVowelOf(prev);
+    return v ? [v, "-"] : ["-"];
+  }
   return c.romaji;
 }
 
@@ -42,10 +49,10 @@ const MAX_SLICE = 4;
 // overrides swap the spellings for some units, ex the particle は is read wa
 export function checkAnswer(kanaText: string, input: string, overrides: Record<number, string[]> = {}): AnswerCheck {
   const units = splitKana(kanaText);
-  const s = normalizeAnswer(input);
+  const s = normalizeAnswer(input, units.includes(LONG_MARK));
   const n = units.length;
   const L = s.length;
-  const opts = units.map((u, i) => overrides[i] ?? acceptedSpellings(u, units[i + 1]));
+  const opts = units.map((u, i) => overrides[i] ?? acceptedSpellings(u, units[i + 1], units[i - 1]));
 
   const INF = 1e9;
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(L + 1).fill(INF));

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProgressBar } from "@/components/ui/misc";
+import { ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS, readingOf } from "@/lib/kana/hiragana";
-import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
+import { KANA_GROUPS, KATAKANA_BASIC_LIST, readingOf } from "@/lib/kana/hiragana";
+import { ALL_VOCAB } from "@/lib/vocab/all";
 import {
   accuracy,
   charAccuracy,
@@ -22,17 +23,18 @@ import {
 } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
 import { cn, pct, plural } from "@/lib/utils";
-import { useAppState } from "@/store/app-store";
+import { actions, useAppState } from "@/store/app-store";
 import { BarChart, LineChart } from "./charts";
 import { SessionList } from "./session-list";
 import { CoachCard } from "@/features/coach/coach-card";
 import { BeltLadder, BeltProgress, shortName } from "@/features/belts/belt";
-import { beltStatus } from "@/lib/progress/belts";
+import { beltScriptFor, beltStatus, type BeltScript } from "@/lib/progress/belts";
 
 // dakuten, combos and small っ, counted apart from the basic 46
-const EXTRAS = ALL_KANA_LIST.filter((k) => !BASIC_KANA_LIST.includes(k));
+const EXTRAS = KANA_GROUPS.filter((g) => g.script === "hiragana" && g.kind !== "basic").flatMap((g) => g.chars);
+const KATA_ALL = KANA_GROUPS.filter((g) => g.script === "katakana").flatMap((g) => g.chars);
 
-const VOCAB = new Map(HIRAGANA_VOCAB.map((w) => [w.id, w]));
+const VOCAB = new Map(ALL_VOCAB.map((w) => [w.id, w]));
 
 export function ProgressView() {
   const state = useAppState();
@@ -105,6 +107,11 @@ function ProgressBody({ p }: { p: Progress }) {
           sub={extrasSeen ? `+${extrasSeen} of ${EXTRAS.length} extras` : encountered.length === 46 ? "Full coverage" : `${46 - encountered.length} still to meet`}
         />
         <Tile label="Characters mastered" value={`${mastered.length}/46`} sub={extrasMastered ? `+${extrasMastered} extras mastered` : "3+ rounds, recent reads right"} />
+        <Tile
+          label="Katakana mastered"
+          value={`${masteredChars(p, KATAKANA_BASIC_LIST).length}/46`}
+          sub={`${encounteredChars(p, KATA_ALL).length} of ${KATA_ALL.length} seen, ${shortName(beltStatus(p, "katakana").belt)} belt`}
+        />
         <Tile label="Real words learned" value={String(wordsLearned(p))} sub={`${plural(wordsPracticed(p), "word")} practiced`} />
         <Tile label="Best combo" value={`×${p.bestCombo}`} sub={`Best round ${p.bestRoundPoints.toLocaleString()} pts`} />
       </section>
@@ -114,10 +121,7 @@ function ProgressBody({ p }: { p: Progress }) {
           <CardTitle>Belts</CardTitle>
           <CardDescription>Earned by what you can actually read, not by how long you play. Once earned, a belt is yours to keep.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-          <BeltProgress status={belt} />
-          <BeltLadder progress={p} />
-        </CardContent>
+        <BeltsBody p={p} />
       </Card>
 
       <div id="coach" className="scroll-mt-24">
@@ -316,5 +320,27 @@ function Legend({ className, text }: { className: string; text: string }) {
       <span className={cn("size-3 rounded", className)} />
       {text}
     </span>
+  );
+}
+
+// hiragana and katakana each have their own ladder
+function BeltsBody({ p }: { p: Progress }) {
+  const [script, setScript] = useState<BeltScript>(() => beltScriptFor(actions.getState().settings.script));
+  return (
+    <CardContent className="space-y-4">
+      <Segmented
+        label="Belt ladder"
+        value={script}
+        onChange={setScript}
+        options={[
+          { value: "hiragana", label: "Hiragana belts" },
+          { value: "katakana", label: "Katakana belts" },
+        ]}
+      />
+      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+        <BeltProgress status={beltStatus(p, script)} />
+        <BeltLadder progress={p} script={script} />
+      </div>
+    </CardContent>
   );
 }

@@ -29,7 +29,7 @@ export function useStartDrill() {
   return (kana: string[]) => {
     const s = actions.getState();
     const r = generateRound({
-      settings: { ...s.settings, mode: "random", enabledChars: kana, questionsPerRound: 10 },
+      settings: { ...s.settings, mode: "random", enabledChars: kana, script: "both", questionsPerRound: 10 },
       chars: s.progress.chars,
       words: s.progress.words,
       gen: EMPTY_GEN_STATE,

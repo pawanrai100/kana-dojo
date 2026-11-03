@@ -1,4 +1,4 @@
-import { SMALL_TSU, readingOf } from "@/lib/kana/hiragana";
+import { SMALL_TSU, SMALL_TSU_K, readingOf } from "@/lib/kana/hiragana";
 import { checkQuestion } from "@/lib/quiz/validate";
 import { particleInfo } from "@/lib/quiz/tokens";
 import type { Question } from "@/lib/quiz/types";
@@ -125,5 +125,7 @@ export function debrief(items: Answered[], maxTricks = 4): Debrief {
   const drill = [...new Set([...byKana.keys(), ...tricks.flatMap((t) => (t.twin ? [t.twin.kana] : []))])];
   // small っ needs something to double, or the drill has nothing to build
   if (drill.includes(SMALL_TSU)) for (const k of ["か", "た", "さ", "ぱ"]) if (!drill.includes(k)) drill.push(k);
+  if (drill.includes(SMALL_TSU_K)) for (const k of ["カ", "タ", "サ", "パ"]) if (!drill.includes(k)) drill.push(k);
+  if (drill.includes("ー")) for (const k of ["コ", "ケ", "ス", "パ"]) if (!drill.includes(k)) drill.push(k);
   return { cause, headline, advice, tricks, habits, timeouts, drill };
 }

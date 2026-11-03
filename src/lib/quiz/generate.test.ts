@@ -41,7 +41,7 @@ describe("generateRound", () => {
   });
 
   it("strips disallowed chars from settings", () => {
-    expect(resolveEnabled(["カ", "日", "ゃ", "か", "か", "が"])).toEqual(["か", "が"]);
+    expect(resolveEnabled(["漢", "日", "ゃ", "か", "か", "が"])).toEqual(["か", "が"]);
     // small っ alone has nothing to double, so it's dropped
     expect(resolveEnabled(["っ", "あ"])).toEqual(["あ"]);
     expect(resolveEnabled(["っ", "か"])).toEqual(["か", "っ"]);

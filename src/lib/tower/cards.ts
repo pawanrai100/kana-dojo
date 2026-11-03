@@ -1,4 +1,4 @@
-import { ALL_FLOORS, zoneOf, type Boss, type Floor } from "./floors";
+import { ALL_FLOORS, floorLabel, zoneOf, type Boss, type Floor } from "./floors";
 import type { TowerProgress } from "./progress";
 
 // boss loot: beat a boss and its card drops into your collection.
@@ -33,7 +33,7 @@ export function bossCards(t: TowerProgress): BossCard[] {
     floor,
     boss: floor.boss!,
     tier: tierFor(t.floors[floor.id]?.stars ?? 0),
-    where: `${floor.tower === "sky" ? "Sky floor" : "Floor"} ${floor.tower === "sky" ? floor.id - 100 : floor.id}`,
+    where: floorLabel(floor),
   }));
 }
 
@@ -42,7 +42,7 @@ export function cardFor(t: TowerProgress, floorId: number): BossCard | undefined
 }
 
 export function cardRole(c: BossCard): string {
-  if (c.floor.kind === "final") return c.floor.tower === "sky" ? "Ruler of the Sky Shrine" : "Master of the Tower";
+  if (c.floor.kind === "final") return c.floor.tower === "sky" ? "Ruler of the Sky Shrine" : c.floor.tower === "kata" ? "Ruler of the Neon City" : "Master of the Tower";
   return `Guardian of ${zoneOf(c.floor)?.name ?? "the Tower"}`;
 }
 

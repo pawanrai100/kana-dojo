@@ -1,7 +1,22 @@
-import { ALL_KANA_LIST, SMALL_TSU, canFollowSokuon, isKnownKana, splitKana, toRomaji, usesOnly } from "@/lib/kana/hiragana";
+import {
+  ALL_KANA_LIST,
+  LONG_MARK,
+  SMALL_TSU,
+  SMALL_TSU_K,
+  canFollowSokuon,
+  isKnownKana,
+  isSmallTsu,
+  longVowelOf,
+  scriptOf,
+  splitKana,
+  toHiragana,
+  toKatakana,
+  toRomaji,
+  usesOnly,
+} from "@/lib/kana/hiragana";
 import type { CharStat, WordStat } from "@/lib/progress/types";
-import { LENGTH_BOUNDS, type Settings } from "@/lib/settings/types";
-import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
+import { LENGTH_BOUNDS, activeChars, type Settings } from "@/lib/settings/types";
+import { ALL_VOCAB } from "@/lib/vocab/all";
 import { SENTENCES, type Sentence } from "@/lib/vocab/sentences";
 import type { VocabWord } from "@/lib/vocab/types";
 import { EMPTY_COACH, charWeight, focusChars, wordNeedsRetry, type CoachContext } from "./adaptive";
@@ -11,7 +26,8 @@ import { rateQuestion } from "./timer";
 import type { GeneratorState, Question, Round } from "./types";
 
 export interface GenerateInput {
-  settings: Pick<Settings, "mode" | "questionsPerRound" | "lengthRange" | "enabledChars" | "timerPace">;
+  // no script = use enabledChars exactly as given (drills, tower floors)
+  settings: Pick<Settings, "mode" | "questionsPerRound" | "lengthRange" | "enabledChars" | "timerPace"> & { script?: Settings["script"] };
   chars: Record<string, CharStat>;
   words: Record<string, WordStat>;
   gen: GeneratorState;
@@ -25,34 +41,45 @@ export type GenerateResult =
   | { ok: true; round: Round; gen: GeneratorState }
   | { ok: false; reason: "no-chars" | "no-words" | "no-sentences"; message: string };
 
-const VOCAB_BY_KANA = new Map(HIRAGANA_VOCAB.map((w) => [w.kana, w]));
+const VOCAB_BY_KANA = new Map(ALL_VOCAB.map((w) => [w.kana, w]));
 
-// only kana we actually teach, in chart order. small っ needs something it can double
+const isMark = (k: string) => isSmallTsu(k) || k === LONG_MARK;
+const sameScript = (list: string[], k: string) => {
+  const own = list.filter((x) => scriptOf(x) === scriptOf(k));
+  return own.length ? own : list;
+};
+
+// only kana we actually teach, in chart order. small っ needs something it can double,
+// and ー needs a katakana to stretch
 export function resolveEnabled(enabled: string[]): string[] {
   const set = new Set(enabled.filter(isKnownKana));
-  if (set.has(SMALL_TSU) && ![...set].some(canFollowSokuon)) set.delete(SMALL_TSU);
+  for (const t of [SMALL_TSU, SMALL_TSU_K])
+    if (set.has(t) && ![...set].some((k) => canFollowSokuon(k) && scriptOf(k) === scriptOf(t))) set.delete(t);
+  if (set.has(LONG_MARK) && ![...set].some((k) => scriptOf(k) === "katakana" && longVowelOf(k))) set.delete(LONG_MARK);
   return ALL_KANA_LIST.filter((k) => set.has(k));
 }
 
 // small っ can't start or end a word and only goes before k/s/t/ch/p sounds.
-// fix any bad spots in a random combo by swapping chars around
+// ー has to follow a katakana with a vowel. fix any bad spots by swapping chars around
 export function fixSokuon(ks: string[], enabled: string[], rng: Rng): string[] {
   const out = [...ks];
-  const plain = enabled.filter((k) => k !== SMALL_TSU);
-  const followers = enabled.filter(canFollowSokuon);
+  const plain = enabled.filter((k) => !isMark(k));
   const pick = (list: string[]) => list[randInt(rng, 0, list.length - 1)];
   for (let i = 0; i < out.length; i++) {
-    if (out[i] !== SMALL_TSU) continue;
-    if (i === 0 || i === out.length - 1 || out[i - 1] === SMALL_TSU || !followers.length) {
-      out[i] = pick(plain);
-    } else if (!canFollowSokuon(out[i + 1])) {
-      out[i + 1] = pick(followers);
+    const k = out[i];
+    if (isSmallTsu(k)) {
+      const followers = enabled.filter((x) => canFollowSokuon(x) && scriptOf(x) === scriptOf(k));
+      if (i === 0 || i === out.length - 1 || isMark(out[i - 1]) || !followers.length) out[i] = pick(sameScript(plain, k));
+      else if (!canFollowSokuon(out[i + 1]) || scriptOf(out[i + 1]) !== scriptOf(k)) out[i + 1] = pick(followers);
+    } else if (k === LONG_MARK) {
+      const prev = out[i - 1];
+      if (i === 0 || isMark(prev) || scriptOf(prev) !== "katakana" || !longVowelOf(prev)) out[i] = pick(sameScript(plain, k));
     }
   }
   return out;
 }
 
-export function wordsForChars(enabled: string[], vocab = HIRAGANA_VOCAB): VocabWord[] {
+export function wordsForChars(enabled: string[], vocab = ALL_VOCAB): VocabWord[] {
   const allowed = new Set(resolveEnabled(enabled));
   return vocab.filter((w) => usesOnly(w.kana, allowed));
 }
@@ -62,8 +89,8 @@ export function generateRound(input: GenerateInput): GenerateResult {
   const now = input.now ?? Date.now();
   const { settings, chars, words } = input;
   const coach = input.coach ?? EMPTY_COACH;
-  const vocab = input.vocab ?? HIRAGANA_VOCAB;
-  const enabled = resolveEnabled(settings.enabledChars);
+  const vocab = input.vocab ?? ALL_VOCAB;
+  const enabled = resolveEnabled(activeChars(settings));
   const need = settings.questionsPerRound;
   const [minLen, maxLen] = LENGTH_BOUNDS[settings.lengthRange];
 
@@ -172,11 +199,26 @@ export function generateRound(input: GenerateInput): GenerateResult {
     return gen.deck.shift()!;
   };
 
+  const mixed = new Set(enabled.map(scriptOf)).size > 1;
+  // with both scripts on, each combo sticks to one: swap a kana for its twin, or draw again
+  const inScript = (k: string, sc: string | undefined): string | undefined => {
+    if (!mixed || !sc || scriptOf(k) === sc) return k;
+    const twin = sc === "katakana" ? toKatakana(k) : toHiragana(k);
+    return twin !== k && enabled.includes(twin) ? twin : undefined;
+  };
   for (let i = 0; i < randomCount; i++) {
     const len = randInt(rng, minLen, maxLen);
     const ks: string[] = [];
+    // both scripts on: each card flips a coin, so neither script drowns out the other
+    let sc: string | undefined = mixed ? (rng() < 0.5 ? "hiragana" : "katakana") : undefined;
     for (let j = 0; j < len; j++) {
       let k = draw();
+      for (let t = 0; t < 12 && !inScript(k, sc); t++) {
+        gen.deck.push(k);
+        k = draw();
+      }
+      k = inScript(k, sc) ?? k;
+      sc ??= scriptOf(k);
       // avoid "ああ" style doubles when there's an alternative
       if (ks.length && k === ks[ks.length - 1] && enabled.length > 1) {
         const swapIdx = gen.deck.findIndex((d) => d !== k);
@@ -188,13 +230,19 @@ export function generateRound(input: GenerateInput): GenerateResult {
       }
       ks.push(k);
     }
-    let fixed = enabled.includes(SMALL_TSU) ? fixSokuon(ks, enabled, rng) : ks;
+    // the doubles dodge above can still pull in the other script, so clean up
+    if (mixed) {
+      const own = enabled.filter((x) => scriptOf(x) === sc && !isMark(x));
+      for (let j = 0; j < ks.length; j++) ks[j] = inScript(ks[j], sc) ?? own[randInt(rng, 0, own.length - 1)];
+    }
+    let fixed = enabled.some(isMark) ? fixSokuon(ks, enabled, rng) : ks;
     let combo = fixed.join("");
     // dodge repeats from this round / recent rounds by nudging one char
     let tries = 0;
     while ((taken.has(combo) || recent.has(combo)) && tries < 10 && enabled.length > 1) {
-      fixed[randInt(rng, 0, fixed.length - 1)] = enabled[randInt(rng, 0, enabled.length - 1)];
-      if (enabled.includes(SMALL_TSU)) fixed = fixSokuon(fixed, enabled, rng);
+      const at = randInt(rng, 0, fixed.length - 1);
+      fixed[at] = sameScript(enabled, fixed[0])[randInt(rng, 0, sameScript(enabled, fixed[0]).length - 1)];
+      if (enabled.some(isMark)) fixed = fixSokuon(fixed, enabled, rng);
       combo = fixed.join("");
       tries++;
     }
@@ -291,8 +339,8 @@ export interface RetryInput {
 export function makeRetryQuestion(input: RetryInput): Omit<Question, "id"> | null {
   const { settings, chars, avoid } = input;
   const rng = input.rng ?? Math.random;
-  const vocab = input.vocab ?? HIRAGANA_VOCAB;
-  const enabled = resolveEnabled(settings.enabledChars);
+  const vocab = input.vocab ?? ALL_VOCAB;
+  const enabled = resolveEnabled(activeChars(settings));
   const missed = [...new Set(input.missed)].filter((k) => enabled.includes(k));
   if (!missed.length) return null;
   const [minLen, maxLen] = LENGTH_BOUNDS[settings.lengthRange];
@@ -311,14 +359,17 @@ export function makeRetryQuestion(input: RetryInput): Omit<Question, "id"> | nul
     if (settings.mode === "words") return null;
   }
 
-  const plain = enabled.filter((k) => k !== SMALL_TSU);
+  // stick to the script of what you missed
+  const sc = scriptOf(missed[0]);
+  const own = missed.filter((k) => scriptOf(k) === sc);
+  const plain = enabled.filter((k) => !isMark(k) && scriptOf(k) === sc);
   if (!plain.length) return null;
-  const len = Math.max(minLen, Math.min(maxLen, missed.length + 1));
+  const len = Math.max(minLen, Math.min(maxLen, own.length + 1));
   for (let tries = 0; tries < 8; tries++) {
-    const ks = missed.slice(0, len);
+    const ks = own.slice(0, len);
     while (ks.length < len) ks.push(plain[randInt(rng, 0, plain.length - 1)]);
     let combo = shuffle(ks, rng);
-    if (combo.includes(SMALL_TSU)) combo = fixSokuon(combo, enabled, rng);
+    if (combo.some(isMark)) combo = fixSokuon(combo, enabled, rng);
     const kana = combo.join("");
     if (avoid.has(kana) && tries < 7) continue;
     return { ...makeQuestion(kana, "random", VOCAB_BY_KANA.get(kana), settings, chars), retry: true };
@@ -330,8 +381,11 @@ export function makeRetryQuestion(input: RetryInput): Omit<Question, "id"> | nul
 function sentenceRound(input: GenerateInput, enabled: string[], rng: Rng, now: number): GenerateResult {
   const { settings, chars } = input;
   const coach = input.coach ?? EMPTY_COACH;
-  const allowed = new Set(enabled);
-  const pool = SENTENCES.filter((s) => usesOnly(s.kana, allowed));
+  // sentences always need hiragana for the grammar bits, so katakana mode reads
+  // sentences with katakana words in them, using your hiragana selection for the rest
+  const katakanaOnly = settings.script === "katakana";
+  const allowed = new Set(katakanaOnly ? resolveEnabled(settings.enabledChars) : enabled);
+  const pool = SENTENCES.filter((s) => usesOnly(s.kana, allowed) && (!katakanaOnly || splitKana(s.kana).some((k) => scriptOf(k) === "katakana")));
   if (!pool.length) {
     return {
       ok: false,

@@ -7,7 +7,7 @@ import { Kbd } from "@/components/ui/misc";
 import type { GradedRound } from "@/lib/quiz/types";
 import type { Achievement } from "@/lib/tower/achievements";
 import { Medal } from "@/features/tower/medal";
-import { BELTS, type BeltStatus } from "@/lib/progress/belts";
+import type { Belt, BeltStatus } from "@/lib/progress/belts";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ const HEADLINES = ["Keep going!", "Getting there!", "Nice reading!", "Brilliant 
 interface Props {
   graded: GradedRound;
   belt: BeltStatus;
-  promoted?: number; // belt index you just earned
+  promoted?: Belt; // belt you just earned
   quests?: string[]; // daily quests this round finished
   freezeEarned?: boolean; // finished all 3 quests and banked a streak freeze
   isBest: boolean;
@@ -111,9 +111,9 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
         </ul>
       )}
 
-      {promoted !== undefined && (
+      {promoted && (
         <div className="mt-5">
-          <BeltPromotion belt={BELTS[promoted]} />
+          <BeltPromotion belt={promoted} />
         </div>
       )}
 

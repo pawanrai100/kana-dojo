@@ -86,3 +86,36 @@ describe("sky shrine", () => {
     expect(earnedIds(p).has("boss-shikappa")).toBe(true);
   });
 });
+
+describe("katakana tower", () => {
+  it("is open from the start and teaches every katakana", async () => {
+    const { KATA_FLOORS, KATA_FIRST, KATA_TOP } = await import("./floors");
+    const { KATAKANA_GROUPS } = await import("@/lib/kana/hiragana");
+    const t = emptyProgress().tower;
+    expect(isUnlocked(t, KATA_FIRST)).toBe(true);
+    expect(isUnlocked(t, KATA_FIRST + 1)).toBe(false);
+    expect(getFloor(KATA_TOP)!.kind).toBe("final");
+    expect(floorLabel(getFloor(KATA_FIRST)!)).toBe("Neon floor 1");
+    const taught = new Set(KATA_FLOORS.flatMap((f) => f.newChars));
+    expect(KATAKANA_GROUPS.flatMap((g) => g.chars).filter((k) => !taught.has(k))).toEqual([]);
+    expect(KATA_FLOORS.filter((f) => f.boss)).toHaveLength(7);
+    // never leaks hiragana in
+    for (const f of KATA_FLOORS) expect(f.chars.every((k) => k >= "ァ"), f.name).toBe(true);
+  });
+
+  it("every katakana floor can build a round", () => {
+    return import("./floors").then(({ KATA_FLOORS }) => {
+      for (const f of KATA_FLOORS) {
+        const r = generateRound({
+          settings: { ...DEFAULT_SETTINGS, mode: f.mode, enabledChars: f.chars, script: undefined, lengthRange: f.lengthRange, timerPace: f.pace },
+          chars: {},
+          words: {},
+          gen: EMPTY_GEN_STATE,
+          rng: mulberry32(f.id),
+        });
+        expect(r.ok, f.name).toBe(true);
+        if (r.ok) for (const q of r.round.questions) expect(q.chars.every((k) => f.chars.includes(k)), `${f.name}: ${q.kana}`).toBe(true);
+      }
+    });
+  });
+});

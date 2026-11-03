@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
 import { describeSelection } from "@/lib/kana/hiragana";
+import { activeChars, type ScriptPref } from "@/lib/settings/types";
 import { generateRound, makeRetryQuestion } from "@/lib/quiz/generate";
 import { coachContext } from "@/lib/quiz/adaptive";
 import { analyzeAnswer } from "@/lib/coach/analyze";
@@ -16,7 +17,7 @@ import { checkQuestion } from "@/lib/quiz/validate";
 import type { ActiveRound } from "@/lib/quiz/session";
 import type { AnswerState, GeneratorState, GradedRound } from "@/lib/quiz/types";
 import type { PracticeMode, Settings, TimerPace } from "@/lib/settings/types";
-import { beltStatus } from "@/lib/progress/belts";
+import { beltScriptFor, beltStatus, promotedBelt, type Belt } from "@/lib/progress/belts";
 import { BeltIcon } from "@/features/belts/belt";
 import type { Achievement } from "@/lib/tower/achievements";
 import { playSound, type SoundName } from "@/lib/sound";
@@ -37,6 +38,12 @@ const MODE_OPTIONS: { value: PracticeMode; label: string }[] = [
   { value: "words", label: "Real words" },
   { value: "random", label: "Random combos" },
   { value: "sentences", label: "Sentences" },
+];
+
+const SCRIPT_OPTIONS: { value: ScriptPref; label: React.ReactNode }[] = [
+  { value: "hiragana", label: <span><span lang="ja" className="font-kana mr-1">あ</span>Hiragana</span> },
+  { value: "katakana", label: <span><span lang="ja" className="font-kana mr-1">ア</span>Katakana</span> },
+  { value: "both", label: "Both" },
 ];
 
 const PACE_OPTIONS: { value: TimerPace; label: string }[] = [
@@ -111,13 +118,14 @@ function PracticeSession({ settings }: { settings: Settings }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-sm [&_[role=radio]]:px-2.5 [&_[role=radio]]:text-xs sm:[&_[role=radio]]:px-3.5 sm:[&_[role=radio]]:text-sm">
+        <Segmented label="Script" value={settings.script} options={SCRIPT_OPTIONS} onChange={(script) => changeSetting({ script })} />
         <Segmented label="Practice mode" value={settings.mode} options={MODE_OPTIONS} onChange={(mode) => changeSetting({ mode })} />
         <span className="flex items-center gap-1.5">
           <Timer className="size-4 text-muted" aria-hidden />
           <Segmented label="Timer pace" value={settings.timerPace} options={PACE_OPTIONS} onChange={(timerPace) => changeSetting({ timerPace })} />
         </span>
         <span className="ml-auto flex items-center gap-2">
-          <Badge tone="primary">{describeSelection(settings.enabledChars)}</Badge>
+          <Badge tone="primary">{describeSelection(activeChars(settings))}</Badge>
           <Link href="/chart" className="text-xs font-extrabold text-primary hover:underline">
             Change
           </Link>
@@ -161,7 +169,7 @@ interface PlayerProps {
 
 interface GradedView {
   graded: GradedRound;
-  promoted?: number;
+  promoted?: Belt;
   isBest: boolean;
   badges: Achievement[];
   quests: string[]; // quests that paid out this round
@@ -215,17 +223,17 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   const finish = (final: AnswerState[]) => {
     const g = gradeRound(round, final, { durationMs: Date.now() - initial.startedAt });
     const prevBest = actions.getState().progress.bestRoundPoints;
-    const beltBefore = beltStatus(actions.getState().progress).index;
+    const before = actions.getState().progress;
     const freezesBefore = streakInfo(actions.getState().progress).freezes;
     const paidBefore = new Set(todaysQuests(actions.getState().progress).filter((q) => q.done).map((q) => q.quest.id));
     const badges = actions.recordRound(g);
-    const beltAfter = beltStatus(actions.getState().progress).index;
+    const promoted = promotedBelt(before, actions.getState().progress);
     const quests = todaysQuests(actions.getState().progress)
       .filter((q) => q.done && !paidBefore.has(q.quest.id))
       .map((q) => q.quest.label);
     const freezeEarned = streakInfo(actions.getState().progress).freezes > freezesBefore;
     setAnswers(final);
-    setView({ graded: g, promoted: beltAfter > beltBefore ? beltAfter : undefined, isBest: g.totalPoints > prevBest, badges, quests, freezeEarned });
+    setView({ graded: g, promoted, isBest: g.totalPoints > prevBest, badges, quests, freezeEarned });
     sfx(g.stars === 3 ? "fanfare" : g.correctCount >= total / 2 ? "correct" : "wrong");
   };
 
@@ -430,7 +438,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
   };
 
   const done = answers.filter((a) => a.locked || a.value.trim()).length;
-  const belt = beltStatus(actions.getState().progress);
+  const belt = beltStatus(actions.getState().progress, beltScriptFor(actions.getState().settings.script));
   const results = view?.graded.results;
 
   const chipTone = (i: number) => {

@@ -13,7 +13,7 @@ import { useAuth } from "@/features/auth/auth-provider";
 import { getShowOnBoard, setShowOnBoard } from "@/lib/leaderboard";
 import { getSupabase } from "@/lib/supabase/client";
 import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS } from "@/lib/kana/hiragana";
-import type { Settings } from "@/lib/settings/types";
+import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
 
@@ -104,8 +104,13 @@ function SettingsBody({ s }: { s: Settings }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {KANA_GROUPS.map((g) => (
+            {KANA_GROUPS.map((g, i) => (
               <div key={g.id}>
+                {(i === 0 || KANA_GROUPS[i - 1].script !== g.script) && (
+                  <p className="mb-2 mt-2 font-display text-lg capitalize">
+                    {g.script} <span lang="ja" className="font-kana text-base text-muted">{g.script === "katakana" ? "ア" : "あ"}</span>
+                  </p>
+                )}
                 <p lang="ja" className="mb-2 text-xs font-extrabold text-muted">
                   {g.label}
                 </p>
@@ -140,7 +145,7 @@ function SettingsBody({ s }: { s: Settings }) {
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted">
             {s.enabledChars.length} of {ALL_KANA_LIST.length} enabled
-            <Button size="sm" variant="ghost" onClick={() => set({ enabledChars: [...BASIC_KANA_LIST] })}>
+            <Button size="sm" variant="ghost" onClick={() => set({ enabledChars: [...BASIC_KANA_LIST, ...KATAKANA_STARTER] })}>
               Basic 46 only
             </Button>
             <Button size="sm" variant="ghost" onClick={() => set({ enabledChars: [...ALL_KANA_LIST] })}>

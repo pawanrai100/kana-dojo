@@ -88,6 +88,7 @@ export function mergeDiverged(local: Progress, remote: Progress): Progress {
     confusions: mergeConfusions(local.confusions, remote.confusions),
     skills: pickBy(local.skills, remote.skills, moreSeen),
     belt: Math.max(local.belt, remote.belt),
+    kBelt: Math.max(local.kBelt ?? 0, remote.kBelt ?? 0),
   };
 }
 
@@ -126,6 +127,7 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     xp: x.xp + y.xp,
     perfect: (x.perfect ?? 0) + (y.perfect ?? 0) || undefined,
     sentences: (x.sentences ?? 0) + (y.sentences ?? 0) || undefined,
+    kata: (x.kata ?? 0) + (y.kata ?? 0) || undefined,
     floors: (x.floors ?? 0) + (y.floors ?? 0) || undefined,
     bestCombo: Math.max(x.bestCombo ?? 0, y.bestCombo ?? 0) || undefined,
     quests: [...new Set([...(x.quests ?? []), ...(y.quests ?? [])])],
@@ -150,5 +152,6 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     confusions: mergeConfusions(account.confusions, guest.confusions, true),
     skills: pickBy(account.skills, guest.skills, addSkill),
     belt: Math.max(account.belt, guest.belt),
+    kBelt: Math.max(account.kBelt ?? 0, guest.kBelt ?? 0),
   };
 }

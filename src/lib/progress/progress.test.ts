@@ -126,10 +126,10 @@ describe("progress tracking", () => {
 
 describe("storage safety", () => {
   it("recovers from junk progress", () => {
-    for (const junk of [null, 5, "x", [], { totalAnswered: -3, chars: { "カ": {}, "ね": { seen: "a" } }, days: { bad: 1 } }]) {
+    for (const junk of [null, 5, "x", [], { totalAnswered: -3, chars: { "漢": {}, "ね": { seen: "a" } }, days: { bad: 1 } }]) {
       const p = sanitizeProgress(junk);
       expect(p.totalAnswered).toBeGreaterThanOrEqual(0);
-      expect(p.chars["カ"]).toBeUndefined();
+      expect(p.chars["漢"]).toBeUndefined();
     }
     const p = sanitizeProgress({ totalAnswered: 5, totalCorrect: 9 });
     expect(p.totalCorrect).toBe(5);
@@ -137,15 +137,21 @@ describe("storage safety", () => {
 
   it("recovers from junk settings", () => {
     expect(sanitizeSettings("nope")).toEqual(DEFAULT_SETTINGS);
-    const s = sanitizeSettings({ questionsPerRound: 7, enabledChars: ["カ", "か", 3], mode: "words" });
+    const s = sanitizeSettings({ questionsPerRound: 7, enabledChars: ["漢", "か", 3, "カ"], mode: "words" });
     expect(s.questionsPerRound).toBe(10);
-    expect(s.enabledChars).toEqual(["か"]);
+    expect(s.enabledChars).toEqual(["か", "カ"]);
     expect(s.mode).toBe("words");
-    expect(sanitizeSettings({ enabledChars: ["カ"] }).enabledChars).toHaveLength(46);
+    // old saves have no katakana yet: they get the katakana basics added, hiragana untouched
+    const old = sanitizeSettings({ enabledChars: ["か", "き"] });
+    expect(old.enabledChars.filter((k) => k < "ァ")).toEqual(["か", "き"]);
+    expect(old.enabledChars).toEqual(expect.arrayContaining(["ア", "ン", "ー"]));
+    expect(sanitizeSettings({ enabledChars: ["漢"] }).enabledChars.filter((k) => k < "ァ")).toHaveLength(46);
+    expect(sanitizeSettings({ script: "katakana" }).script).toBe("katakana");
+    expect(sanitizeSettings({ script: "klingon" }).script).toBe("hiragana");
   });
 
   it("drops stored rounds containing excluded kana", () => {
-    expect(sanitizeActiveRound({ round: { id: "x", questions: [{ id: "a", kana: "カタカナ" }] } })).toBeNull();
+    expect(sanitizeActiveRound({ round: { id: "x", questions: [{ id: "a", kana: "漢字" }] } })).toBeNull();
     const ok = sanitizeActiveRound({ round: { id: "x", questions: [{ id: "a", kana: "ねこ" }] }, answers: [] });
     expect(ok?.answers).toHaveLength(1);
     expect(ok?.round.questions[0].romaji).toBe("neko");

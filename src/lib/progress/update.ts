@@ -1,4 +1,5 @@
 import { analyzeAnswer } from "@/lib/coach/analyze";
+import { scriptOf } from "@/lib/kana/hiragana";
 import { particleInfo } from "@/lib/quiz/tokens";
 import type { GeneratorState, GradedRound } from "@/lib/quiz/types";
 import { currentStreak, dayKey, masteredChars } from "./stats";
@@ -137,6 +138,7 @@ export function applyGradedRound(p: Progress, g: GradedRound, gen: GeneratorStat
     xp: day.xp + g.xpEarned,
     perfect: (day.perfect ?? 0) + (answered >= 5 && g.correctCount === g.results.length ? 1 : 0),
     sentences: (day.sentences ?? 0) + tried.filter((r) => r.correct && r.question.kind === "sentence").length,
+    kata: (day.kata ?? 0) + tried.filter((r) => r.correct && r.question.chars.some((k) => scriptOf(k) === "katakana")).length || undefined,
     bestCombo: Math.max(day.bestCombo ?? 0, g.maxCombo),
   };
   next.bestStreak = Math.max(next.bestStreak, currentStreak(next, now));

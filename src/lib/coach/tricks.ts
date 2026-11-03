@@ -50,6 +50,56 @@ const BASIC: Record<string, string> = {
   ん: "A lowercase n written in one quick swoop: \"n\".",
 };
 
+// katakana: straight lines and sharp corners, so the hooks are blockier
+const KATA: Record<string, string> = {
+  ア: "An axe hacking down: \"a!\"",
+  イ: "An eagle perched on a branch: \"i\" (eagle).",
+  ウ: "Like う with a little roof on: \"u\".",
+  エ: "An elevator shaft, top and bottom floor: \"e\" (elevator).",
+  オ: "An opera singer with arms spread wide: \"o\".",
+  カ: "Same shape as か, just without the extra dash: \"ka\".",
+  キ: "A key with two teeth, like き but blockier: \"ki\".",
+  ク: "A cook's hat seen from the side: \"ku\" (cook).",
+  ケ: "A crooked K: \"ke\".",
+  コ: "A corner of a box, like a cord wrapped around: \"ko\".",
+  サ: "A signpost with two poles: \"sa\" (sign).",
+  シ: "A smiley face looking up and to the side: \"shi\" (she's smiling). Dashes lie flat, the tail swoops UP.",
+  ス: "A person doing a big stride on a ski: \"su\" (ski... su).",
+  セ: "Like せ, a mouth with one sharp tooth: \"se\".",
+  ソ: "A sewing needle and a stitch dropping DOWN: \"so\". Dashes stand up, the tail falls from the top.",
+  タ: "Like ク with a bar across: a taco folded over: \"ta\".",
+  チ: "A cheerleader with a big chin, standing tall: \"chi\".",
+  ツ: "Two eyes and a tsunami swooping DOWN: \"tsu\". Dashes stand up, the tail comes from the top.",
+  テ: "A telephone pole with wires: \"te\".",
+  ト: "A totem pole with one branch: \"to\".",
+  ナ: "A knife stabbed through: \"na\" (knife).",
+  ニ: "Two needles lying flat: \"ni\" (needle).",
+  ヌ: "Chopsticks pinching noodles: \"nu\".",
+  ネ: "A nail with a necktie: \"ne\".",
+  ノ: "One single slash. No!: \"no\".",
+  ハ: "Two people walking away laughing: \"ha\".",
+  ヒ: "A heel kicking out: \"hi\" (heel).",
+  フ: "Mount Fuji's one big slope: \"fu\".",
+  ヘ: "Exactly the same as hiragana へ: \"he\".",
+  ホ: "A holy cross with two little feet: \"ho\".",
+  マ: "A mama bird's beak pointing down: \"ma\".",
+  ミ: "Three missiles flying up: \"mi\".",
+  ム: "A cow's face with its moo: \"mu\".",
+  メ: "An X marks the spot on a map. Mark: \"me\".",
+  モ: "Like も, a fishhook with more bait: \"mo\".",
+  ヤ: "A yak's horn: \"ya\".",
+  ユ: "A U-turn sign drawn with straight lines: \"yu\".",
+  ヨ: "A backwards E like a yo-yo stack: \"yo\".",
+  ラ: "A rabbit with one ear flat: \"ra\".",
+  リ: "Like り, two reeds: \"ri\".",
+  ル: "Two roots growing down: \"ru\".",
+  レ: "A leg kicking: \"re\".",
+  ロ: "A square road sign: \"ro\".",
+  ワ: "A wine glass on its side: \"wa\".",
+  ヲ: "Like フ with a bar through it: \"wo\". Pretty rare in katakana.",
+  ン: "A needle stitch dropping down, n: \"n\". It tilts more than ソ.",
+};
+
 // how to tell the twins apart, keyed by sorted pair
 const DIFF: Record<string, string> = {
   "ぬ|め": "ぬ ends with a little loop. め just stops.",
@@ -71,6 +121,26 @@ const DIFF: Record<string, string> = {
   "ず|づ": "Same sound. づ is rare, so if you see it, type zu (or du).",
   "しゃ|じゃ": "The two dashes ゛ turn sha into ja.",
   "しょ|じょ": "The two dashes ゛ turn sho into jo.",
+  "シ|ツ": "シ's dashes lie flat and the tail swoops up from the bottom. ツ's dashes stand up and the tail falls from the top.",
+  "ソ|ン": "ソ's dash stands up and the stroke falls from the top. ン's dash lies flat and the stroke swoops up.",
+  "ク|ケ": "ケ has a line that sticks out past the roof. ク's roof is closed.",
+  "ク|タ": "タ is ク with an extra dash inside.",
+  "ケ|タ": "タ has a dash inside a closed roof. ケ's top line sticks out.",
+  "ウ|ワ": "ウ has a little dash on top. ワ doesn't.",
+  "フ|ワ": "ワ has a short line on the left side. フ doesn't.",
+  "ウ|フ": "ウ has a dash on top and a line on the left. フ is just the one hook.",
+  "チ|テ": "チ's bottom stroke sweeps to the left. テ's goes straight down then left.",
+  "ス|ヌ": "ヌ has an extra dash crossing it. ス doesn't.",
+  "コ|ユ": "ユ's bottom line sticks out to the left. コ is a clean corner.",
+  "ロ|ユ": "ロ is a closed box. ユ is open on the left.",
+  "コ|ロ": "ロ is a closed box. コ is open on the left.",
+  "ア|マ": "ア has a tail going down the middle. マ just has a little dash.",
+  "ナ|メ": "ナ is a cross with a long line. メ is an X.",
+  "メ|ノ": "ノ is one slash. メ adds a second stroke to make an X.",
+  "ル|レ": "ル has two strokes. レ is one.",
+  "ヨ|ヲ": "ヨ has three bars. ヲ is a hook with a bar through it.",
+  "カ|ヤ": "カ's hook points down. ヤ's sweeps up and right.",
+  "シャ|ジャ": "The two dashes ゛ turn sha into ja.",
 };
 const MARK_DIFF = "Two dashes ゛ make a b sound. A tiny circle ゜ makes a p sound.";
 
@@ -86,17 +156,21 @@ const LOOK_OF = new Map(LOOKALIKES.flatMap((g) => g.map((k) => [k, g] as const))
 
 // dakuten kana sit right after their plain version in unicode: か+1 = が, は+2 = ぱ
 function baseOf(k: string): string | undefined {
-  if (k.length !== 1 || groupOf(k)?.id !== "dakuten") return undefined;
+  if (k.length !== 1 || groupOf(k)?.kind !== "dakuten") return undefined;
   for (const back of [1, 2]) {
     const b = String.fromCharCode(k.charCodeAt(0) - back);
-    if (BASIC[b]) return b;
+    if (BASIC[b] || KATA[b]) return b;
   }
   return undefined;
 }
 
 export function trickFor(k: string): string {
   if (BASIC[k]) return BASIC[k];
+  if (KATA[k]) return KATA[k];
   if (k === SMALL_TSU) return "A small っ is a tiny pause. Double the next consonant: きって is kitte, not kitsute.";
+  if (k === "ッ") return "Small ッ works just like っ. Double the next consonant: サッカー is sakkaa.";
+  if (k === "ー") return "The bar ー stretches the vowel before it. コーヒー is koohii: say the o twice as long.";
+  if (groupOf(k)?.kind === "extended") return `A small ${k.slice(1)} glues on to make a sound Japanese borrowed: ${k} = ${readingOf(k)}.`;
   const base = baseOf(k);
   if (base) {
     const row = getKana(base)?.romaji[0][0] ?? "";
@@ -104,7 +178,8 @@ export function trickFor(k: string): string {
   }
   if (k.length === 2) {
     const first = k[0];
-    return `${first} (${readingOf(first)}) + a small ${k[1]} glue into one beat: ${readingOf(k)}. Say it fast, not ${readingOf(first)}-${readingOf(k[1] === "ゃ" ? "や" : k[1] === "ゅ" ? "ゆ" : "よ")}.`;
+    const big = { ゃ: "や", ゅ: "ゆ", ょ: "よ", ャ: "ヤ", ュ: "ユ", ョ: "ヨ" }[k[1]] ?? k[1];
+    return `${first} (${readingOf(first)}) + a small ${k[1]} glue into one beat: ${readingOf(k)}. Say it fast, not ${readingOf(first)}-${readingOf(big)}.`;
   }
   return `Say it out loud as you type it: ${readingOf(k)}.`;
 }
@@ -112,5 +187,5 @@ export function trickFor(k: string): string {
 // how to tell k from its twin t, if they're a known lookalike pair
 export function twinDiff(k: string, t: string): string | undefined {
   if (!LOOK_OF.get(k)?.includes(t)) return undefined;
-  return DIFF[pair(k, t)] ?? (/[ばびぶべぼぱぴぷぺぽ]/.test(k + t) ? MARK_DIFF : undefined);
+  return DIFF[pair(k, t)] ?? (/[ばびぶべぼぱぴぷぺぽバビブベボパピプペポ]/.test(k + t) ? MARK_DIFF : undefined);
 }

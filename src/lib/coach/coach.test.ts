@@ -86,7 +86,7 @@ describe("the coach learns from rounds", () => {
     const back = sanitizeProgress(JSON.parse(JSON.stringify(p)));
     expect(back.confusions).toEqual(p.confusions);
     expect(back.skills).toEqual(p.skills);
-    expect(sanitizeProgress({ confusions: { ね: { れ: "x", カ: 2 } }, skills: { bogus: {} } }).confusions).toEqual({});
+    expect(sanitizeProgress({ confusions: { ね: { れ: "x", 漢: 2 } }, skills: { bogus: {} } }).confusions).toEqual({});
     expect(mergeDiverged(p, emptyProgress()).confusions["ね"]["れ"]).toBe(1);
     expect(mergeGuestInto(p, p).confusions["ね"]["れ"]).toBe(2);
   });

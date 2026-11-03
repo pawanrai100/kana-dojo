@@ -1,7 +1,7 @@
 import { KANA_GROUPS, getRow } from "@/lib/kana/hiragana";
 import { skillMissRate } from "@/lib/quiz/adaptive";
 import { isCleared } from "@/lib/tower/progress";
-import { FLOORS, TOP_FLOOR } from "@/lib/tower/floors";
+import { FLOORS, TOP_FLOOR, floorsOf } from "@/lib/tower/floors";
 import { isMastered } from "./stats";
 import type { Progress } from "./types";
 
@@ -124,16 +124,67 @@ export const BELTS: Belt[] = [
   },
 ];
 
+// katakana gets its own ladder, same colours, its own goals
+const kgroup = (id: string) => KANA_GROUPS.find((g) => g.id === id)!.chars;
+const K_BASIC = kgroup("k-basic");
+const K_DAKUTEN = kgroup("k-dakuten");
+const K_EXTRAS = [...kgroup("k-combos"), ...kgroup("k-sokuon")];
+const K_STARTER = [...getRow("kt-vowel")!.chars, ...getRow("kt-k")!.chars];
+const K_ALL = KANA_GROUPS.filter((g) => g.script === "katakana").flatMap((g) => g.chars);
+const kataFloors = () => floorsOf("kata");
+
+const hira = (id: string) => BELTS.find((b) => b.id === id)!;
+export const KATA_BELTS: Belt[] = [
+  { ...hira("white"), id: "k-white", goal: "Start here." },
+  { ...hira("yellow"), id: "k-yellow", goal: "Master the katakana vowels and the K-row.", step: (p) => masterStep(p, K_STARTER, K_STARTER.length, "katakana vowels and K-row") },
+  { ...hira("orange"), id: "k-orange", goal: "Master 20 basic katakana.", step: (p) => masterStep(p, K_BASIC, 20, "basic katakana") },
+  { ...hira("green"), id: "k-green", goal: "Master 35 basic katakana.", step: (p) => masterStep(p, K_BASIC, 35, "basic katakana") },
+  { ...hira("blue"), id: "k-blue", goal: "Master all 46 basic katakana.", step: (p) => masterStep(p, K_BASIC, 46, "basic katakana") },
+  { ...hira("purple"), id: "k-purple", goal: "Master all 25 katakana dakuten (ガ, ザ, ダ, バ, パ).", step: (p) => masterStep(p, K_DAKUTEN, K_DAKUTEN.length, "katakana dakuten") },
+  { ...hira("brown"), id: "k-brown", goal: "Master the combos (キャ...), small ッ and the long ー.", step: (p) => masterStep(p, K_EXTRAS, K_EXTRAS.length, "katakana combos, ッ or ー") },
+  { ...hira("black"), id: "k-black", goal: "Every katakana mastered, foreign sounds like ファ and ティ included.", step: (p) => masterStep(p, K_ALL, K_ALL.length, "katakana") },
+  {
+    ...hira("dan1"),
+    id: "k-dan1",
+    goal: "Beat the Shadow King at the top of Neon City.",
+    step: (p) => {
+      const top = kataFloors().at(-1)!.id;
+      return { have: isCleared(p.tower, top) ? 1 : 0, need: 1, label: isCleared(p.tower, top) ? "Done" : "Beat the Shadow King on Neon floor " + (top - 200) };
+    },
+  },
+  { ...hira("dan2"), id: "k-dan2" },
+  {
+    ...hira("dan3"),
+    id: "k-dan3",
+    goal: "3 stars on every Neon City floor and a 30-day streak.",
+    step: (p) => {
+      const fs = kataFloors();
+      const stars = fs.filter((f) => (p.tower.floors[f.id]?.stars ?? 0) === 3).length;
+      return both(
+        { have: stars, need: fs.length, label: `Get 3 stars on ${fs.length - stars} more Neon City floors` },
+        { have: Math.min(p.bestStreak, 30), need: 30, label: `Practise ${Math.max(0, 30 - p.bestStreak)} more days in a row` },
+      );
+    },
+  },
+];
+
+export type BeltScript = "hiragana" | "katakana";
+const LADDER: Record<BeltScript, Belt[]> = { hiragana: BELTS, katakana: KATA_BELTS };
+export const ladderOf = (script: BeltScript = "hiragana") => LADDER[script];
+const earnedOf = (p: Progress, script: BeltScript) => (script === "katakana" ? (p.kBelt ?? 0) : (p.belt ?? 0));
+
 const done = (s: BeltStep) => s.have >= s.need;
 
 // the highest belt your skills support right now (belts go in order)
-export function qualifiedBelt(p: Progress): number {
+export function qualifiedBelt(p: Progress, script: BeltScript = "hiragana"): number {
+  const L = LADDER[script];
   let i = 0;
-  while (i + 1 < BELTS.length && done(BELTS[i + 1].step(p))) i++;
+  while (i + 1 < L.length && done(L[i + 1].step(p))) i++;
   return i;
 }
 
 export interface BeltStatus {
+  script: BeltScript;
   index: number;
   belt: Belt;
   next?: Belt;
@@ -141,15 +192,30 @@ export interface BeltStatus {
   needsReview: boolean; // earned it before, but mastery has slipped below it
 }
 
-export function beltStatus(p: Progress): BeltStatus {
-  const q = qualifiedBelt(p);
-  const index = Math.max(p.belt ?? 0, q);
-  const next = BELTS[index + 1];
-  return { index, belt: BELTS[index], next, nextStep: next?.step(p), needsReview: q < index };
+export function beltStatus(p: Progress, script: BeltScript = "hiragana"): BeltStatus {
+  const L = LADDER[script];
+  const q = qualifiedBelt(p, script);
+  const index = Math.min(Math.max(earnedOf(p, script), q), L.length - 1);
+  const next = L[index + 1];
+  return { script, index, belt: L[index], next, nextStep: next?.step(p), needsReview: q < index };
 }
 
-// lock in a newly earned belt so it can never be taken away
+// lock in newly earned belts (both ladders) so they can never be taken away
 export function withBelt(p: Progress): Progress {
-  const q = qualifiedBelt(p);
-  return q > (p.belt ?? 0) ? { ...p, belt: q } : p;
+  const h = qualifiedBelt(p, "hiragana");
+  const k = qualifiedBelt(p, "katakana");
+  if (h <= (p.belt ?? 0) && k <= (p.kBelt ?? 0)) return p;
+  return { ...p, belt: Math.max(h, p.belt ?? 0), kBelt: Math.max(k, p.kBelt ?? 0) };
 }
+
+// a belt you just earned on either ladder, for the promotion banner
+export function promotedBelt(before: Progress, after: Progress): Belt | undefined {
+  for (const sc of ["katakana", "hiragana"] as const) {
+    const a = beltStatus(after, sc).index;
+    if (a > beltStatus(before, sc).index) return LADDER[sc][a];
+  }
+  return undefined;
+}
+
+// which ladder to show for a script setting
+export const beltScriptFor = (script: "hiragana" | "katakana" | "both"): BeltScript => (script === "katakana" ? "katakana" : "hiragana");

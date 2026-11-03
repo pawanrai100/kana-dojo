@@ -14,11 +14,12 @@ import { Hearts, Sprite, type Fx } from "./battle-parts";
 export function theme(floor: Floor) {
   if (floor.kind === "final") return { sky: "#120c05", glow: "#ffb02e", fog: "rgb(255 176 46 / 0.18)" };
   if (floor.tower === "sky") return { sky: "#140f2e", glow: "#8b6bff", fog: "rgb(139 107 255 / 0.2)" };
+  if (floor.tower === "kata") return { sky: "#04161c", glow: "#18e0d0", fog: "rgb(24 224 208 / 0.18)" };
   return { sky: "#1c0b0e", glow: "#ff4b4b", fog: "rgb(255 75 75 / 0.16)" };
 }
 
 export function bossTitle(floor: Floor): string {
-  if (floor.kind === "final") return floor.tower === "sky" ? "Ruler of the Sky Shrine" : "Master of the Tower";
+  if (floor.kind === "final") return floor.tower === "sky" ? "Ruler of the Sky Shrine" : floor.tower === "kata" ? "Ruler of the Neon City" : "Master of the Tower";
   return `Guardian of ${zoneOf(floor)?.name ?? "the Tower"}`;
 }
 

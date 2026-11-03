@@ -8,7 +8,7 @@ import { ProgressBar } from "@/components/ui/misc";
 import { beltStatus } from "@/lib/progress/belts";
 import type { Progress } from "@/lib/progress/types";
 import { ACHIEVEMENTS, currentTitle, earnedIds } from "@/lib/tower/achievements";
-import { FINAL_BOSS, SKY_FINAL_BOSS, SKY_ZONES, TOP_FLOOR, ZONES, floorLabel, floorsOf, getFloor, type Floor, type TowerId } from "@/lib/tower/floors";
+import { FINAL_BOSS, KATA_FINAL_BOSS, KATA_ZONES, SKY_FINAL_BOSS, SKY_ZONES, TOP_FLOOR, ZONES, floorLabel, floorNumber, floorsOf, getFloor, type Floor, type TowerId } from "@/lib/tower/floors";
 import { skyOpen } from "@/lib/tower/gate";
 import { clearedCount, currentFloor, isCleared, isUnlocked, totalStars } from "@/lib/tower/progress";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,13 @@ const TOWERS: Record<TowerId, { name: string; blurb: string; summit: string; zon
     zones: SKY_ZONES,
     final: SKY_FINAL_BOSS,
   },
+  kata: {
+    name: "Neon City",
+    blurb: "The katakana tower. All 46, then the marks, ッ, ー, combos and foreign sounds like ファ. Open from day one.",
+    summit: "Neon Crown",
+    zones: KATA_ZONES,
+    final: KATA_FINAL_BOSS,
+  },
 };
 
 export function TowerView() {
@@ -45,7 +52,8 @@ export function TowerView() {
   const open = skyOpen(state.progress);
   const unlocked = (id: number) => isUnlocked(state.progress.tower, id, open);
   // once the first tower is done, land on the sky shrine
-  const shown: TowerId | "cards" = tab ?? (open && isCleared(state.progress.tower, TOP_FLOOR) ? "sky" : "kana");
+  // land on the tower that fits: neon city for katakana, the sky shrine after the dragon
+  const shown: TowerId | "cards" = tab ?? (state.settings.script === "katakana" ? "kata" : open && isCleared(state.progress.tower, TOP_FLOOR) ? "sky" : "kana");
 
   const floor = playing ? getFloor(playing) : undefined;
   if (floor && unlocked(floor.id)) {
@@ -60,8 +68,8 @@ export function TowerView() {
   }
   return (
     <div className="space-y-6">
-      <div role="tablist" aria-label="Towers" className="inline-flex gap-1 rounded-2xl bg-surface-2 p-1">
-        {(["kana", "sky", "cards"] as const).map((id) => (
+      <div role="tablist" aria-label="Towers" className="flex w-full gap-1 rounded-2xl bg-surface-2 p-1 sm:inline-flex sm:w-auto">
+        {(["kana", "sky", "kata", "cards"] as const).map((id) => (
           <button
             key={id}
             role="tab"
@@ -69,12 +77,17 @@ export function TowerView() {
             aria-selected={shown === id}
             onClick={() => setTab(id)}
             className={cn(
-              "flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-extrabold transition-colors",
+              "flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-xl px-1.5 py-2 text-xs font-extrabold transition-colors sm:flex-none sm:gap-1.5 sm:px-4 sm:text-sm",
               shown === id ? "bg-surface text-primary shadow-[0_3px_0_var(--border)]" : "text-muted hover:text-foreground",
             )}
           >
             {id === "sky" && (open ? <Cloud className="size-4" aria-hidden /> : <Lock className="size-3.5" aria-hidden />)}
             {id === "cards" && <Layers className="size-4" aria-hidden />}
+            {id === "kata" && (
+              <span lang="ja" aria-hidden className="font-kana text-sm">
+                ア
+              </span>
+            )}
             {id === "cards" ? "Cards" : TOWERS[id].name}
           </button>
         ))}
@@ -231,7 +244,7 @@ function FloorButton({
   const boss = f.boss;
   const final = f.kind === "final";
   const label = `${floorLabel(f)}: ${boss ? `${boss.name} boss` : f.name}. ${unlocked ? (cleared ? `${stars} stars` : "Not cleared yet") : "Locked"}`;
-  const number = f.tower === "sky" ? f.id - 100 : f.id;
+  const number = floorNumber(f);
 
   return (
     <button
@@ -248,7 +261,9 @@ function FloorButton({
           : boss
             ? f.tower === "sky"
               ? "bg-[#6a4fd8] text-white shadow-[0_6px_0_#4a33a8]"
-              : "bg-bad text-white shadow-[0_6px_0_var(--bad-deep)]"
+              : f.tower === "kata"
+                ? "bg-[#0d8f86] text-white shadow-[0_6px_0_#08605a]"
+                : "bg-bad text-white shadow-[0_6px_0_var(--bad-deep)]"
             : "bg-surface shadow-[0_5px_0_var(--border)]",
         unlocked && "hover:brightness-[1.03]",
         isCurrent && "ring-4 ring-primary ring-offset-2 ring-offset-background",

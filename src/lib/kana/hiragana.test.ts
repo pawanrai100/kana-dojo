@@ -17,8 +17,8 @@ describe("hiragana data", () => {
 
   it("has every extra in exactly one group: 25 dakuten, 33 combos, small っ", () => {
     const by = Object.fromEntries(KANA_GROUPS.map((g) => [g.id, g.chars.length]));
-    expect(by).toEqual({ basic: 46, dakuten: 25, combos: 33, sokuon: 1 });
-    expect(new Set(ALL_KANA_LIST).size).toBe(105);
+    expect(by).toEqual({ basic: 46, dakuten: 25, combos: 33, sokuon: 1, "k-basic": 46, "k-dakuten": 25, "k-combos": 33, "k-sokuon": 2, "k-extended": 19 });
+    expect(new Set(ALL_KANA_LIST).size).toBe(105 + 125);
   });
 
   it("reads combos as one sound and doubles after small っ", () => {

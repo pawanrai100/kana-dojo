@@ -11,6 +11,7 @@ import { AccountChip } from "./account-chip";
 import { LogoMark } from "./logo";
 import { ThemeSync } from "./theme-sync";
 import { BeltChip } from "@/features/belts/belt";
+import { beltScriptFor } from "@/lib/progress/belts";
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -65,7 +66,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2.5">
-            {state && <BeltChip progress={state.progress} />}
+            {state && <BeltChip progress={state.progress} script={beltScriptFor(state.settings.script)} />}
             <span
               className="flex items-center gap-1.5 rounded-full bg-sun px-3 py-1.5 text-sm font-extrabold text-sun-ink shadow-[0_3px_0_var(--sun-deep)]"
               aria-label={`${streak} day streak`}

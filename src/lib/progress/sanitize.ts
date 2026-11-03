@@ -86,6 +86,7 @@ function day(v: unknown): DayStat | null {
     xp: num(v.xp),
     perfect: opt(v.perfect),
     sentences: opt(v.sentences),
+    kata: opt(v.kata),
     floors: opt(v.floors),
     bestCombo: opt(v.bestCombo),
     quests: Array.isArray(v.quests) ? [...new Set(v.quests.filter((q): q is string => typeof q === "string"))].slice(0, 10) : undefined,
@@ -148,5 +149,6 @@ export function sanitizeProgress(raw: unknown): Progress {
     confusions: confusions(raw.confusions),
     skills: record(raw.skills, skillStat, (k) => k in SKILLS),
     belt: Math.min(Math.floor(num(raw.belt)), 20),
+    kBelt: Math.min(Math.floor(num(raw.kBelt)), 20),
   };
 }

@@ -4,15 +4,30 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Check, CircleDot, Play, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/misc";
+import { Badge, Segmented } from "@/components/ui/misc";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
-import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS, LOOKALIKES, SMALL_TSU, getKana, getRow, readingOf, type KanaGroup } from "@/lib/kana/hiragana";
+import {
+  ALL_KANA_LIST,
+  BASIC_KANA_LIST,
+  KANA_GROUPS,
+  LONG_MARK,
+  LOOKALIKES,
+  SMALL_TSU,
+  getKana,
+  getRow,
+  isSmallTsu,
+  readingOf,
+  scriptOf,
+  toKatakana,
+  type KanaGroup,
+} from "@/lib/kana/hiragana";
+import type { KanaScript } from "@/lib/kana/types";
 import { wordsForChars } from "@/lib/quiz/generate";
 import { charAccuracy, isMastered } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
-import type { Settings } from "@/lib/settings/types";
-import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
+import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
+import { ALL_VOCAB } from "@/lib/vocab/all";
 import { cn, pct } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
 
@@ -33,6 +48,12 @@ const LAYOUT: Record<string, (string | null)[]> = {
 
 const reading = readingOf;
 
+// katakana rows reuse the same grid, just shifted into katakana
+function layoutOf(id: string): (string | null)[] | undefined {
+  if (!id.startsWith("kt-")) return LAYOUT[id];
+  return LAYOUT[id.slice(3)]?.map((k) => (k ? toKatakana(k) : null));
+}
+
 export function KanaChart() {
   const state = useAppState();
   if (!state) return <PageSkeleton />;
@@ -43,7 +64,13 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
   const router = useRouter();
   const [draft, setDraft] = useState<string[]>(settings.enabledChars);
   const [open, setOpen] = useState<string | null>(null);
+  const [script, setScript] = useState<KanaScript>(settings.script === "katakana" ? "katakana" : "hiragana");
   const selected = new Set(draft);
+  const groups = KANA_GROUPS.filter((g) => g.script === script);
+  const basic = script === "katakana" ? KATAKANA_STARTER : BASIC_KANA_LIST;
+  const everything = groups.flatMap((g) => g.chars);
+  const mine = draft.filter((k) => scriptOf(k) === script);
+  const others = draft.filter((k) => scriptOf(k) !== script);
 
   const commit = (next: string[]) => {
     const ordered = ALL_KANA_LIST.filter((k) => next.includes(k));
@@ -52,6 +79,8 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
     if (ordered.length) actions.updateSettings({ enabledChars: ordered });
   };
 
+  // swap this script's picks, keep the other script's as they are
+  const commitMine = (chars: string[]) => commit([...others, ...chars]);
   const toggle = (k: string) => commit(selected.has(k) ? draft.filter((x) => x !== k) : [...draft, k]);
   const toggleRow = (chars: string[]) => {
     const all = chars.every((k) => selected.has(k));
@@ -59,52 +88,64 @@ function ChartBody({ settings, progress }: { settings: Settings; progress: Progr
   };
 
   const practice = (chars?: string[]) => {
-    // small っ on its own can't make a word, so bring the basics along
-    if (chars?.every((k) => k === SMALL_TSU)) chars = [...BASIC_KANA_LIST, ...chars];
-    if (chars) commit(chars);
+    // small っ (or ー) on its own can't make a word, so bring the basics along
+    if (chars?.every((k) => isSmallTsu(k) || k === LONG_MARK)) chars = [...basic, ...chars];
+    if (chars) commitMine(chars);
+    // practising from this tab means practising this script
+    if (settings.script !== script) actions.updateSettings({ script });
     actions.clearActive();
     router.push("/practice");
   };
 
-  const wordCount = wordsForChars(draft).length;
+  const wordCount = wordsForChars(mine).length;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Hiragana chart"
-        description="The basic 46, then dakuten, combos and small っ. Tick the ones you want in your rounds, or open one to see how you're doing with it."
-      />
+        title="Kana chart"
+        description="The basic 46, then dakuten, combos and the little extras. Tick the ones you want in your rounds, or open one to see how you're doing with it."
+      >
+        <Segmented
+          label="Script"
+          value={script}
+          onChange={setScript}
+          options={[
+            { value: "hiragana", label: <span><span lang="ja" className="font-kana mr-1">あ</span>Hiragana</span> },
+            { value: "katakana", label: <span><span lang="ja" className="font-kana mr-1">ア</span>Katakana</span> },
+          ]}
+        />
+      </PageHeader>
 
       <div className="sticky top-[4.5rem] z-20 flex flex-wrap items-center gap-2 rounded-2xl bg-surface/95 shadow-[0_4px_0_var(--border)] p-3 shadow-card backdrop-blur lg:top-4">
-        <Button variant="secondary" size="sm" onClick={() => commit([...BASIC_KANA_LIST])}>
+        <Button variant="secondary" size="sm" onClick={() => commitMine([...basic])}>
           Basic 46
         </Button>
-        <Button variant="secondary" size="sm" onClick={() => commit([...ALL_KANA_LIST])}>
+        <Button variant="secondary" size="sm" onClick={() => commitMine(everything)}>
           Everything
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setDraft([])}>
+        <Button variant="ghost" size="sm" onClick={() => setDraft(others)}>
           Clear
         </Button>
         <span className="text-sm text-muted">
-          <strong className="text-foreground">{draft.length}</strong> selected, {wordCount} real words available
+          <strong className="text-foreground">{mine.length}</strong> {script} selected, {wordCount} real words available
         </span>
-        <Button className="ml-auto" disabled={draft.length === 0} onClick={() => practice()}>
+        <Button className="ml-auto" disabled={mine.length === 0} onClick={() => practice()}>
           <Play /> Practice selected
         </Button>
       </div>
 
-      {draft.length === 0 && (
+      {mine.length === 0 && (
         <p role="status" className="rounded-xl bg-bad-soft px-4 py-3 text-sm text-bad">
           Select at least one character. Your last saved selection is still used until you pick something.
         </p>
       )}
-      {draft.length > 0 && wordCount < 10 && (
+      {mine.length > 0 && wordCount < 10 && (
         <p role="status" className="rounded-xl bg-primary-soft px-4 py-3 text-sm text-primary">
           Only {wordCount} real word{wordCount === 1 ? "" : "s"} can be spelled with this selection. Real Words mode will give short rounds, so Random Combos is the better fit here.
         </p>
       )}
 
-      {KANA_GROUPS.map((g) => (
+      {groups.map((g) => (
         <GroupTable
           key={g.id}
           group={g}
@@ -144,7 +185,7 @@ function GroupTable({
   onPractice: () => void;
 }) {
   const all = group.chars.every((k) => selected.has(k));
-  const cols = Math.max(...group.rows.map((r) => (LAYOUT[r.id] ?? r.chars).length));
+  const cols = Math.max(...group.rows.map((r) => (layoutOf(r.id) ?? r.chars).length));
   return (
     <section aria-labelledby={`group-${group.id}`} className="rounded-[var(--radius-card)] bg-surface p-3 shadow-card sm:p-5">
       <div className="mb-3 flex flex-wrap items-start gap-3 px-2">
@@ -170,7 +211,7 @@ function GroupTable({
             {group.rows.map((row) => {
               const rowAll = row.chars.every((k) => selected.has(k));
               const rowSome = row.chars.some((k) => selected.has(k));
-              const cells = LAYOUT[row.id] ?? row.chars;
+              const cells = layoutOf(row.id) ?? row.chars;
               return (
                 <tr key={row.id}>
                   <th scope="row" className="w-24 pr-2 text-left align-middle">
@@ -268,7 +309,7 @@ function CharDetail({
   const c = kana ? getKana(kana) : undefined;
   const s = kana ? progress.chars[kana] : undefined;
   const row = c ? getRow(c.row) : undefined;
-  const examples = kana ? HIRAGANA_VOCAB.filter((w) => w.kana.includes(kana)).slice(0, 5) : [];
+  const examples = kana ? ALL_VOCAB.filter((w) => w.kana.includes(kana)).slice(0, 5) : [];
   const confused = kana ? LOOKALIKES.find((g) => g.includes(kana))?.filter((k) => k !== kana) ?? [] : [];
 
   return (
@@ -281,15 +322,19 @@ function CharDetail({
                 {c.kana}
               </span>
               <div className="space-y-1">
-                <DialogTitle className="text-2xl">{c.kana === SMALL_TSU ? "small tsu" : c.romaji[0]}</DialogTitle>
+                <DialogTitle className="text-2xl">{isSmallTsu(c.kana) ? "small tsu" : c.kana === LONG_MARK ? "long vowel bar" : c.romaji[0]}</DialogTitle>
                 <DialogDescription>
                   {c.kana === SMALL_TSU ? (
                     "No sound of its own. It doubles the next consonant: きって = kitte, まっちゃ = matcha."
+                  ) : c.kana === "ッ" ? (
+                    "No sound of its own. It doubles the next consonant: サッカー = sakkaa, ベッド = beddo."
+                  ) : c.kana === LONG_MARK ? (
+                    "Stretches the vowel before it. コーヒー = koohii, ケーキ = keeki. You can type the vowel twice or a dash (ko-hi-)."
                   ) : (
                     <>
                       {row.label}
                       {c.romaji.length > 1 && `, also typed as ${c.romaji.slice(1).join(", ")}`}
-                      {c.kana === "ん" && ", type n, nn or n'"}
+                      {(c.kana === "ん" || c.kana === "ン") && ", type n, nn or n'"}
                     </>
                   )}
                 </DialogDescription>
@@ -341,7 +386,7 @@ function CharDetail({
             )}
 
             <Button className="w-full" onClick={() => onPracticeRow(row.chars)}>
-              <Play /> Practice {c.kana === SMALL_TSU ? "small っ" : `the ${row.label}`}
+              <Play /> Practice {isSmallTsu(c.kana) || c.kana === LONG_MARK ? row.label.toLowerCase() : `the ${row.label}`}
             </Button>
           </div>
         )}

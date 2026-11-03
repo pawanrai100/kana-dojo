@@ -1,4 +1,4 @@
-import { LOOKALIKES, SMALL_TSU, canFollowSokuon, groupOf, readingOf, splitKana, toRomaji } from "@/lib/kana/hiragana";
+import { LONG_MARK, LOOKALIKES, SMALL_TSU, SMALL_TSU_K, canFollowSokuon, groupOf, isSmallTsu, readingOf, splitKana, toRomaji } from "@/lib/kana/hiragana";
 import type { CharStat } from "@/lib/progress/types";
 import type { CoachContext } from "@/lib/quiz/adaptive";
 import { EMPTY_COACH, focusChars } from "@/lib/quiz/adaptive";
@@ -39,6 +39,13 @@ const STYLE: Record<string, MoveId[]> = {
   ayutengu: ["combo", "long"],
   pramirei: ["tsu"],
   basarihyon: ["combo", "marks", "tsu", "weak"],
+  k1: ["blitz"],
+  k2: ["blitz", "long"],
+  k3: ["twin", "weak"],
+  k4: ["twin", "long"],
+  k5: ["marks", "tsu"],
+  k6: ["combo", "blitz"],
+  k7: ["twin", "combo", "marks", "tsu", "long"],
 };
 
 export interface MoveInput {
@@ -54,19 +61,19 @@ const pick = <T,>(xs: T[], rng: Rng): T => xs[randInt(rng, 0, xs.length - 1)];
 function pools(floor: Floor, stats: Record<string, CharStat>, coach: CoachContext) {
   const learned = floor.chars;
   const set = new Set(learned);
-  const plain = learned.filter((k) => k !== SMALL_TSU);
+  const plain = learned.filter((k) => !isSmallTsu(k) && k !== LONG_MARK);
   // じ/ぢ and ず/づ sound the same, so they're no trap
   const twins = LOOKALIKES.map((g) => g.filter((k) => set.has(k))).filter((g) => new Set(g.map(readingOf)).size >= 2);
   // dakuten next to their plain kana in unicode: か+1 = が, は+2 = ぱ
   const marks: [string, string][] = [];
-  for (const d of learned.filter((k) => k.length === 1 && groupOf(k)?.id === "dakuten")) {
-    const b = [1, 2].map((n) => String.fromCharCode(d.charCodeAt(0) - n)).find((x) => set.has(x) && groupOf(x)?.id === "basic");
+  for (const d of learned.filter((k) => k.length === 1 && groupOf(k)?.kind === "dakuten")) {
+    const b = [1, 2].map((n) => String.fromCharCode(d.charCodeAt(0) - n)).find((x) => set.has(x) && groupOf(x)?.kind === "basic");
     if (b) marks.push([b, d]);
   }
-  const combos = learned.filter((k) => groupOf(k)?.id === "combos");
+  const combos = learned.filter((k) => groupOf(k)?.kind === "combos" || groupOf(k)?.kind === "extended");
   const followers = learned.filter(canFollowSokuon);
   const weak = focusChars(plain, stats, 8, Date.now(), coach);
-  return { learned, plain, twins, marks, combos, followers, hasTsu: set.has(SMALL_TSU) && followers.length > 0, weak };
+  return { learned, plain, twins, marks, combos, followers, tsu: set.has(SMALL_TSU_K) ? SMALL_TSU_K : SMALL_TSU, hasTsu: (set.has(SMALL_TSU) || set.has(SMALL_TSU_K)) && followers.length > 0, weak };
 }
 
 export function availableMoves(floor: Floor, stats: Record<string, CharStat> = {}, coach: CoachContext = EMPTY_COACH): MoveId[] {
@@ -119,7 +126,7 @@ function build(move: MoveId, len: number, p: ReturnType<typeof pools>, rng: Rng)
       return shuffle(ks, rng);
     }
     case "tsu": {
-      while (ks.length < len) ks.push(filler(), SMALL_TSU, pick(p.followers, rng));
+      while (ks.length < len) ks.push(filler(), p.tsu, pick(p.followers, rng));
       return ks.slice(0, Math.max(3, len - (len % 3 === 1 ? 1 : 0)));
     }
     case "weak": {
@@ -146,7 +153,7 @@ export function bossMove(input: MoveInput, forced?: MoveId): Omit<Question, "id"
   let ks = build(move, len, p, rng);
   ks = fixSokuon(ks, p.learned, rng);
   // ん and small っ can't open a word
-  if (ks[0] === "ん" || ks[0] === SMALL_TSU) ks[0] = pick(p.plain.filter((k) => k !== "ん"), rng) ?? ks[0];
+  if (ks[0] === "ん" || ks[0] === "ン" || isSmallTsu(ks[0]) || ks[0] === LONG_MARK) ks[0] = pick(p.plain.filter((k) => k !== "ん"), rng) ?? ks[0];
   const kana = ks.join("");
   const chars = splitKana(kana);
   const rating = rateQuestion(chars, "random", floor.pace, stats);

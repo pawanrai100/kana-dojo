@@ -4,7 +4,7 @@ import type { Progress } from "@/lib/progress/types";
 import { KANA_GROUPS } from "@/lib/kana/hiragana";
 import { skillMissRate } from "@/lib/quiz/adaptive";
 import { BELTS, beltStatus } from "@/lib/progress/belts";
-import { ALL_BOSSES, ALL_FLOORS, FLOORS, FINAL_BOSS, SKY_FINAL_BOSS, SKY_FLOORS, floorLabel, getFloor, type Enemy } from "./floors";
+import { ALL_BOSSES, ALL_FLOORS, FLOORS, FINAL_BOSS, KATA_FINAL_BOSS, KATA_FIRST, KATA_FLOORS, SKY_FINAL_BOSS, SKY_FLOORS, floorLabel, getFloor, type Enemy } from "./floors";
 import { skyOpen } from "./gate";
 import { clearedCount, isCleared } from "./progress";
 
@@ -38,7 +38,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     name: b.title,
     how: `Defeat ${b.name} on ${floorLabel(getFloor(bossFloor(b.id))!).toLowerCase()}.`,
     glyph: b.kana[0],
-    tier: b.id === FINAL_BOSS.id || b.id === SKY_FINAL_BOSS.id ? "gold" : "boss",
+    tier: b.id === FINAL_BOSS.id || b.id === SKY_FINAL_BOSS.id || b.id === KATA_FINAL_BOSS.id ? "gold" : "boss",
     title: b.title,
     art: b.id as Enemy["id"],
     earned: (p) => isCleared(p.tower, bossFloor(b.id)),
@@ -86,8 +86,32 @@ export const ACHIEVEMENTS: Achievement[] = [
     how: "Master all 105 hiragana, extras included.",
     glyph: "皆",
     tier: "gold",
-    earned: (p) => allMastered(p, KANA_GROUPS.flatMap((g) => g.chars)),
+    earned: (p) => allMastered(p, KANA_GROUPS.filter((g) => g.script === "hiragana").flatMap((g) => g.chars)),
   },
+  // katakana
+  { id: "kata-first", name: "Hello Katakana", how: "Read 15 katakana cards right in one day.", glyph: "ア", tier: "bronze", earned: (p) => bestDay(p, (d) => (d.kata ?? 0) >= 15) },
+  { id: "kata-neon", name: "Neon Lights", how: "Clear Neon floor 1 of the katakana tower.", glyph: "ネ", tier: "bronze", earned: (p) => isCleared(p.tower, KATA_FIRST) },
+  { id: "kata-46", name: "Katakana Master", how: "Master all 46 basic katakana.", glyph: "カ", tier: "gold", earned: (p) => allMastered(p, group("k-basic")) },
+  { id: "kata-long", name: "Stretch It Out", how: "Master the long ー and small ッ.", glyph: "ー", tier: "bronze", earned: (p) => allMastered(p, group("k-sokuon")) },
+  { id: "kata-foreign", name: "World Traveler", how: "Master every foreign sound (ファ, ティ, ヴ...).", glyph: "ヴ", tier: "silver", earned: (p) => allMastered(p, group("k-extended")) },
+  {
+    id: "kata-words",
+    name: "Loanword Lover",
+    how: "Learn 30 katakana words.",
+    glyph: "語",
+    tier: "silver",
+    earned: (p) => Object.entries(p.words).filter(([id, w]) => id >= "ァ" && w.roundsCorrect >= 2 && w.lastCorrect).length >= 30,
+  },
+  {
+    id: "kata-stars",
+    name: "City Lights",
+    how: "Get 3 stars on every Neon City floor.",
+    glyph: "光",
+    tier: "gold",
+    earned: (p) => KATA_FLOORS.every((f) => (p.tower.floors[f.id]?.stars ?? 0) === 3),
+  },
+  { id: "kata-black", name: "Katakana Black Belt", how: "Earn your katakana Black belt.", glyph: "黒", tier: "gold", earned: (p) => beltStatus(p, "katakana").index >= beltAt("black") },
+  { id: "both-scripts", name: "Two Scripts", how: "Master all 46 hiragana and all 46 katakana.", glyph: "両", tier: "gold", earned: (p) => allMastered(p, group("basic")) && allMastered(p, group("k-basic")) },
   // sentences
   {
     id: "particle-pro",

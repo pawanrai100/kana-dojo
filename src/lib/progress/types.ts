@@ -38,6 +38,7 @@ export interface DayStat {
   // counters for daily quests
   perfect?: number;
   sentences?: number;
+  kata?: number; // katakana cards read right
   floors?: number;
   bestCombo?: number;
   quests?: string[]; // quest ids already paid out today
@@ -85,6 +86,7 @@ export interface Progress {
   confusions: Record<string, Record<string, number>>;
   skills: Record<string, SkillStat>;
   belt: number; // highest belt ever earned (index into BELTS), never goes down
+  kBelt: number; // same for the katakana ladder
 }
 
 export function emptyProgress(): Progress {
@@ -108,5 +110,6 @@ export function emptyProgress(): Progress {
     confusions: {},
     skills: {},
     belt: 0,
+    kBelt: 0,
   };
 }

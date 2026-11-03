@@ -20,6 +20,7 @@ const POOL: Quest[] = [
   { id: "perfect", label: "Get a perfect round", need: 1, have: (d) => d.perfect ?? 0 },
   { id: "sentences", label: "Read 5 sentences right", need: 5, have: (d) => d.sentences ?? 0 },
   { id: "tower", label: "Clear a Tower floor", need: 1, have: (d) => d.floors ?? 0 },
+  { id: "katakana", label: "Read 15 katakana cards right", need: 15, have: (d) => d.kata ?? 0 },
   { id: "combo", label: "Hit a ×8 combo", need: 8, have: (d) => d.bestCombo ?? 0 },
   { id: "sharp", label: "Answer 20 cards at 90%+", need: 20, have: (d) => (d.answered >= 20 && d.correct / d.answered >= 0.9 ? d.answered : Math.min(d.answered, 19)) },
 ];

@@ -1,4 +1,4 @@
-import { ALL_KANA_LIST, LOOKALIKES, SMALL_TSU, getKana, groupOf, readingOf } from "@/lib/kana/hiragana";
+import { ALL_KANA_LIST, LONG_MARK, LOOKALIKES, getKana, groupOf, isSmallTsu, readingOf } from "@/lib/kana/hiragana";
 
 // the kinds of mistakes worth tracking beyond single kana. each is a habit
 // you can fix once you know about it, so the coach names them and drills them
@@ -53,11 +53,11 @@ export const SKILLS: Record<SkillId, SkillInfo> = {
 const BY_READING = new Map<string, string[]>();
 for (const k of ALL_KANA_LIST) {
   const c = getKana(k);
-  if (!c || k === SMALL_TSU) continue;
+  if (!c || isSmallTsu(k) || k === LONG_MARK) continue;
   for (const r of c.romaji) BY_READING.set(r, [...(BY_READING.get(r) ?? []), k]);
 }
-BY_READING.set("nn", ["ん"]);
-BY_READING.set("n'", ["ん"]);
+BY_READING.set("nn", ["ん", "ン"]);
+BY_READING.set("n'", ["ん", "ン"]);
 
 export function kanaForReading(typed: string): string[] {
   return BY_READING.get(typed) ?? [];
@@ -72,6 +72,7 @@ function isLongVowel(units: string[], i: number): boolean {
   if (i === 0) return false;
   const prev = VOWEL_OF(readingOf(units[i - 1]));
   const k = units[i];
+  if (k === LONG_MARK) return true;
   return (
     (k === "う" && (prev === "o" || prev === "u")) ||
     (k === "い" && (prev === "e" || prev === "i")) ||
@@ -85,13 +86,13 @@ export function skillsOf(units: string[], i: number, particle = false): SkillId[
   const k = units[i];
   const out: SkillId[] = [];
   if (particle) out.push("particles");
-  const g = groupOf(k)?.id;
+  const g = groupOf(k)?.kind;
   if (g === "dakuten") out.push("marks");
   if (g === "combos") {
     out.push("combos");
     if (getKana(k)?.row && /[gjbp]/.test(getKana(k)!.romaji[0][0])) out.push("marks");
   }
-  if (k === SMALL_TSU) out.push("small-tsu");
+  if (isSmallTsu(k)) out.push("small-tsu");
   if (k === "ん") out.push("n-sound");
   if (LOOK_GROUP.has(k)) out.push("lookalikes");
   if (isLongVowel(units, i)) out.push("long-vowels");

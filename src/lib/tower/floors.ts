@@ -1,4 +1,4 @@
-import { BASIC_KANA_LIST, KANA_GROUPS, getRow } from "@/lib/kana/hiragana";
+import { BASIC_KANA_LIST, KANA_GROUPS, KATAKANA_BASIC_LIST, getRow } from "@/lib/kana/hiragana";
 import type { LengthRange, PracticeMode, TimerPace } from "@/lib/settings/types";
 
 // the tower climbs the hiragana chart. each zone teaches two rows,
@@ -35,7 +35,15 @@ export interface Enemy {
     | "minjimata"
     | "ayutengu"
     | "pramirei"
-    | "basarihyon";
+    | "basarihyon"
+    // katakana tower bosses, waiting on drawings
+    | "k1"
+    | "k2"
+    | "k3"
+    | "k4"
+    | "k5"
+    | "k6"
+    | "k7";
   name: string;
 }
 
@@ -73,7 +81,7 @@ export interface Zone {
   mixMode?: PracticeMode; // ex real words for small っ
 }
 
-export type TowerId = "kana" | "sky";
+export type TowerId = "kana" | "sky" | "kata";
 
 export interface Floor {
   id: number; // 1 = ground floor of the first tower, sky shrine floors start at 101
@@ -192,7 +200,9 @@ function buildFloors(plan: TowerPlan): Floor[] {
     // one floor per new row: drill just that row
     for (const d of z.drills) {
       const fresh = rowChars(d);
-      const chars = [...fresh, ...(z.extra ?? [])];
+      // extras only ride along on the small っ / ー floors, they need something to work on
+      const needsExtra = d.some((r) => r.endsWith("xtsu") || r.endsWith("long"));
+      const chars = [...fresh, ...(needsExtra ? (z.extra ?? []) : [])];
       const t = DRILL[Math.min(z.id, DRILL.length) - 1];
       out.push({
         tower,
@@ -375,7 +385,81 @@ export const SKY_FLOORS: Floor[] = buildFloors({
 export const SKY_FIRST = SKY_FLOORS[0].id;
 export const SKY_TOP = SKY_FLOORS[SKY_FLOORS.length - 1].id;
 
-export const ALL_FLOORS: Floor[] = [...FLOORS, ...SKY_FLOORS];
+// the katakana tower: a neon city, same climb as the first tower plus the extras.
+// bosses are shadows until their drawings come in
+const KATA_MINIONS = {
+  drill: [
+    { id: "goblin", name: "Neon Goblin" },
+    { id: "skeleton", name: "Cyber Skeleton" },
+  ],
+  mix: [
+    { id: "obake", name: "Glitch Ghost" },
+    { id: "kasa", name: "Robo Umbrella" },
+  ],
+} satisfies Record<string, Enemy[]>;
+
+const shadow = (n: number, kana: string, title: string): Boss => ({
+  id: `k${n}`,
+  name: `Shadow Boss ${["I", "II", "III", "IV", "V", "VI"][n - 1]}`,
+  kana,
+  title,
+  blurb: "Nobody has seen its real face yet. Beat it anyway.",
+});
+
+export const KATA_ZONES: Zone[] = [
+  { id: 1, name: "Neon Gate", drills: [["kt-vowel"], ["kt-k"]], boss: shadow(1, "シャドウ", "Neon Breaker") },
+  { id: 2, name: "Arcade Street", drills: [["kt-s"], ["kt-t"]], boss: shadow(2, "シャドウ", "High Scorer") },
+  { id: 3, name: "Robot Alley", drills: [["kt-n"], ["kt-h"]], boss: shadow(3, "シャドウ", "Bot Buster") },
+  { id: 4, name: "Pixel Market", drills: [["kt-m", "kt-y"], ["kt-r", "kt-w", "kt-nn"]], boss: shadow(4, "シャドウ", "Pixel Perfect") },
+  {
+    id: 5,
+    name: "Voltage Plant",
+    drills: [["kt-g", "kt-z"], ["kt-d", "kt-b", "kt-p"], ["kt-xtsu", "kt-long"]],
+    extra: KATAKANA_BASIC_LIST,
+    mixName: "Voltage mix",
+    mixMode: "mixed",
+    boss: shadow(5, "シャドウ", "Live Wire"),
+  },
+  {
+    id: 6,
+    name: "Hyper Lane",
+    drills: [
+      ["kt-ky", "kt-sh", "kt-ch", "kt-ny"],
+      ["kt-hy", "kt-my", "kt-ry", "kt-gy", "kt-j", "kt-by", "kt-py"],
+      ["kt-f", "kt-ti", "kt-wi", "kt-she", "kt-v"],
+    ],
+    mixName: "Hyper mix",
+    mixMode: "mixed",
+    boss: shadow(6, "シャドウ", "Speed Demon"),
+  },
+];
+
+export const KATA_FINAL_BOSS: Boss = {
+  id: "k7",
+  name: "Shadow King",
+  kana: "シャドウキング",
+  title: "Neon Crown",
+  blurb: "The shadow on top of the neon city. Every katakana, real loanwords, no mercy.",
+};
+
+export const KATA_FLOORS: Floor[] = buildFloors({
+  tower: "kata",
+  zones: KATA_ZONES,
+  final: KATA_FINAL_BOSS,
+  finalEnemy: "k7",
+  startId: 201,
+  minions: KATA_MINIONS,
+  known: [],
+  finalMode: "mixed",
+  finalHp: 25,
+  finalPace: "fast",
+  finalBonus: 2000,
+  bossBonus: 200,
+});
+export const KATA_FIRST = KATA_FLOORS[0].id;
+export const KATA_TOP = KATA_FLOORS[KATA_FLOORS.length - 1].id;
+
+export const ALL_FLOORS: Floor[] = [...FLOORS, ...SKY_FLOORS, ...KATA_FLOORS];
 const BY_ID = new Map(ALL_FLOORS.map((f) => [f.id, f]));
 
 export function getFloor(id: number): Floor | undefined {
@@ -383,22 +467,33 @@ export function getFloor(id: number): Floor | undefined {
 }
 
 export function floorsOf(tower: TowerId): Floor[] {
-  return tower === "sky" ? SKY_FLOORS : FLOORS;
+  return tower === "sky" ? SKY_FLOORS : tower === "kata" ? KATA_FLOORS : FLOORS;
 }
 
 export function zoneOf(f: Floor): Zone | undefined {
-  return (f.tower === "sky" ? SKY_ZONES : ZONES).find((z) => z.id === f.zone);
+  return (f.tower === "sky" ? SKY_ZONES : f.tower === "kata" ? KATA_ZONES : ZONES).find((z) => z.id === f.zone);
 }
 
-export const ALL_BOSSES: Boss[] = [...ZONES.map((z) => z.boss), FINAL_BOSS, ...SKY_ZONES.map((z) => z.boss), SKY_FINAL_BOSS];
+export const ALL_BOSSES: Boss[] = [
+  ...ZONES.map((z) => z.boss),
+  FINAL_BOSS,
+  ...SKY_ZONES.map((z) => z.boss),
+  SKY_FINAL_BOSS,
+  ...KATA_ZONES.map((z) => z.boss),
+  KATA_FINAL_BOSS,
+];
 
 // sanity: every extra kana is taught somewhere in the sky shrine
 export const SKY_TAUGHT = new Set(SKY_FLOORS.flatMap((f) => f.newChars));
-export const EXTRA_KANA = KANA_GROUPS.filter((g) => g.id !== "basic").flatMap((g) => g.chars);
+export const EXTRA_KANA = KANA_GROUPS.filter((g) => g.script === "hiragana" && g.kind !== "basic").flatMap((g) => g.chars);
 
-// how a floor is named to people: sky shrine floors count from 1 again
+// how a floor is named to people: each tower counts from 1 again
+export function floorNumber(f: Floor): number {
+  return f.tower === "sky" ? f.id - 100 : f.tower === "kata" ? f.id - 200 : f.id;
+}
+
 export function floorLabel(f: Floor): string {
-  return f.tower === "sky" ? `Sky floor ${f.id - 100}` : `Floor ${f.id}`;
+  return f.tower === "sky" ? `Sky floor ${f.id - 100}` : f.tower === "kata" ? `Neon floor ${f.id - 200}` : `Floor ${f.id}`;
 }
 
 // the next floor in the same tower, if there is one

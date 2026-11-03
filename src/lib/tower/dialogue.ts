@@ -82,6 +82,49 @@ export const DIALOGUE: Record<string, BossLines> = {
     slow: "...time stopped. You didn't move. ...boring.",
     win: ["...you heard every pause. ...I'm free now. Thank you.", "...fine. The peak is yours. ...I'll haunt someone else."],
   },
+  // katakana tower shadows. they get real personalities once they get real faces
+  k1: {
+    intro: "Welcome to the neon city. Lights on. Brain off. Let's go.",
+    lose: ["{k}? Glitched. Rebooting you back to the gate.", "Game over. Insert coin to continue.", "Neon too bright for you? Squint harder."],
+    slow: "Lag detected. Your connection to your brain is too slow.",
+    win: ["Signal lost... you actually beat the gate.", "Fine. The city lets you in. Don't get comfortable."],
+  },
+  k2: {
+    intro: "High score's mine. It's ALWAYS mine. Try and take it.",
+    lose: ["New high score: me. Again. {k} cost you the run.", "You button-mashed and still lost. Respect the arcade.", "Continue? 10... 9... nah."],
+    slow: "Time's up, player one. The machine ate your coin.",
+    win: ["NEW HIGH SCORE?! Who even are you?!", "Okay okay, put your name on the board. Just this once."],
+  },
+  k3: {
+    intro: "BEEP. Target acquired. Reading ability: LOW.",
+    lose: ["ERROR: {k} not found in your brain. BEEP.", "Calculating your chances... zero percent. Confirmed.", "Robots don't miss. Humans do. Proven."],
+    slow: "Processing... processing... you are slower than a dial-up modem.",
+    win: ["SYSTEM FAILURE. Human outperformed robot. Logging this as a bug.", "...BEEP. Respect protocol activated."],
+  },
+  k4: {
+    intro: "Every pixel in this market is mine. Even the ones you can't read.",
+    lose: ["Pixelated. {k} was right there in 8-bit.", "Low resolution reader. Upgrade yourself.", "You're one pixel short of a brain."],
+    slow: "Buffering... buffering... still buffering. Yikes.",
+    win: ["Crisp. Sharp. 4K reading. I hate it.", "Fine. Take a pixel. Take the whole market."],
+  },
+  k5: {
+    intro: "Ten thousand volts and a ッ waiting to fry you. Plug in.",
+    lose: ["ZAP! {k} short-circuited you.", "Overloaded. Fried. Done.", "You stretched the ー wrong and blew a fuse."],
+    slow: "The power's been on this whole time. You weren't.",
+    win: ["Power outage... you shut me down?!", "Grr... the current flows to you now. Go."],
+  },
+  k6: {
+    intro: "Hyper Lane. Fast sounds, foreign sounds, no brakes. Keep up.",
+    lose: ["You crashed on {k}. In the slow lane.", "Too fast for you? This is MY lane.", "ファ, ティ, ヴ... you choked on all of them."],
+    slow: "I lapped you twice. Pull over.",
+    win: ["You... overtook me? On MY lane?", "Speed record broken. Ugh. Go on to the top."],
+  },
+  k7: {
+    intro: "So you reached the crown of the neon city. Every sign here answers to me.",
+    lose: ["The Shadow King doesn't lose to someone who misreads {k}.", "Bow to the crown. Then go back down.", "The city's lights go out for you. Goodbye."],
+    slow: "A king doesn't wait. You've been dismissed.",
+    win: ["...The crown is yours. The neon city bows to its new ruler.", "Impossible... the shadows fade. You read every sign in the city."],
+  },
   basarihyon: {
     intro: "You climbed all this way just to lose to me? Every yokai bows to the Lord. So will you.",
     lose: ["You tripped on {k}? In front of the LORD? Shameful.", "The throne stays mine. It was never in danger.", "Crawl back down. Come back when you're worth my time."],

@@ -2,7 +2,7 @@
 
 import { ArrowRight, Check, Hourglass, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { splitKana } from "@/lib/kana/hiragana";
+import { splitKana, scriptOf } from "@/lib/kana/hiragana";
 import { particleInfo } from "@/lib/quiz/tokens";
 import type { AnswerState, Difficulty, GradedQuestion, Question } from "@/lib/quiz/types";
 import { comboMultiplier } from "@/lib/game/scoring";
@@ -25,7 +25,7 @@ export function KanaLine({ q, missed, missedClass, className }: { q: Question; m
   );
   if (!q.tokens) {
     return (
-      <p lang="ja" className={cn("font-kana break-all text-center", className ?? kanaSize(q.chars.length))} aria-label={`Hiragana: ${q.kana}`}>
+      <p lang="ja" className={cn("font-kana break-all text-center", className ?? kanaSize(q.chars.length))} aria-label={`${scriptLabel(q.chars)}: ${q.kana}`}>
         {q.chars.map(unit)}
       </p>
     );
@@ -34,7 +34,7 @@ export function KanaLine({ q, missed, missedClass, className }: { q: Question; m
   const words = q.tokens.map((t) => ({ ...t, units: splitKana(t.kana) }));
   const starts = words.map((_, i) => words.slice(0, i).reduce((n, w) => n + w.units.length, 0));
   return (
-    <p lang="ja" className={cn("font-kana flex flex-wrap justify-center gap-x-[0.45em] gap-y-2 text-center", className ?? "text-4xl sm:text-5xl")} aria-label={`Hiragana: ${q.kana}`}>
+    <p lang="ja" className={cn("font-kana flex flex-wrap justify-center gap-x-[0.45em] gap-y-2 text-center", className ?? "text-4xl sm:text-5xl")} aria-label={`${scriptLabel(q.chars)}: ${q.kana}`}>
       {words.map((t, ti) => {
         const units = t.units;
         const start = starts[ti];
@@ -262,4 +262,10 @@ export function AnswerFeedback({
 function particleSlip(q: Question, missed: Set<number>): boolean {
   const { overrides } = particleInfo(q);
   return Object.keys(overrides).some((i) => missed.has(Number(i)));
+}
+
+// what screen readers call the card: hiragana, katakana, or both mixed in a sentence
+function scriptLabel(chars: string[]): string {
+  const sc = new Set(chars.map(scriptOf));
+  return sc.size > 1 ? "Kana" : sc.has("katakana") ? "Katakana" : "Hiragana";
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { KATAKANA_BASIC_LIST } from "@/lib/kana/hiragana";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -41,7 +42,7 @@ function StatGrid({ progress }: { progress: Progress }) {
     { label: "Belt", value: shortName(belt.belt), sub: belt.needsReview ? "needs review" : belt.next ? `next: ${shortName(belt.next)}` : "top rank" },
     { label: "Boss cards", value: `${bossCards(progress.tower).filter((c) => c.tier).length}/${CARD_COUNT}`, sub: "from the Tower" },
     { label: "Accuracy", value: progress.totalAnswered ? pct(accuracy(progress.totalCorrect, progress.totalAnswered)) : "No data", sub: plural(progress.totalAnswered, "answer") },
-    { label: "Mastered", value: `${masteredChars(progress).length}/46`, sub: "hiragana" },
+    { label: "Mastered", value: `${masteredChars(progress).length}/46`, sub: `hiragana, ${masteredChars(progress, KATAKANA_BASIC_LIST).length}/46 katakana` },
     { label: "Streak", value: plural(currentStreak(progress), "day"), sub: `Best ${plural(progress.bestStreak, "day")}, ${plural(streakInfo(progress).freezes, "freeze")}` },
     { label: "Words learned", value: String(wordsLearned(progress)), sub: plural(progress.roundsCompleted, "round") },
   ];

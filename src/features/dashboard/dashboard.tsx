@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
-import { HIRAGANA_VOCAB } from "@/lib/vocab/hiragana-words";
+import { ALL_VOCAB } from "@/lib/vocab/all";
 import { wordsForChars } from "@/lib/quiz/generate";
 import { charWeight } from "@/lib/quiz/adaptive";
-import { BASIC_KANA_LIST } from "@/lib/kana/hiragana";
+import { BASIC_KANA_LIST, KATAKANA_BASIC_LIST } from "@/lib/kana/hiragana";
 import { UPCOMING_MODULES } from "@/lib/modules";
 import {
   accuracy,
@@ -33,13 +33,14 @@ import { skyOpen } from "@/lib/tower/gate";
 import { clearedCount, currentFloor } from "@/lib/tower/progress";
 import { CoachCard } from "@/features/coach/coach-card";
 import { BeltProgress } from "@/features/belts/belt";
-import { beltStatus } from "@/lib/progress/belts";
+import { beltScriptFor, beltStatus, type BeltScript } from "@/lib/progress/belts";
+import { activeChars } from "@/lib/settings/types";
 import { QuestsCard } from "@/features/quests/quests-card";
 
 // a word from the learner's pool that leans on their weakest chars
 function pickPreview(p: Progress, enabled: string[]) {
   const pool = wordsForChars(enabled);
-  const list = pool.length ? pool : HIRAGANA_VOCAB;
+  const list = pool.length ? pool : ALL_VOCAB;
   let best = list[0];
   let bestScore = -1;
   for (const w of list) {
@@ -56,7 +57,7 @@ function pickPreview(p: Progress, enabled: string[]) {
 export function Dashboard() {
   const state = useAppState();
   if (!state) return <PageSkeleton />;
-  return <DashboardView progress={state.progress} enabled={state.settings.enabledChars} hasActive={!!state.active} />;
+  return <DashboardView progress={state.progress} enabled={activeChars(state.settings)} script={beltScriptFor(state.settings.script)} hasActive={!!state.active} />;
 }
 
 function greeting() {
@@ -66,18 +67,21 @@ function greeting() {
   return "こんばんは! Good evening";
 }
 
-function DashboardView({ progress, enabled, hasActive }: { progress: Progress; enabled: string[]; hasActive: boolean }) {
+function DashboardView({ progress, enabled, script, hasActive }: { progress: Progress; enabled: string[]; script: BeltScript; hasActive: boolean }) {
   const router = useRouter();
   const auth = useAuth();
   const [preview] = useState(() => pickPreview(progress, enabled));
   const [hello] = useState(greeting);
   const [revealed, setRevealed] = useState(false);
 
-  const mastered = masteredChars(progress).length;
-  const seen = encounteredChars(progress).length;
+  // everything here follows the script you're practising
+  const kata = script === "katakana";
+  const pool = kata ? KATAKANA_BASIC_LIST : BASIC_KANA_LIST;
+  const mastered = masteredChars(progress, pool).length;
+  const seen = encounteredChars(progress, pool).length;
   const acc = accuracy(progress.totalCorrect, progress.totalAnswered);
   const streak = currentStreak(progress);
-  const belt = beltStatus(progress);
+  const belt = beltStatus(progress, script);
   const isNew = progress.totalAnswered === 0;
 
   const start = () => {
@@ -91,12 +95,12 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
         <div className="flex flex-col justify-center gap-4 rounded-[var(--radius-card)] bg-primary p-6 text-white shadow-[0_8px_0_var(--primary-deep)] sm:p-8">
           <p className="text-sm font-bold text-white/80">{hello}</p>
           <h1 className="font-display text-3xl leading-tight sm:text-[2.6rem]">
-            {isNew ? "Read hiragana like a game." : belt.belt.name}
+            {isNew ? (kata ? "Read katakana like a game." : "Read hiragana like a game.") : `${kata ? "Katakana " : ""}${belt.belt.name}`}
           </h1>
           <p className="max-w-prose font-medium text-white/85">
             {isNew
               ? "Real Japanese words and random kana against the clock. Rounds never end, and the game keeps serving the ones you miss."
-              : `${mastered} of 46 basic kana mastered. ${streak > 0 ? `${plural(streak, "day")} in a row.` : "Play today to start a streak."}`}
+              : `${mastered} of 46 basic ${kata ? "katakana" : "kana"} mastered. ${streak > 0 ? `${plural(streak, "day")} in a row.` : "Play today to start a streak."}`}
           </p>
           {!isNew && (
             <BeltProgress status={belt} light className="max-w-sm" />
@@ -171,11 +175,11 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Your hiragana</CardTitle>
+            <CardTitle>Your {kata ? "katakana" : "hiragana"}</CardTitle>
             <CardDescription>Blue means mastered: right in 3 separate rounds.</CardDescription>
           </CardHeader>
           <CardContent>
-            <MiniKanaGrid progress={progress} />
+            <MiniKanaGrid progress={progress} pool={pool} />
             <Link href="/chart" className="mt-4 inline-block text-sm font-extrabold text-primary hover:underline">
               Open the full chart
             </Link>
@@ -188,7 +192,7 @@ function DashboardView({ progress, enabled, hasActive }: { progress: Progress; e
         <CoachCard progress={progress} />
       </div>
 
-      <TowerCard progress={progress} />
+      <TowerCard progress={progress} script={script} />
       <LeaderboardCard />
 
       <section aria-label="Coming next">
@@ -222,10 +226,10 @@ function Stat({ icon, tone, label, value, sub }: { icon: React.ReactNode; tone: 
   );
 }
 
-function MiniKanaGrid({ progress }: { progress: Progress }) {
+function MiniKanaGrid({ progress, pool }: { progress: Progress; pool: string[] }) {
   return (
     <div className="grid grid-cols-10 gap-1" role="list" aria-label="Character status">
-      {BASIC_KANA_LIST.map((k) => {
+      {pool.map((k) => {
         const s = progress.chars[k];
         const m = isMastered(s);
         return (
@@ -247,11 +251,11 @@ function MiniKanaGrid({ progress }: { progress: Progress }) {
   );
 }
 
-function TowerCard({ progress }: { progress: Progress }) {
+function TowerCard({ progress, script }: { progress: Progress; script: BeltScript }) {
   const t = progress.tower;
-  // after the dragon, this card follows the sky shrine instead
+  // katakana learners get neon city. after the dragon, the sky shrine
   const sky = skyOpen(progress) && clearedCount(t) === TOP_FLOOR;
-  const tower = sky ? "sky" : "kana";
+  const tower = script === "katakana" ? "kata" : sky ? "sky" : "kana";
   const total = floorsOf(tower).length;
   const cleared = clearedCount(t, tower);
   const next = getFloor(currentFloor(t, tower))!;
@@ -265,10 +269,12 @@ function TowerCard({ progress }: { progress: Progress }) {
         <Castle className="size-7" />
       </span>
       <span className="min-w-0 flex-1 basis-56">
-        <span className="font-display block text-xl">{sky ? "Sky Shrine" : "The Tower"}</span>
+        <span className="font-display block text-xl">{tower === "kata" ? "Neon City" : sky ? "Sky Shrine" : "The Tower"}</span>
         <span className="block text-sm opacity-80">
           {done
-            ? sky
+            ? tower === "kata"
+              ? "You beat the Shadow King. Go back for 3 stars on every floor."
+              : sky
               ? "You beat the shogun. Go back for 3 stars on every floor."
               : "You beat the dragon. Go back for 3 stars on every floor."
             : next.boss

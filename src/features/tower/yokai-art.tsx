@@ -34,6 +34,38 @@ function Kitsune() {
   );
 }
 
+// katakana bosses before their drawings exist: a hooded shadow with glowing eyes
+function Shadow({ eye, horns }: { eye: string; horns?: boolean }) {
+  return (
+    <g>
+      <defs>
+        <radialGradient id={`glow-${eye.slice(1)}`}>
+          <stop offset="0%" stopColor={eye} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={eye} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="80" cy="90" rx="78" ry="70" fill={`url(#glow-${eye.slice(1)})`} />
+      {horns && <path d="M46 52 L36 18 L60 44 Z M114 52 L124 18 L100 44 Z" fill="#0b0b12" />}
+      <path d="M80 18 C44 18 30 52 30 84 C30 110 22 128 14 150 L146 150 C138 128 130 110 130 84 C130 52 116 18 80 18 Z" fill="#0b0b12" />
+      <path d="M80 34 C56 34 46 60 48 86 C64 96 96 96 112 86 C114 60 104 34 80 34 Z" fill="#000" />
+      <path d="M58 70 L74 76 L58 80 Z" fill={eye} />
+      <path d="M102 70 L86 76 L102 80 Z" fill={eye} />
+      <text x="80" y="128" textAnchor="middle" fontSize="22" fontWeight="900" fill={eye} opacity="0.85">
+        ?
+      </text>
+    </g>
+  );
+}
+const SHADOWS: Record<string, { eye: string; horns?: boolean }> = {
+  k1: { eye: "#18e0d0" },
+  k2: { eye: "#ff4fd8" },
+  k3: { eye: "#ffe14f" },
+  k4: { eye: "#5c8bff" },
+  k5: { eye: "#ff8a2b", horns: true },
+  k6: { eye: "#9dff4f" },
+  k7: { eye: "#ff2b4f", horns: true },
+};
+
 // bosses drawn by pawan, cut out as transparent webp
 const DRAWN: Partial<Record<Enemy["id"], string>> = {
   saru: "/bosses/ugyasaru.webp",
@@ -52,6 +84,7 @@ const DRAWN: Partial<Record<Enemy["id"], string>> = {
 
 const ART: Partial<Record<Enemy["id"], () => React.ReactElement>> = {
   kitsune: Kitsune,
+  ...Object.fromEntries(Object.entries(SHADOWS).map(([id, look]) => [id, () => <Shadow {...look} />])),
 };
 
 export function YokaiArt({ id, className, title }: { id: Enemy["id"]; className?: string; title?: string }) {

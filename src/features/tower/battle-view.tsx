@@ -29,7 +29,7 @@ import { MOVES, bossBatch, signatureMoves, type MoveId } from "@/lib/tower/boss-
 import { debrief, type Debrief } from "@/lib/coach/debrief";
 import { cardFor, tierFor } from "@/lib/tower/cards";
 import { BossArena, BossEntrance, BossFelled } from "./boss-arena";
-import { BELTS, beltStatus } from "@/lib/progress/belts";
+import { promotedBelt, type Belt } from "@/lib/progress/belts";
 import { BeltPromotion } from "@/features/belts/belt";
 
 type Phase = "intro" | "entrance" | "answer" | "feedback" | "result";
@@ -62,7 +62,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   const [elapsed, setElapsed] = useState(0);
   const [fx, setFx] = useState<Fx>({ kind: null, n: 0 });
   const [blankTry, setBlankTry] = useState(0);
-  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; notes?: Debrief; said?: string; promoted?: number } | null>(null);
+  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; notes?: Debrief; said?: string; promoted?: Belt } | null>(null);
 
   const gen = useRef<GeneratorState>(EMPTY_GEN_STATE);
   const log = useRef<Logged[]>([]);
@@ -80,6 +80,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     ...DEFAULT_SETTINGS,
     mode: floor.mode,
     enabledChars: floor.chars,
+    script: "both" as const,
     lengthRange: floor.lengthRange,
     timerPace: floor.pace,
     questionsPerRound: 10 as const,
@@ -169,9 +170,9 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       questions: items.map((l, i) => ({ ...l.q, id: `${l.q.id}-${i}` })),
     };
     const graded = items.length ? gradeRound(round, items.map((l) => l.a), { durationMs: Date.now() - startedAt.current }) : null;
-    const beltBefore = beltStatus(actions.getState().progress).index;
+    const before = actions.getState().progress;
     const { outcome, badges } = actions.recordBattle(graded, final);
-    const beltAfter = beltStatus(actions.getState().progress).index;
+    const promoted = promotedBelt(before, actions.getState().progress);
     const seen = new Set<string>();
     const misses = items
       .filter((l) => !checkQuestion(l.q, l.a.value).correct)
@@ -188,7 +189,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         : notes?.cause === "clock"
           ? bossSlowLine(id)
           : bossLine(id, "lose", seed, notes?.tricks[0]?.kana);
-    setResult({ outcome, badges, misses, notes, said, promoted: beltAfter > beltBefore ? beltAfter : undefined });
+    setResult({ outcome, badges, misses, notes, said, promoted });
     setPhase("result");
     sfx(final.status === "won" ? "fanfare" : "wrong");
   };
@@ -409,7 +410,9 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
           final
             ? "bg-foreground text-background shadow-[0_8px_0_var(--sun-deep)]"
             : boss
-              ? "bg-bad text-white shadow-[0_8px_0_var(--bad-deep)]"
+              ? floor.tower === "kata"
+                ? "bg-[#0d8f86] text-white shadow-[0_8px_0_#08605a]"
+                : "bg-bad text-white shadow-[0_8px_0_var(--bad-deep)]"
               : "bg-surface shadow-[0_8px_0_var(--border)]",
         )}
       >
@@ -506,7 +509,7 @@ function Result({
   misses: Question[];
   notes?: Debrief;
   said?: string;
-  promoted?: number;
+  promoted?: Belt;
   onRetry: () => void;
   onNext: () => void;
   onExit: () => void;
@@ -591,9 +594,9 @@ function Result({
           </div>
         )}
 
-        {promoted !== undefined && (
+        {promoted && (
           <div className="w-full text-left">
-            <BeltPromotion belt={BELTS[promoted]} />
+            <BeltPromotion belt={promoted} />
           </div>
         )}
 

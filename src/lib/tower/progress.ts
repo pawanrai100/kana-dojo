@@ -1,7 +1,7 @@
 import { dayKey } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
 import { battleStars, type BattleState } from "./battle";
-import { SKY_FIRST, floorsOf, getFloor, type TowerId } from "./floors";
+import { KATA_FIRST, SKY_FIRST, floorsOf, getFloor, type TowerId } from "./floors";
 
 export interface FloorRecord {
   stars: 0 | 1 | 2 | 3;
@@ -25,7 +25,8 @@ export function isCleared(t: TowerProgress, id: number): boolean {
 // a floor opens once the one below it is cleared
 // the sky shrine's first floor has its own gate (see gate.ts), so callers pass it in
 export function isUnlocked(t: TowerProgress, id: number, skyOpen = false): boolean {
-  if (id === 1) return true;
+  // the first tower and the katakana tower are open from the start
+  if (id === 1 || id === KATA_FIRST) return true;
   if (id === SKY_FIRST) return skyOpen;
   return isCleared(t, id - 1);
 }

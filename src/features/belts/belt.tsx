@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, Lock } from "lucide-react";
 import { ProgressBar } from "@/components/ui/misc";
-import { BELTS, beltStatus, type Belt, type BeltStatus } from "@/lib/progress/belts";
+import { beltStatus, ladderOf, type Belt, type BeltScript, type BeltStatus } from "@/lib/progress/belts";
 import type { Progress } from "@/lib/progress/types";
 import { cn } from "@/lib/utils";
 
@@ -25,15 +25,20 @@ export function BeltIcon({ belt, className, review = false }: { belt: Belt; clas
 export const shortName = (b: Belt) => (b.stripes ? `${b.stripes}${["st", "nd", "rd"][b.stripes - 1]} dan` : b.name.replace(" belt", ""));
 
 // header chip: your belt, links to the full ladder
-export function BeltChip({ progress }: { progress: Progress }) {
-  const s = beltStatus(progress);
+export function BeltChip({ progress, script = "hiragana" }: { progress: Progress; script?: BeltScript }) {
+  const s = beltStatus(progress, script);
   return (
     <Link
       href="/progress#belts"
       className="hidden items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-sm font-extrabold shadow-[0_3px_0_var(--border)] hover:brightness-95 sm:flex"
-      aria-label={`${s.belt.name}${s.needsReview ? ", needs review" : ""}. See all belts`}
+      aria-label={`${script === "katakana" ? "Katakana " : ""}${s.belt.name}${s.needsReview ? ", needs review" : ""}. See all belts`}
     >
       <BeltIcon belt={s.belt} review={s.needsReview} className="h-5 w-9" />
+      {script === "katakana" && (
+        <span lang="ja" aria-hidden className="font-kana text-xs text-muted">
+          ア
+        </span>
+      )}
       {shortName(s.belt)}
     </Link>
   );
@@ -68,11 +73,11 @@ export function BeltProgress({ status, light = false, className }: { status: Bel
 }
 
 // every belt, with what earns it and where you are
-export function BeltLadder({ progress }: { progress: Progress }) {
-  const s = beltStatus(progress);
+export function BeltLadder({ progress, script = "hiragana" }: { progress: Progress; script?: BeltScript }) {
+  const s = beltStatus(progress, script);
   return (
     <ol className="space-y-2">
-      {BELTS.map((b, i) => {
+      {ladderOf(script).map((b, i) => {
         const earned = i <= s.index;
         const current = i === s.index;
         return (
