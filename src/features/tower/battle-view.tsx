@@ -23,6 +23,8 @@ import { Medal } from "./medal";
 import { Hearts, Sprite, type Fx } from "./battle-parts";
 import { YokaiArt } from "./yokai-art";
 import { CardDrop } from "./boss-card";
+import { DebriefPanel } from "./debrief-panel";
+import { debrief, type Debrief } from "@/lib/coach/debrief";
 import { cardFor, tierFor } from "@/lib/tower/cards";
 import { BossArena, BossEntrance, BossFelled } from "./boss-arena";
 import { BELTS, beltStatus } from "@/lib/progress/belts";
@@ -58,7 +60,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
   const [elapsed, setElapsed] = useState(0);
   const [fx, setFx] = useState<Fx>({ kind: null, n: 0 });
   const [blankTry, setBlankTry] = useState(0);
-  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; promoted?: number } | null>(null);
+  const [result, setResult] = useState<{ outcome: TowerOutcome; badges: Achievement[]; misses: Question[]; notes?: Debrief; promoted?: number } | null>(null);
 
   const gen = useRef<GeneratorState>(EMPTY_GEN_STATE);
   const log = useRef<Logged[]>([]);
@@ -163,7 +165,8 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       .filter((l) => !checkQuestion(l.q, l.a.value).correct)
       .map((l) => l.q)
       .filter((m) => (seen.has(m.kana) ? false : (seen.add(m.kana), true)));
-    setResult({ outcome, badges, misses, promoted: beltAfter > beltBefore ? beltAfter : undefined });
+    const notes = final.status === "won" ? undefined : debrief(items.map((l) => ({ q: l.q, value: l.a.value, timedOut: l.a.timedOut })));
+    setResult({ outcome, badges, misses, notes, promoted: beltAfter > beltBefore ? beltAfter : undefined });
     setPhase("result");
     sfx(final.status === "won" ? "fanfare" : "wrong");
   };
@@ -258,6 +261,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
         outcome={result.outcome}
         badges={result.badges}
         misses={result.misses}
+        notes={result.notes}
         promoted={result.promoted}
         onRetry={begin}
         onNext={() => onPlay(floor.id + 1)}
@@ -454,6 +458,7 @@ function Result({
   outcome,
   badges,
   misses,
+  notes,
   promoted,
   onRetry,
   onNext,
@@ -464,6 +469,7 @@ function Result({
   outcome: TowerOutcome;
   badges: Achievement[];
   misses: Question[];
+  notes?: Debrief;
   promoted?: number;
   onRetry: () => void;
   onNext: () => void;
@@ -553,7 +559,9 @@ function Result({
           </div>
         )}
 
-        {misses.length > 0 && (
+        {notes && <DebriefPanel floor={floor} d={notes} />}
+
+        {misses.length > 0 && !notes && (
           <div className="w-full text-left">
             <p className="mb-2 text-sm font-extrabold">Readings to remember</p>
             <ul className="flex flex-wrap gap-2">
