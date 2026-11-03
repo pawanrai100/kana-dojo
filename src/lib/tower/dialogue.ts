@@ -114,10 +114,10 @@ export const DIALOGUE: Record<string, BossLines> = {
     win: ["Left head: \"We lost.\" Right head: \"Don't talk to me.\"", "Two heads and neither of us saw that coming. Go."],
   },
   k6: {
-    intro: "Hyper Lane. Fast sounds, foreign sounds, no brakes. Keep up.",
-    lose: ["You crashed on {k}. In the slow lane.", "Too fast for you? This is MY lane.", "ファ, ティ, ヴ... you choked on all of them."],
-    slow: "I lapped you twice. Pull over.",
-    win: ["You... overtook me? On MY lane?", "Speed record broken. Ugh. Go on to the top."],
+    intro: "PULL OVER! License, registration, and read these foreign sounds. Both of us are watching.",
+    lose: ["You're under arrest for misreading {k}. You have the right to stay bad at katakana.", "Cop head: \"Book him.\" Sheriff head: \"Throw away the key.\"", "Busted. Two badges, one body, zero mercy."],
+    slow: "Speed limit's 100 and you're doing 2. We're writing you a ticket for being too SLOW.",
+    win: ["Cop head: \"He got away.\" Sheriff head: \"...Let him go. He earned it.\"", "Fine, fine. No ticket this time. Get outta our lane."],
   },
   k7: {
     intro: "Lanterns lit. Bones rattling. Every sign in Neon City answers to me, the Bone King.",

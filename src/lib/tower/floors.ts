@@ -385,8 +385,7 @@ export const SKY_FLOORS: Floor[] = buildFloors({
 export const SKY_FIRST = SKY_FLOORS[0].id;
 export const SKY_TOP = SKY_FLOORS[SKY_FLOORS.length - 1].id;
 
-// the katakana tower: a neon city, same climb as the first tower plus the extras.
-// zone 6 is still a shadow until its drawing comes in
+// the katakana tower: a neon city, same climb as the first tower plus the extras
 const KATA_MINIONS = {
   drill: [
     { id: "goblin", name: "Neon Goblin" },
@@ -398,13 +397,6 @@ const KATA_MINIONS = {
   ],
 } satisfies Record<string, Enemy[]>;
 
-const shadow = (n: number, kana: string, title: string): Boss => ({
-  id: `k${n}`,
-  name: `Shadow Boss ${["I", "II", "III", "IV", "V", "VI"][n - 1]}`,
-  kana,
-  title,
-  blurb: "Nobody has seen its real face yet. Beat it anyway.",
-});
 
 export const KATA_ZONES: Zone[] = [
   { id: 1, name: "Neon Gate", drills: [["kt-vowel"], ["kt-k"]], boss: { id: "k1", name: "Ugyatsume", kana: "ウギャツメ", title: "Eye Poker", blurb: "A one-eyed mountain hermit with a spiked box on his back. His third eye never blinks, and it's watching your mistakes." } },
@@ -430,7 +422,13 @@ export const KATA_ZONES: Zone[] = [
     ],
     mixName: "Hyper mix",
     mixMode: "mixed",
-    boss: shadow(6, "シャドウ", "Speed Demon"),
+    boss: {
+      id: "k6",
+      name: "Hyunpazonbi",
+      kana: "ヒュンパゾンビ",
+      title: "Speed Trap Breaker",
+      blurb: "A zombie cop and a zombie sheriff stitched into one body. Speeding down Hyper Lane? They'll pull you over.",
+    },
   },
 ];
 

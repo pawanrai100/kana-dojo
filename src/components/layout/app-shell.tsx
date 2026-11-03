@@ -10,6 +10,7 @@ import { useAppState } from "@/store/app-store";
 import { AccountChip } from "./account-chip";
 import { LogoMark } from "./logo";
 import { ThemeSync } from "./theme-sync";
+import { UpdateWatcher } from "./update-watcher";
 import { BeltChip } from "@/features/belts/belt";
 import { beltScriptFor } from "@/lib/progress/belts";
 
@@ -35,6 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <ThemeSync />
+      <UpdateWatcher />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-xl focus:bg-surface focus:px-3 focus:py-2">
         Skip to content
       </a>
