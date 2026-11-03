@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "Privacy Policy" };
 
 export default function Page() {
   return (
-    <LegalPage title="Privacy Policy" updated="October 18, 2026">
+    <LegalPage title="Privacy Policy" updated="November 3, 2026">
       <p>
         Kana Dojo is a free website for learning to read Japanese. This page explains what information it keeps and why. The
         short version: only what&apos;s needed to save your learning progress, and nothing is sold or shared for advertising.
@@ -17,6 +17,11 @@ export default function Page() {
           If you practice as a guest, your progress and settings are stored only in your own browser (local storage). They
           are never sent to us.
         </p>
+      </section>
+
+      <section>
+        <h2>Speaking and listening practice</h2>
+        <p>Conversation lesson completion and review dates are stored in this browser, separately for each account or guest, and are not currently synced. Optional microphone recordings stay in memory in the current tab; they are not uploaded or transcribed and are discarded when you leave the activity. Microphone access starts only when you choose to record. Model speech uses your browser or operating system&apos;s speech service, which may process the model text according to that provider&apos;s settings.</p>
       </section>
 
       <section>

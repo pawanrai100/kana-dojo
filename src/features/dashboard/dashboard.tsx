@@ -36,6 +36,7 @@ import { BeltProgress } from "@/features/belts/belt";
 import { beltScriptFor, beltStatus, type BeltScript } from "@/lib/progress/belts";
 import { activeChars } from "@/lib/settings/types";
 import { QuestsCard } from "@/features/quests/quests-card";
+import { LearningCard } from "@/features/learning/learning-view";
 
 // a word from the learner's pool that leans on their weakest chars
 function pickPreview(p: Progress, enabled: string[]) {
@@ -85,6 +86,7 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
   const isNew = progress.totalAnswered === 0;
 
   const start = () => {
+    if (isNew) actions.updateSettings({ timerPace: "off", mode: "random", questionsPerRound: 5, lengthRange: "2-3", enabledChars: [...enabled.filter((k) => !pool.includes(k)), ...pool.slice(0, 5)] });
     actions.clearActive();
     router.push("/practice");
   };
@@ -107,13 +109,13 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
           )}
           <div className="flex flex-wrap gap-3 pt-1">
             <Button size="lg" variant="sun" onClick={start}>
-              <Play /> Start Practice
+              <Play /> {isNew ? "Start with five vowels" : "Start Practice"}
             </Button>
-            <Button size="lg" variant="outline" asChild className="bg-white text-primary ring-0 shadow-[0_5px_0_var(--primary-deep)]">
+            {hasActive && <Button size="lg" variant="outline" asChild className="bg-white text-primary ring-0 shadow-[0_5px_0_var(--primary-deep)]">
               <Link href="/practice">
                 <RotateCcw /> {hasActive ? "Resume Practice" : "Continue practicing"}
               </Link>
-            </Button>
+            </Button>}
           </div>
         </div>
 
@@ -139,6 +141,8 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
           </span>
         </button>
       </section>
+
+      <LearningCard />
 
       {auth.status === "guest" && (
         <Link

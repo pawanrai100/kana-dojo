@@ -104,6 +104,8 @@ function PracticeSession({ settings }: { settings: Settings }) {
   };
 
   const changeSetting = (patch: Partial<Settings>) => {
+    const active = actions.getState().active;
+    if (active?.answers.some((a) => a.locked || a.value.trim()) && !window.confirm("Restart this round with new practice settings? Answers in this unfinished round will not be saved.")) return;
     actions.updateSettings(patch);
     newRound();
   };
@@ -443,7 +445,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
 
   const chipTone = (i: number) => {
     const r = results?.[i];
-    if (r) return r.correct ? "bg-good text-white shadow-[0_3px_0_var(--good-deep)]" : "bg-bad text-white shadow-[0_3px_0_var(--bad-deep)]";
+    if (r) return r.unanswered ? "bg-surface text-muted shadow-[0_3px_0_var(--border)]" : r.correct ? "bg-good text-white shadow-[0_3px_0_var(--good-deep)]" : "bg-bad text-white shadow-[0_3px_0_var(--bad-deep)]";
     if (answers[i].locked)
       return lockedOk(i) ? "bg-good text-white shadow-[0_3px_0_var(--good-deep)]" : "bg-bad text-white shadow-[0_3px_0_var(--bad-deep)]";
     if (i === activeIndex) return "bg-surface text-primary ring-[3px] ring-inset ring-primary shadow-[0_3px_0_var(--border)]";
@@ -453,7 +455,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
 
   const chipLabel = (i: number) => {
     const r = results?.[i];
-    const st = r ? (r.correct ? "correct" : "incorrect") : answers[i].locked ? (lockedOk(i) ? "correct" : "incorrect") : i === activeIndex ? "current" : answers[i].value.trim() ? "answered" : "not answered";
+    const st = r ? (r.unanswered ? "not attempted" : r.correct ? "correct" : r.timedOut ? "timed out" : "incorrect") : answers[i].locked ? (lockedOk(i) ? "correct" : "incorrect") : i === activeIndex ? "current" : answers[i].value.trim() ? "answered" : "not answered";
     return `Question ${i + 1}: ${st}`;
   };
 
@@ -475,7 +477,7 @@ function RoundPlayer({ initial, settings, roundNo, onNext }: PlayerProps) {
           isBest={view.isBest}
           badges={view.badges}
           shortcuts={settings.shortcuts}
-          nextLabel={`Next ${settings.questionsPerRound} Words →`}
+          nextLabel="Next round →"
           onNext={onNext}
         />
       )}

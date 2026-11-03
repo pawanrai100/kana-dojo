@@ -7,6 +7,7 @@ import { particleInfo } from "@/lib/quiz/tokens";
 import type { AnswerState, Difficulty, GradedQuestion, Question } from "@/lib/quiz/types";
 import { comboMultiplier } from "@/lib/game/scoring";
 import { cn } from "@/lib/utils";
+import { SpeechControls } from "@/components/learning/pronunciation";
 
 const DIFF_LABEL: Record<Difficulty, string> = { easy: "Easy", medium: "Medium", hard: "Hard" };
 const DIFF_TONE: Record<Difficulty, string> = {
@@ -151,12 +152,12 @@ export function ActiveCard({ q, index, total, showNumber, answer, timeLeftSec, t
 // a finished question in the results grid
 export function ResultCard({ result, index, showNumber, revealDelayMs = 0 }: { result: GradedQuestion; index: number; showNumber: boolean; revealDelayMs?: number }) {
   const q = result.question;
-  const missed = new Set(result.missedIdx);
+  const missed = new Set(result.unanswered ? [] : result.missedIdx);
   return (
     <article
       className={cn(
         "animate-stamp flex flex-col gap-2 rounded-[var(--radius-card)] p-5",
-        result.correct ? "bg-good-soft shadow-[0_6px_0_var(--good)]" : "bg-bad-soft shadow-[0_6px_0_var(--bad)]",
+        result.unanswered ? "bg-surface shadow-card" : result.correct ? "bg-good-soft shadow-[0_6px_0_var(--good)]" : "bg-bad-soft shadow-[0_6px_0_var(--bad)]",
       )}
       style={{ animationDelay: `${revealDelayMs}ms` }}
     >
@@ -175,10 +176,10 @@ export function ResultCard({ result, index, showNumber, revealDelayMs = 0 }: { r
       </div>
       <KanaLine q={q} missed={missed} missedClass="text-bad underline decoration-[3px] underline-offset-[10px]" className={cn("justify-start text-left", q.tokens ? "text-2xl" : "text-4xl")} />
       <p className="flex items-center gap-2 text-lg">
-        {result.correct ? <Check className="size-5 text-good" aria-label="Correct" /> : <X className="size-5 text-bad" aria-label="Incorrect" />}
+        {result.unanswered ? <span className="text-sm text-muted">Not attempted</span> : result.correct ? <Check className="size-5 text-good" aria-label="Correct" /> : <X className="size-5 text-bad" aria-label="Incorrect" />}
         <span className="font-extrabold">{q.romaji}</span>
       </p>
-      {!result.correct && (
+      {!result.correct && !result.unanswered && (
         <p className="text-sm text-muted">
           You typed <span className="font-bold text-bad line-through">{result.answer || "nothing"}</span>
         </p>
@@ -192,6 +193,7 @@ export function ResultCard({ result, index, showNumber, revealDelayMs = 0 }: { r
           <span className="rounded-full bg-surface px-2.5 py-0.5 text-xs font-extrabold text-muted">Reading practice</span>
         )}
       </p>
+      <SpeechControls text={q.tokens ? q.tokens.map((t) => t.particle ? ({ "は": "わ", "へ": "え", "を": "お" }[t.kana] ?? t.kana) : t.kana).join(" ") : q.kana} />
     </article>
   );
 }

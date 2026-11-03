@@ -6,6 +6,11 @@ export function emptyAnswer(): AnswerState {
   return { value: "", locked: false, timedOut: false, timeUsedMs: 0 };
 }
 
+export function roundAccuracy(graded: Pick<GradedRound, "results" | "correctCount">): number {
+  const attempted = graded.results.filter((r) => !r.unanswered).length;
+  return attempted ? graded.correctCount / attempted : 0;
+}
+
 export function gradeRound(
   round: Round,
   answers: AnswerState[],

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLearning } from "@/features/learning/use-learning";
+
 import { KATAKANA_BASIC_LIST } from "@/lib/kana/hiragana";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -241,6 +243,7 @@ function EditProfile({ profile }: { profile: Profile }) {
 }
 
 function AccountCard({ email, providers, usesPassword }: { email: string | null; providers: string[]; usesPassword: boolean }) {
+  const learning = useLearning();
   const { signOut } = useAuth();
   const app = useAppState();
   const router = useRouter();
@@ -258,7 +261,7 @@ function AccountCard({ email, providers, usesPassword }: { email: string | null;
 
   const download = () => {
     if (!app) return;
-    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), settings: app.settings, progress: app.progress }, null, 2)], {
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), settings: app.settings, progress: app.progress, conversationLessons: learning.progress }, null, 2)], {
       type: "application/json",
     });
     const a = document.createElement("a");

@@ -16,6 +16,7 @@ import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS } from "@/lib/kana/hiragana
 import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
+import { useLearning } from "@/features/learning/use-learning";
 
 export function SettingsView() {
   const state = useAppState();
@@ -24,6 +25,7 @@ export function SettingsView() {
 }
 
 function SettingsBody({ s }: { s: Settings }) {
+  const learning = useLearning();
   const [confirmReset, setConfirmReset] = useState(false);
   const set = (patch: Partial<Settings>) => {
     actions.updateSettings(patch);
@@ -204,7 +206,7 @@ function SettingsBody({ s }: { s: Settings }) {
         <DialogContent>
           <DialogTitle>Reset all progress?</DialogTitle>
           <DialogDescription className="mt-2">
-            This deletes your stats, streaks, Tower progress and mastery from this browser. It can&apos;t be undone.
+            This deletes your stats, streaks, Tower progress, mastery, and conversation lesson reviews from this browser. It can&apos;t be undone.
           </DialogDescription>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirmReset(false)}>
@@ -214,6 +216,7 @@ function SettingsBody({ s }: { s: Settings }) {
               variant="danger"
               onClick={() => {
                 actions.resetProgress();
+                learning.save({});
                 setConfirmReset(false);
               }}
             >

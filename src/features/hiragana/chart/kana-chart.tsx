@@ -30,6 +30,8 @@ import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
 import { ALL_VOCAB } from "@/lib/vocab/all";
 import { cn, pct } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
+import { SpeechControls, Pronunciation } from "@/components/learning/pronunciation";
+import { trickFor, twinDiff } from "@/lib/coach/tricks";
 
 // gojuon grid positions, null = empty slot (や and わ rows have gaps)
 const LAYOUT: Record<string, (string | null)[]> = {
@@ -314,7 +316,7 @@ function CharDetail({
 
   return (
     <Dialog open={!!kana} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-h-[85dvh] overflow-y-auto">
         {c && row && (
           <div className="space-y-4">
             <div className="flex items-center gap-5">
@@ -344,6 +346,9 @@ function CharDetail({
               </div>
             </div>
 
+            {!isSmallTsu(c.kana) && c.kana !== LONG_MARK && <SpeechControls text={c.kana} />}
+            <p className="rounded-xl bg-primary-soft p-3 text-sm">{trickFor(c.kana)}</p>
+
             <dl className="grid grid-cols-3 gap-2 text-center">
               <div className="rounded-xl bg-surface-2 p-2">
                 <dt className="text-xs text-muted">Accuracy</dt>
@@ -369,16 +374,18 @@ function CharDetail({
                 ))}
               </p>
             )}
+            {confused.map((other) => twinDiff(c.kana, other) ? <p key={other} className="rounded-xl bg-sun-soft p-3 text-sm">{twinDiff(c.kana, other)}</p> : null)}
 
             {examples.length > 0 && (
               <div>
                 <p className="mb-2 text-sm font-medium">Words with {c.kana}</p>
                 <ul className="space-y-1 text-sm">
                   {examples.map((w) => (
-                    <li key={w.id} className="flex gap-3">
+                    <li key={w.id} className="flex flex-wrap items-center gap-3 py-1">
                       <span lang="ja" className="font-kana w-20 text-base">{w.kana}</span>
                       <span className="w-20 text-muted">{w.romaji}</span>
                       <span className="truncate">{w.meaning}</span>
+                      <Pronunciation text={w.kana} label={`Hear ${w.kana}`} />
                     </li>
                   ))}
                 </ul>
