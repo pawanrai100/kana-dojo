@@ -20,7 +20,7 @@ describe("boss cards", () => {
     expect(cards.map((c) => c.no)).toEqual(cards.map((_, i) => i + 1));
     expect(cards.every((c) => c.tier === null)).toBe(true);
     expect(cards[12].boss.name).toContain("Basarihyon");
-    expect(cards.at(-1)!.boss.name).toBe("Shadow King");
+    expect(cards.at(-1)!.boss.name).toContain("Pawadokuro");
   });
 
   it("tier follows stars", () => {

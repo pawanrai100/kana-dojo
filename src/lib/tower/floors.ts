@@ -386,7 +386,7 @@ export const SKY_FIRST = SKY_FLOORS[0].id;
 export const SKY_TOP = SKY_FLOORS[SKY_FLOORS.length - 1].id;
 
 // the katakana tower: a neon city, same climb as the first tower plus the extras.
-// bosses are shadows until their drawings come in
+// zone 6 is still a shadow until its drawing comes in
 const KATA_MINIONS = {
   drill: [
     { id: "goblin", name: "Neon Goblin" },
@@ -407,10 +407,10 @@ const shadow = (n: number, kana: string, title: string): Boss => ({
 });
 
 export const KATA_ZONES: Zone[] = [
-  { id: 1, name: "Neon Gate", drills: [["kt-vowel"], ["kt-k"]], boss: shadow(1, "シャドウ", "Neon Breaker") },
-  { id: 2, name: "Arcade Street", drills: [["kt-s"], ["kt-t"]], boss: shadow(2, "シャドウ", "High Scorer") },
-  { id: 3, name: "Robot Alley", drills: [["kt-n"], ["kt-h"]], boss: shadow(3, "シャドウ", "Bot Buster") },
-  { id: 4, name: "Pixel Market", drills: [["kt-m", "kt-y"], ["kt-r", "kt-w", "kt-nn"]], boss: shadow(4, "シャドウ", "Pixel Perfect") },
+  { id: 1, name: "Neon Gate", drills: [["kt-vowel"], ["kt-k"]], boss: { id: "k1", name: "Ugyatsume", kana: "ウギャツメ", title: "Eye Poker", blurb: "A one-eyed mountain hermit with a spiked box on his back. His third eye never blinks, and it's watching your mistakes." } },
+  { id: 2, name: "Arcade Street", drills: [["kt-s"], ["kt-t"]], boss: { id: "k2", name: "Deeprokubi", kana: "ディープロクビ", title: "Neck Breaker", blurb: "His neck stretches across the whole street. The longer the word, the longer the neck." } },
+  { id: 3, name: "Robot Alley", drills: [["kt-n"], ["kt-h"]], boss: { id: "k3", name: "Ugyannya", kana: "ウギャンニャ", title: "Mask Breaker", blurb: "A grinning demon hiding behind a horned mask. Every kana he shows you is wearing a disguise." } },
+  { id: 4, name: "Pixel Market", drills: [["kt-m", "kt-y"], ["kt-r", "kt-w", "kt-nn"]], boss: { id: "k4", name: "Ugyagumo", kana: "ウギャグモ", title: "Web Cutter", blurb: "An eight-legged spider demon who spins lookalike kana into one big sticky web." } },
   {
     id: 5,
     name: "Voltage Plant",
@@ -418,7 +418,7 @@ export const KATA_ZONES: Zone[] = [
     extra: KATAKANA_BASIC_LIST,
     mixName: "Voltage mix",
     mixMode: "mixed",
-    boss: shadow(5, "シャドウ", "Live Wire"),
+    boss: { id: "k5", name: "Ugdeepkuchi", kana: "ウグディープクチ", title: "Double Trouble", blurb: "Two heads, two mouths, twice the trash talk. Loves small ッ because it doubles everything, just like him." },
   },
   {
     id: 6,
@@ -436,10 +436,10 @@ export const KATA_ZONES: Zone[] = [
 
 export const KATA_FINAL_BOSS: Boss = {
   id: "k7",
-  name: "Shadow King",
-  kana: "シャドウキング",
-  title: "Neon Crown",
-  blurb: "The shadow on top of the neon city. Every katakana, real loanwords, no mercy.",
+  name: "Pawadokuro, Bone King",
+  kana: "パワドクロ",
+  title: "Bone Crusher",
+  blurb: "A giant skeleton lit by shrine lanterns, ruling the top of Neon City. Every katakana, real loanwords, no mercy.",
 };
 
 export const KATA_FLOORS: Floor[] = buildFloors({

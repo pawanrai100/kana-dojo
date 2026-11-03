@@ -80,6 +80,12 @@ const DRAWN: Partial<Record<Enemy["id"], string>> = {
   ayutengu: "/bosses/ayutengu.webp",
   pramirei: "/bosses/pramirei.webp",
   basarihyon: "/bosses/basarihyon.webp",
+  k1: "/bosses/ugyatsume.webp",
+  k2: "/bosses/deeprokubi.webp",
+  k3: "/bosses/ugyannya.webp",
+  k4: "/bosses/ugyagumo.webp",
+  k5: "/bosses/ugdeepkuchi.webp",
+  k7: "/bosses/pawadokuro.webp",
 };
 
 const ART: Partial<Record<Enemy["id"], () => React.ReactElement>> = {

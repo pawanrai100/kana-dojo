@@ -273,7 +273,7 @@ function TowerCard({ progress, script }: { progress: Progress; script: BeltScrip
         <span className="block text-sm opacity-80">
           {done
             ? tower === "kata"
-              ? "You beat the Shadow King. Go back for 3 stars on every floor."
+              ? "You beat Pawadokuro. Go back for 3 stars on every floor."
               : sky
               ? "You beat the shogun. Go back for 3 stars on every floor."
               : "You beat the dragon. Go back for 3 stars on every floor."

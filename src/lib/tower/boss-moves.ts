@@ -39,11 +39,11 @@ const STYLE: Record<string, MoveId[]> = {
   ayutengu: ["combo", "long"],
   pramirei: ["tsu"],
   basarihyon: ["combo", "marks", "tsu", "weak"],
-  k1: ["blitz"],
-  k2: ["blitz", "long"],
-  k3: ["twin", "weak"],
-  k4: ["twin", "long"],
-  k5: ["marks", "tsu"],
+  k1: ["weak", "blitz"], // the eye finds your weak spots
+  k2: ["long", "blitz"], // long neck, long words
+  k3: ["twin"], // masks = disguised lookalikes
+  k4: ["twin", "long"], // a web of lookalikes
+  k5: ["tsu", "marks"], // two heads love doubles
   k6: ["combo", "blitz"],
   k7: ["twin", "combo", "marks", "tsu", "long"],
 };

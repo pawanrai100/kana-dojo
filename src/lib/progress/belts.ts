@@ -146,10 +146,10 @@ export const KATA_BELTS: Belt[] = [
   {
     ...hira("dan1"),
     id: "k-dan1",
-    goal: "Beat the Shadow King at the top of Neon City.",
+    goal: "Beat Pawadokuro the Bone King at the top of Neon City.",
     step: (p) => {
       const top = kataFloors().at(-1)!.id;
-      return { have: isCleared(p.tower, top) ? 1 : 0, need: 1, label: isCleared(p.tower, top) ? "Done" : "Beat the Shadow King on Neon floor " + (top - 200) };
+      return { have: isCleared(p.tower, top) ? 1 : 0, need: 1, label: isCleared(p.tower, top) ? "Done" : "Beat Pawadokuro on Neon floor " + (top - 200) };
     },
   },
   { ...hira("dan2"), id: "k-dan2" },
