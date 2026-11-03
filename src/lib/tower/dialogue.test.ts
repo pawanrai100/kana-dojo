@@ -19,10 +19,11 @@ describe("boss dialogue", () => {
   });
 
   it("fills in the missed kana, or skips lines that need one", () => {
-    for (let seed = 0; seed < 6; seed++) {
-      expect(bossLine("tako", "lose", seed)).not.toContain("{k}");
-      expect(bossLine("tako", "lose", seed, "ぬ")).not.toContain("{k}");
-    }
+    for (const id of bosses)
+      for (let seed = 0; seed < 6; seed++) {
+        expect(bossLine(id, "lose", seed)).not.toContain("{k}");
+        expect(bossLine(id, "lose", seed, "ぬ")).not.toContain("{k}");
+      }
     expect([0, 1, 2].map((s) => bossLine("tako", "lose", s, "ぬ")).some((l) => l?.includes("ぬ"))).toBe(true);
   });
 

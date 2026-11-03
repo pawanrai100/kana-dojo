@@ -15,6 +15,7 @@ export interface Question {
   timeLimitSec: number | null; // null = no timer (zen)
   retry?: boolean; // a second shot at kana you just missed
   tokens?: { kana: string; particle?: boolean }[]; // sentences: the words, in order
+  challenge?: "twin" | "marks" | "combo" | "tsu" | "weak" | "blitz" | "long"; // a boss move
 }
 
 export interface Round {

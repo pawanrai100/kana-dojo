@@ -25,6 +25,7 @@ import { YokaiArt } from "./yokai-art";
 import { CardDrop } from "./boss-card";
 import { BossSpeech, DebriefPanel } from "./debrief-panel";
 import { bossLine, bossSlowLine } from "@/lib/tower/dialogue";
+import { MOVES, bossBatch, signatureMoves, type MoveId } from "@/lib/tower/boss-moves";
 import { debrief, type Debrief } from "@/lib/coach/debrief";
 import { cardFor, tierFor } from "@/lib/tower/cards";
 import { BossArena, BossEntrance, BossFelled } from "./boss-arena";
@@ -84,19 +85,23 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     questionsPerRound: 10 as const,
   };
 
-  // a fresh batch of questions using only this floor's kana
-  const batch = (): Question[] => {
+  // a fresh batch of questions using only this floor's kana.
+  // bosses swap most of them for their moves, nastier once they're raging
+  const batchN = useRef(0);
+  const batch = (rage = false): Question[] => {
     const p = actions.getState().progress;
+    const coach = coachContext(p);
     const r = generateRound({
       settings: floorSettings,
       chars: p.chars,
       words: p.words,
       gen: gen.current,
-      coach: coachContext(p),
+      coach,
     });
     if (!r.ok) return [];
     gen.current = r.gen;
-    return r.round.questions;
+    if (!isBoss) return r.round.questions;
+    return bossBatch(r.round.questions, { floor, rage, stats: p.chars, coach, rng: Math.random }, `m${batchN.current++}`);
   };
 
   const begin = () => {
@@ -121,7 +126,13 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
     const check = checkQuestion(q, value);
     const used = timedOut && q.timeLimitSec ? q.timeLimitSec * 1000 : Math.round(usedNow.current());
     log.current.push({ q, a: { value, locked: true, timedOut, timeUsedMs: used } });
-    setBattle((b) => applyAnswer(b, check.correct));
+    const after = applyAnswer(battle, check.correct);
+    setBattle(after);
+    // crossing half health: the boss gets angry and the rest of its moves get nastier
+    const half = after.maxEnemyHp / 2;
+    if (isBoss && after.status === "fighting" && battle.enemyHp > half && after.enemyHp <= half) {
+      setQueue((qs) => [...qs.slice(0, idx + 1), ...qs.slice(idx + 1).filter((x) => x.retry), ...batch(true)]);
+    }
     setFx((f) => ({ kind: check.correct ? "hit" : "miss", n: f.n + 1 }));
     // a miss comes back three cards later as a second chance
     if (!check.correct) {
@@ -189,7 +200,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
       return;
     }
     const next = idx + 1;
-    if (next >= queue.length - 2) setQueue((qs) => [...qs, ...batch()]);
+    if (next >= queue.length - 2) setQueue((qs) => [...qs, ...batch(battle.enemyHp <= battle.maxEnemyHp / 2)]);
     setIdx(next);
     setValue("");
     setFb(null);
@@ -293,6 +304,7 @@ export function BattleView({ floor, onExit, onPlay }: { floor: Floor; onExit: ()
 
       {phase === "answer" && q && (
         <>
+          {isBoss && q.challenge && <MoveBanner key={`${q.id}-${idx}`} floor={floor} move={q.challenge} />}
           <ActiveCard
             key={`${q.id}-${idx}`}
             q={q}
@@ -414,6 +426,16 @@ function Intro({ floor, startRef, onStart, onExit }: { floor: Floor; startRef: R
               </p>
             </div>
             <p className="max-w-sm font-medium opacity-90">{boss.blurb}</p>
+            {signatureMoves(floor).length > 0 && (
+              <p className="flex flex-wrap items-center justify-center gap-1.5 text-xs font-extrabold">
+                <span className="opacity-80">Signature moves:</span>
+                {signatureMoves(floor).map((m) => (
+                  <span key={m} className="rounded-full bg-black/25 px-2.5 py-1 uppercase tracking-wide">
+                    {MOVES[m].name}
+                  </span>
+                ))}
+              </p>
+            )}
           </>
         ) : (
           <>
@@ -605,6 +627,18 @@ function Result({
           </Button>
         </div>
       </section>
+    </div>
+  );
+}
+
+// "Alekoni uses MARK STORM!" right above the card
+function MoveBanner({ floor, move }: { floor: Floor; move: MoveId }) {
+  const m = MOVES[move];
+  return (
+    <div role="status" className="animate-pop mx-auto flex w-full max-w-[620px] flex-wrap items-baseline justify-center gap-x-2 rounded-2xl bg-foreground px-4 py-2 text-center text-background">
+      <span className="text-sm font-bold opacity-80">{floor.enemy.name.split(",")[0]} uses</span>
+      <span className="font-display text-lg uppercase tracking-wide text-sun">{m.name}!</span>
+      <span className="basis-full text-xs font-medium opacity-70">{m.hint}</span>
     </div>
   );
 }
