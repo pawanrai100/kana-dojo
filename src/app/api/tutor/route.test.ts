@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("next/server", () => ({ connection: async () => {} }));
 const user = vi.hoisted(() => ({ id: "preview-user", authenticated: true }));
 vi.mock("@/lib/supabase/config", () => ({ authEnabled: true }));
 vi.mock("@/lib/supabase/server", () => ({ getServerSupabase: async () => ({ auth: { getUser: async () => ({ data: { user: user.authenticated ? { id: user.id } : null }, error: null }) } }) }));

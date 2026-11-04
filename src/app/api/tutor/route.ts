@@ -2,11 +2,11 @@ import { getServerSupabase } from "@/lib/supabase/server";
 import { authEnabled } from "@/lib/supabase/config";
 import { tutorInput, responseText } from "@/lib/learning/tutor";
 import { SPEAKING_LESSONS } from "@/lib/learning/lessons";
-export const dynamic = "force-dynamic";
+import { connection } from "next/server";
 const enabled = () => process.env.TUTOR_ENABLED === "true" && !!process.env.OPENAI_API_KEY && !!process.env.OPENAI_TUTOR_MODEL && !!process.env.TUTOR_PREVIEW_USER_IDS && authEnabled;
 const attempts = new Map<string, { at: number; count: number }>();
 const json = (body: unknown, status = 200) => Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
-export async function GET() { return json({ available: enabled() }); }
+export async function GET() { await connection(); return json({ available: enabled() }); }
 export async function POST(request: Request) {
   if (!enabled()) return json({ error: "The tutor is not configured. Scripted roleplay is available." }, 503);
   if (request.headers.get("origin") !== new URL(request.url).origin) return json({ error: "Open the tutor from this website." }, 403);
