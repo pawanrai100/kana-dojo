@@ -17,6 +17,9 @@ export interface Settings {
   theme: ThemePref;
   script: ScriptPref;
   sound: boolean;
+  voiceName: string; // "" = pick the most natural one automatically
+  voiceRate: "normal" | "slow";
+  speakAnswers: boolean; // say the word out loud after you answer in practice
   autoFocus: boolean;
   shortcuts: boolean;
   enabledChars: string[];
@@ -31,6 +34,9 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   script: "hiragana",
   sound: true,
+  voiceName: "",
+  voiceRate: "normal",
+  speakAnswers: false,
   autoFocus: true,
   shortcuts: true,
   enabledChars: [...BASIC_KANA_LIST, ...KATAKANA_BASIC_LIST, LONG_MARK],
@@ -71,6 +77,9 @@ export function sanitizeSettings(raw: unknown): Settings {
     theme: pick(r.theme, ["light", "dark", "system"] as const, d.theme),
     script: pick(r.script, ["hiragana", "katakana", "both"] as const, d.script),
     sound: bool(r.sound, d.sound),
+    voiceName: typeof r.voiceName === "string" ? r.voiceName.slice(0, 120) : d.voiceName,
+    voiceRate: pick(r.voiceRate, ["normal", "slow"] as const, d.voiceRate),
+    speakAnswers: bool(r.speakAnswers, d.speakAnswers),
     autoFocus: bool(r.autoFocus, d.autoFocus),
     shortcuts: bool(r.shortcuts, d.shortcuts),
     enabledChars: enabled,

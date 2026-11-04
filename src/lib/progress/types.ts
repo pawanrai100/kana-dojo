@@ -39,6 +39,8 @@ export interface DayStat {
   perfect?: number;
   sentences?: number;
   kata?: number; // katakana cards read right
+  voice?: number; // listen/speak cards right in voice mode
+  talks?: number; // conversations finished with hana
   floors?: number;
   bestCombo?: number;
   quests?: string[]; // quest ids already paid out today

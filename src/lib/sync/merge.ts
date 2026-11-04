@@ -128,6 +128,8 @@ export function mergeGuestInto(account: Progress, guest: Progress): Progress {
     perfect: (x.perfect ?? 0) + (y.perfect ?? 0) || undefined,
     sentences: (x.sentences ?? 0) + (y.sentences ?? 0) || undefined,
     kata: (x.kata ?? 0) + (y.kata ?? 0) || undefined,
+    voice: (x.voice ?? 0) + (y.voice ?? 0) || undefined,
+    talks: (x.talks ?? 0) + (y.talks ?? 0) || undefined,
     floors: (x.floors ?? 0) + (y.floors ?? 0) || undefined,
     bestCombo: Math.max(x.bestCombo ?? 0, y.bestCombo ?? 0) || undefined,
     quests: [...new Set([...(x.quests ?? []), ...(y.quests ?? [])])],

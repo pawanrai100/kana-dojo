@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { AlertCircle, Check, Flag, Info, RotateCcw, SkipForward, Target, Timer } from "lucide-react";
+import { AlertCircle, Check, Flag, Info, Mic, RotateCcw, SkipForward, Target, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge, Kbd, ProgressBar, Segmented } from "@/components/ui/misc";
 import { PageSkeleton } from "@/components/layout/page-header";
@@ -113,7 +113,12 @@ function PracticeSession({ settings }: { settings: Settings }) {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl sm:text-4xl">Practice</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="font-display text-3xl sm:text-4xl">Practice</h1>
+          <Link href="/voice" className="ml-auto flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1.5 text-sm font-extrabold text-primary hover:brightness-95">
+            <Mic className="size-4" aria-hidden /> Voice mode
+          </Link>
+        </div>
         <p className="mt-1 hidden text-sm text-muted sm:block">Read the kana, type it in romaji, beat the clock.</p>
       </div>
 

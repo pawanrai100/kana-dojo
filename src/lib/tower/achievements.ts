@@ -111,6 +111,17 @@ export const ACHIEVEMENTS: Achievement[] = [
     earned: (p) => KATA_FLOORS.every((f) => (p.tower.floors[f.id]?.stars ?? 0) === 3),
   },
   { id: "kata-black", name: "Katakana Black Belt", how: "Earn your katakana Black belt.", glyph: "黒", tier: "gold", earned: (p) => beltStatus(p, "katakana").index >= beltAt("black") },
+  // voice mode
+  { id: "voice-first", name: "First Chat", how: "Finish a conversation with Hana-sensei.", glyph: "話", tier: "bronze", earned: (p) => bestDay(p, (d) => (d.talks ?? 0) >= 1) },
+  { id: "voice-ears", name: "Good Ears", how: "Get 20 cards right in voice mode in one day.", glyph: "耳", tier: "silver", earned: (p) => bestDay(p, (d) => (d.voice ?? 0) >= 20) },
+  {
+    id: "voice-chatter",
+    name: "Chatterbox",
+    how: "Finish 10 conversations with Hana-sensei.",
+    glyph: "声",
+    tier: "gold",
+    earned: (p) => Object.values(p.days).reduce((n, d) => n + (d.talks ?? 0), 0) >= 10,
+  },
   { id: "both-scripts", name: "Two Scripts", how: "Master all 46 hiragana and all 46 katakana.", glyph: "両", tier: "gold", earned: (p) => allMastered(p, group("basic")) && allMastered(p, group("k-basic")) },
   // sentences
   {

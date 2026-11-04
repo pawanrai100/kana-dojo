@@ -29,6 +29,7 @@ import type { Progress } from "@/lib/progress/types";
 import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
 import { ALL_VOCAB } from "@/lib/vocab/all";
 import { cn, pct } from "@/lib/utils";
+import { SpeakerButton } from "@/features/voice/speaker-button";
 import { actions, useAppState } from "@/store/app-store";
 
 // gojuon grid positions, null = empty slot (や and わ rows have gaps)
@@ -338,7 +339,8 @@ function CharDetail({
                     </>
                   )}
                 </DialogDescription>
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  {!isSmallTsu(c.kana) && c.kana !== LONG_MARK && <SpeakerButton text={c.kana} className="size-7" />}
                   {isMastered(s) ? <Badge tone="sun">Mastered</Badge> : s?.seen ? <Badge tone="primary">Practiced</Badge> : <Badge>Not seen yet</Badge>}
                 </div>
               </div>
@@ -375,7 +377,8 @@ function CharDetail({
                 <p className="mb-2 text-sm font-medium">Words with {c.kana}</p>
                 <ul className="space-y-1 text-sm">
                   {examples.map((w) => (
-                    <li key={w.id} className="flex gap-3">
+                    <li key={w.id} className="flex items-center gap-3">
+                      <SpeakerButton text={w.kana} className="size-7" />
                       <span lang="ja" className="font-kana w-20 text-base">{w.kana}</span>
                       <span className="w-20 text-muted">{w.romaji}</span>
                       <span className="truncate">{w.meaning}</span>

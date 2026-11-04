@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { sanitizeProgress } from "@/lib/progress/sanitize";
-import { currentStreak } from "@/lib/progress/stats";
+import { currentStreak, dayKey } from "@/lib/progress/stats";
 import { emptyProgress, type Progress } from "@/lib/progress/types";
 import { applyGradedRound } from "@/lib/progress/update";
 import type { GeneratorState, GradedRound } from "@/lib/quiz/types";
@@ -135,6 +135,19 @@ export const actions = {
     const before = ensure().progress;
     const after = withBelt(claimQuests(applyGradedRound(before, graded, before.gen)).progress);
     set({ progress: after, active: null });
+    return newlyEarned(before, after);
+  },
+  // voice mode: listen/speak cards count as practice (without touching a round
+  // you left open), plus voice counters for badges
+  recordVoice(graded: GradedRound | null, opts: { talk?: boolean } = {}): Achievement[] {
+    const before = ensure().progress;
+    let p = graded ? applyGradedRound(before, graded, before.gen) : before;
+    const k = dayKey(Date.now());
+    const d = p.days[k] ?? { answered: 0, correct: 0, rounds: 0, xp: 0 };
+    const right = graded ? graded.results.filter((r) => r.correct).length : 0;
+    p = { ...p, days: { ...p.days, [k]: { ...d, voice: (d.voice ?? 0) + right || undefined, talks: (d.talks ?? 0) + (opts.talk ? 1 : 0) || undefined } } };
+    const after = withBelt(claimQuests(p).progress);
+    set({ progress: after });
     return newlyEarned(before, after);
   },
   // a tower battle counts as practice too, then the floor result goes on top

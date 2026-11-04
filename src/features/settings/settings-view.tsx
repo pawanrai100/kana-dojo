@@ -12,6 +12,7 @@ import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
 import { useAuth } from "@/features/auth/auth-provider";
 import { getShowOnBoard, setShowOnBoard } from "@/lib/leaderboard";
 import { getSupabase } from "@/lib/supabase/client";
+import { isNatural, japaneseVoices, speak } from "@/lib/voice/speech";
 import { ALL_KANA_LIST, BASIC_KANA_LIST, KANA_GROUPS } from "@/lib/kana/hiragana";
 import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
 import { cn } from "@/lib/utils";
@@ -183,6 +184,8 @@ function SettingsBody({ s }: { s: Settings }) {
         </CardContent>
       </Card>
 
+      <VoiceSettings s={s} set={set} />
+
       <LeaderboardSetting />
 
       <Card>
@@ -292,6 +295,64 @@ function LeaderboardSetting() {
       <CardContent>
         <ToggleRow label="Show me on the leaderboard" hint="Turn this off to hide from everyone else. You'll still see the board." checked={show} onChange={(v) => void change(v)} />
         {failed && <p className="mt-2 text-xs font-bold text-bad">Couldn&apos;t save that. Try again.</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+// hana's voice: which one, how fast, and whether practice reads answers out loud
+function VoiceSettings({ s, set }: { s: Settings; set: (patch: Partial<Settings>) => void }) {
+  const [voices, setVoices] = useState<{ name: string; natural: boolean }[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    void japaneseVoices().then((vs) => live && setVoices(vs.map((v) => ({ name: v.name, natural: isNatural(v.name) }))));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const test = () => void speak("こんにちは！ わたしは はな です。 いっしょに べんきょう しよう！", { voice: s.voiceName || undefined, rate: s.voiceRate });
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Voice</CardTitle>
+        <CardDescription>
+          Hana-sensei uses a Japanese voice built into your device. Voices marked natural sound the most human. Edge&apos;s &quot;Nanami&quot; and Chrome&apos;s &quot;Google 日本語&quot; are the best ones out there.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="divide-y divide-border">
+        <Row label="Voice" hint={voices && !voices.length ? "No Japanese voice on this device. Try Chrome, Edge or Safari, or add Japanese in your system's speech settings." : undefined}>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Voice"
+              value={s.voiceName}
+              onChange={(e) => set({ voiceName: e.target.value })}
+              className="h-10 max-w-64 rounded-xl border-2 border-border bg-background px-2 text-sm font-bold"
+            >
+              <option value="">Best available (automatic)</option>
+              {(voices ?? []).map((v) => (
+                <option key={v.name} value={v.name}>
+                  {v.name}
+                  {v.natural ? " ✦ natural" : ""}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" variant="secondary" onClick={test}>
+              Test
+            </Button>
+          </div>
+        </Row>
+        <Row label="Speaking speed">
+          <Segmented
+            label="Speaking speed"
+            value={s.voiceRate}
+            onChange={(voiceRate) => set({ voiceRate })}
+            options={[
+              { value: "normal", label: "Normal" },
+              { value: "slow", label: "Slow" },
+            ]}
+          />
+        </Row>
+        <ToggleRow label="Read answers out loud" hint="After every card in practice, hear how the word sounds." checked={s.speakAnswers} onChange={(speakAnswers) => set({ speakAnswers })} />
       </CardContent>
     </Card>
   );

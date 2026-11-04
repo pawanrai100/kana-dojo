@@ -7,6 +7,10 @@ import { particleInfo } from "@/lib/quiz/tokens";
 import type { AnswerState, Difficulty, GradedQuestion, Question } from "@/lib/quiz/types";
 import { comboMultiplier } from "@/lib/game/scoring";
 import { cn } from "@/lib/utils";
+import { useEffect } from "react";
+import { SpeakerButton } from "@/features/voice/speaker-button";
+import { speak } from "@/lib/voice/speech";
+import { actions } from "@/store/app-store";
 
 const DIFF_LABEL: Record<Difficulty, string> = { easy: "Easy", medium: "Medium", hard: "Hard" };
 const DIFF_TONE: Record<Difficulty, string> = {
@@ -215,6 +219,11 @@ export function AnswerFeedback({
   nextLabel?: string;
 }) {
   const missed = new Set(missedIdx);
+  // "read answers out loud" in settings: hear the word every time
+  useEffect(() => {
+    const s = actions.getState().settings;
+    if (s.speakAnswers) void speak(q.kana, { voice: s.voiceName || undefined, rate: s.voiceRate });
+  }, [q.kana]);
   return (
     <div className="mx-auto w-full max-w-[620px]">
       <article
@@ -228,7 +237,10 @@ export function AnswerFeedback({
           {correct ? <Check className="size-7" aria-label="Correct" /> : <X className="size-7" aria-label="Missed" />}
         </span>
         <KanaLine q={q} missed={correct ? undefined : missed} missedClass="text-bad underline decoration-4 underline-offset-[12px]" />
-        <p className="text-2xl font-extrabold">{q.romaji}</p>
+        <p className="flex items-center gap-2 text-2xl font-extrabold">
+          {q.romaji}
+          <SpeakerButton text={q.kana} label="Hear it" />
+        </p>
         {!correct && particleSlip(q, missed) && (
           <p className="rounded-xl bg-surface px-3 py-1.5 text-sm font-bold text-primary">
             Particle tip: は reads wa, を reads o and へ reads e when they&apos;re particles.

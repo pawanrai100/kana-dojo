@@ -87,6 +87,8 @@ function day(v: unknown): DayStat | null {
     perfect: opt(v.perfect),
     sentences: opt(v.sentences),
     kata: opt(v.kata),
+    voice: opt(v.voice),
+    talks: opt(v.talks),
     floors: opt(v.floors),
     bestCombo: opt(v.bestCombo),
     quests: Array.isArray(v.quests) ? [...new Set(v.quests.filter((q): q is string => typeof q === "string"))].slice(0, 10) : undefined,

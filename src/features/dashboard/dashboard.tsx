@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BookOpenText, Castle, Flame, Lock, Play, RotateCcw, Target, Trophy, UserRound } from "lucide-react";
+import { BookOpenText, Castle, Flame, Lock, Mic, Play, RotateCcw, Target, Trophy, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/misc";
@@ -35,6 +35,7 @@ import { CoachCard } from "@/features/coach/coach-card";
 import { BeltProgress } from "@/features/belts/belt";
 import { beltScriptFor, beltStatus, type BeltScript } from "@/lib/progress/belts";
 import { activeChars } from "@/lib/settings/types";
+import { Hana } from "@/features/voice/hana";
 import { QuestsCard } from "@/features/quests/quests-card";
 
 // a word from the learner's pool that leans on their weakest chars
@@ -193,6 +194,16 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
       </div>
 
       <TowerCard progress={progress} script={script} />
+      <Link href="/voice" className="press flex flex-wrap items-center gap-4 rounded-[var(--radius-card)] bg-[#ffe3ec] p-5 text-[#3a1a2a] shadow-[0_6px_0_#f2a9c1] sm:p-6">
+        <Hana className="size-16" state="happy" />
+        <span className="min-w-0 flex-1 basis-56">
+          <span className="font-display block text-xl">Talk with Hana-sensei</span>
+          <span className="block text-sm opacity-80">Real conversations out loud, listening drills, and say-it-back practice.</span>
+        </span>
+        <span className="flex items-center gap-1.5 rounded-2xl bg-[#ff7aa8] px-5 py-3 font-extrabold text-white shadow-[0_4px_0_#d9557f]">
+          <Mic className="size-4" aria-hidden /> Voice mode
+        </span>
+      </Link>
       <LeaderboardCard />
 
       <section aria-label="Coming next">
