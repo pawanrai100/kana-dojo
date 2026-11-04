@@ -21,6 +21,7 @@ function isActive(pathname: string, href: string) {
 const SHORT: Record<string, string> = {
   "/": "Home",
   "/practice": "Practice",
+  "/voice": "Voice",
   "/tower": "Tower",
   "/chart": "Chart",
   "/progress": "Stats",
@@ -45,10 +46,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex w-full max-w-6xl items-center gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Kana Dojo home">
             <LogoMark size={40} />
-            <span className="font-display hidden text-xl sm:inline lg:hidden xl:inline">Kana Dojo</span>
+            <span className="font-display hidden whitespace-nowrap text-xl sm:inline lg:hidden 2xl:inline">Kana Dojo</span>
           </Link>
 
-          <nav aria-label="Main" className="ml-4 hidden items-center gap-1 lg:flex">
+          <nav aria-label="Main" className="ml-2 hidden items-center gap-0.5 lg:flex xl:ml-4 xl:gap-1">
             {MAIN_NAV.map((item) => {
               const active = isActive(pathname, item.href);
               return (
@@ -57,7 +58,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "rounded-full px-4 py-2 text-[15px] font-extrabold transition-colors",
+                    "rounded-full px-3 py-2 text-[15px] font-extrabold transition-colors xl:px-4",
                     active ? "bg-surface text-primary shadow-[0_3px_0_var(--border)]" : "text-muted hover:text-foreground",
                   )}
                 >
@@ -92,7 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-8 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
       >
         {MAIN_NAV.map((item) => {
           const active = isActive(pathname, item.href);
@@ -101,9 +102,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={cn("flex flex-col items-center gap-1 py-2.5 text-[10px] font-extrabold sm:text-[11px]", active ? "text-primary" : "text-muted")}
+              className={cn("flex min-w-0 flex-col items-center gap-1 py-2.5 text-[9.5px] font-extrabold tracking-tight sm:text-[11px] sm:tracking-normal", active ? "text-primary" : "text-muted")}
             >
-              <span className={cn("grid h-8 w-10 place-items-center rounded-full sm:w-11", active && "bg-primary-soft")}>
+              <span className={cn("grid h-8 w-9 place-items-center rounded-full sm:w-11", active && "bg-primary-soft")}>
                 <item.icon className="size-5" />
               </span>
               {SHORT[item.href] ?? item.label}
