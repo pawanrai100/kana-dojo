@@ -36,6 +36,7 @@ import { BeltProgress } from "@/features/belts/belt";
 import { beltScriptFor, beltStatus, type BeltScript } from "@/lib/progress/belts";
 import { activeChars } from "@/lib/settings/types";
 import { QuestsCard } from "@/features/quests/quests-card";
+import { LearningCard } from "@/features/learning/learning-view";
 
 // a word from the learner's pool that leans on their weakest chars
 function pickPreview(p: Progress, enabled: string[]) {
@@ -85,6 +86,7 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
   const isNew = progress.totalAnswered === 0;
 
   const start = () => {
+    if (isNew) actions.updateSettings({ timerPace: "off", mode: "random", questionsPerRound: 5, lengthRange: "2-3", enabledChars: [...enabled.filter((k) => !pool.includes(k)), ...pool.slice(0, 5)] });
     actions.clearActive();
     router.push("/practice");
   };
@@ -107,13 +109,13 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
           )}
           <div className="flex flex-wrap gap-3 pt-1">
             <Button size="lg" variant="sun" onClick={start}>
-              <Play /> Start Practice
+              <Play /> {isNew ? "Start with five vowels" : "Start Practice"}
             </Button>
-            <Button size="lg" variant="outline" asChild className="bg-white text-primary ring-0 shadow-[0_5px_0_var(--primary-deep)]">
+            {hasActive && <Button size="lg" variant="outline" asChild className="bg-white text-primary ring-0 shadow-[0_5px_0_var(--primary-deep)]">
               <Link href="/practice">
                 <RotateCcw /> {hasActive ? "Resume Practice" : "Continue practicing"}
               </Link>
-            </Button>
+            </Button>}
           </div>
         </div>
 
@@ -139,6 +141,8 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
           </span>
         </button>
       </section>
+
+      <LearningCard />
 
       {auth.status === "guest" && (
         <Link
@@ -195,14 +199,13 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
       <TowerCard progress={progress} script={script} />
       <LeaderboardCard />
 
-      <section aria-label="Coming next">
-        <h2 className="mb-3 text-sm font-extrabold text-muted">Coming next</h2>
+      <section aria-label="Explore learning">
+        <h2 className="mb-3 text-sm font-extrabold text-muted">Explore learning</h2>
         <ul className="flex flex-wrap gap-2">
           {UPCOMING_MODULES.map((m) => (
             <li key={m.id} className="flex items-center gap-2 rounded-full bg-surface px-4 py-2 text-sm font-bold text-muted shadow-[0_3px_0_var(--border)]">
               <m.icon className="size-4" aria-hidden />
-              {m.label}
-              <Lock className="size-3.5 opacity-60" aria-label="Coming soon" />
+              {m.status === "live" && m.href ? <Link href={m.href} className="text-primary hover:underline">{m.label}</Link> : <>{m.label}<Lock className="size-3.5 opacity-60" aria-label="Coming soon" /></>}
             </li>
           ))}
         </ul>

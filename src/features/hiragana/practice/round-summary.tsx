@@ -10,6 +10,7 @@ import { Medal } from "@/features/tower/medal";
 import type { Belt, BeltStatus } from "@/lib/progress/belts";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { cn } from "@/lib/utils";
+import { roundAccuracy } from "@/lib/quiz/grade";
 
 const HEADLINES = ["Keep going!", "Getting there!", "Nice reading!", "Brilliant round!"];
 
@@ -34,6 +35,7 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
   // every char you slipped on this round, in the order you met them
   const missed = [...new Set(graded.results.flatMap((r) => (r.correct || r.unanswered ? [] : r.missedChars)))];
   const notReached = graded.results.filter((r) => r.unanswered).length;
+  const attempted = total - notReached;
 
   return (
     <section
@@ -58,15 +60,15 @@ export const RoundSummary = forwardRef<HTMLButtonElement, Props>(function RoundS
           </div>
           <h2 className="font-display text-2xl sm:text-3xl">{graded.correctCount === total ? "Perfect round!" : HEADLINES[graded.stars]}</h2>
           <p className="text-sm text-muted">
-            You read <strong className="text-foreground">{graded.correctCount}</strong> of {total} correctly
-            {notReached > 0 && <> ({notReached} not reached, those don&apos;t count against you)</>}
+            You read <strong className="text-foreground">{graded.correctCount}</strong> of {attempted} attempted questions correctly
+            {notReached > 0 && <> · {notReached} not attempted (excluded from accuracy)</>}
             {isBest && graded.totalPoints > 0 && <span className="ml-2 rounded-full bg-sun px-2.5 py-0.5 text-xs font-extrabold text-sun-ink">New best score</span>}
           </p>
         </div>
 
         <dl className="grid grid-cols-3 gap-3 text-center sm:gap-6">
           <Stat icon={<Trophy className="size-4" />} label="Score" value={graded.totalPoints.toLocaleString()} />
-          <Stat icon={<Target className="size-4" />} label="Accuracy" value={`${Math.round((graded.correctCount / total) * 100)}%`} />
+          <Stat icon={<Target className="size-4" />} label="Accuracy" value={attempted ? `${Math.round(roundAccuracy(graded) * 100)}%` : "No attempts"} />
           <Stat icon={<Flame className="size-4" />} label="Best combo" value={`×${graded.maxCombo}`} />
         </dl>
       </div>
