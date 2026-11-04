@@ -21,7 +21,8 @@ export default function Page() {
 
       <section>
         <h2>Speaking and listening practice</h2>
-        <p>Conversation lesson completion and review dates are stored in this browser, separately for each account or guest, and are not currently synced. Optional microphone recordings stay in memory in the current tab; they are not uploaded or transcribed and are discarded when you leave the activity. Microphone access starts only when you choose to record. Model speech uses your browser or operating system&apos;s speech service, which may process the model text according to that provider&apos;s settings.</p>
+        <p>Conversation reviews, study reviews, saved words, preferences and notebook notes are stored in this browser, separately for each account or guest. You can export them to a file. Where cloud study backup is enabled, pressing Merge with cloud backup sends this study data to your own account in Supabase; it is not automatic background sync. Optional microphone recordings stay in memory in the current tab; they are not uploaded or transcribed and are discarded when you leave the activity. Microphone access starts only when you choose to record. Model speech uses your browser or operating system&apos;s speech service, which may process the model text according to that provider&apos;s settings.</p>
+        <p>The optional AI tutor, when configured, sends the selected scenario and your current typed conversation through our server to OpenAI only after you agree and press Send. No microphone recording is included. The app requests that generated responses are not stored for later API retrieval; provider retention and processing still follow <a href="https://developers.openai.com/api/docs/guides/your-data">OpenAI&apos;s API data policy</a>. Conversation text stays in tab memory in this interface and is not included in study backups. Do not include sensitive personal information.</p>
       </section>
 
       <section>

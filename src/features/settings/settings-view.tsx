@@ -17,6 +17,8 @@ import { KATAKANA_STARTER, type Settings } from "@/lib/settings/types";
 import { cn } from "@/lib/utils";
 import { actions, useAppState } from "@/store/app-store";
 import { useLearning } from "@/features/learning/use-learning";
+import { useStudy } from "@/features/learning/use-study";
+import { emptyStudy } from "@/lib/learning/study-progress";
 
 export function SettingsView() {
   const state = useAppState();
@@ -26,6 +28,7 @@ export function SettingsView() {
 
 function SettingsBody({ s }: { s: Settings }) {
   const learning = useLearning();
+  const study = useStudy();
   const [confirmReset, setConfirmReset] = useState(false);
   const set = (patch: Partial<Settings>) => {
     actions.updateSettings(patch);
@@ -206,7 +209,7 @@ function SettingsBody({ s }: { s: Settings }) {
         <DialogContent>
           <DialogTitle>Reset all progress?</DialogTitle>
           <DialogDescription className="mt-2">
-            This deletes your stats, streaks, Tower progress, mastery, and conversation lesson reviews from this browser. It can&apos;t be undone.
+            This deletes your stats, streaks, Tower progress, mastery, conversation reviews, study reviews, saved words and notebook from this browser. It does not delete a separate cloud study backup. Export a backup first if you want to keep a copy. It can&apos;t be undone.
           </DialogDescription>
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirmReset(false)}>
@@ -217,6 +220,7 @@ function SettingsBody({ s }: { s: Settings }) {
               onClick={() => {
                 actions.resetProgress();
                 learning.save({});
+                study.save(emptyStudy());
                 setConfirmReset(false);
               }}
             >

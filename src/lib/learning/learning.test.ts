@@ -5,7 +5,7 @@ import { completeLesson, learningKey, recommendedLesson, sanitizeLearning } from
 const DAY = 86_400_000;
 describe("conversation curriculum", () => {
   it("has unique missions and complete, answerable lessons", () => {
-    expect(new Set(SPEAKING_LESSONS.map((l) => l.id)).size).toBe(6);
+    expect(new Set(SPEAKING_LESSONS.map((l) => l.id)).size).toBe(12);
     for (const lesson of SPEAKING_LESSONS) {
       expect(lesson.phrases).toHaveLength(3);
       expect(lesson.turns).toHaveLength(2);

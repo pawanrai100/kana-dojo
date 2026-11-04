@@ -1,3 +1,5 @@
+import { EXTRA_LESSONS } from "./extra-lessons";
+
 export interface Phrase {
   id: string;
   japanese: string;
@@ -105,6 +107,7 @@ export const SPEAKING_LESSONS: SpeakingLesson[] = [
       { prompt: "あそこです。", speech: "あそこです。", meaning: "It's over there.", hint: "Thank them for helping.", model: "ありがとうございます。", reading: "arigatou gozaimasu", accepted: ["ありがとうございます", "arigatou gozaimasu", "ありがとう", "arigatou"] },
     ],
   },
+  ...EXTRA_LESSONS,
 ];
 
 export function normalizeReply(value: string): string {

@@ -23,6 +23,7 @@ export function LearningView() {
 
   return <div className="space-y-6">
     <PageHeader title="Your first conversations" description="Start speaking while you learn kana. Listen, understand, and practise a short exchange. Every lesson is open from day one." />
+    <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-primary-soft p-5"><div><h2 className="font-display text-xl">Build the skills behind the conversation</h2><p className="text-sm text-muted">Daily plans, vocabulary, grammar, sounds, shadowing and your notebook.</p></div><Button asChild><Link href="/study">Open study studio</Link></Button></section>
     <section className="rounded-[var(--radius-card)] bg-primary p-6 text-primary-foreground shadow-card sm:p-8" aria-label="Today's lesson">
       <p className="text-sm font-extrabold">{learning.progress[recommended.id]?.dueAt <= now ? "Review due" : "Today's lesson"} · about 5–10 minutes</p>
       <h2 className="font-display mt-2 text-2xl">{recommended.title}</h2>

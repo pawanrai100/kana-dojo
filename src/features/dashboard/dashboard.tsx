@@ -199,14 +199,13 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
       <TowerCard progress={progress} script={script} />
       <LeaderboardCard />
 
-      <section aria-label="Coming next">
-        <h2 className="mb-3 text-sm font-extrabold text-muted">Coming next</h2>
+      <section aria-label="Explore learning">
+        <h2 className="mb-3 text-sm font-extrabold text-muted">Explore learning</h2>
         <ul className="flex flex-wrap gap-2">
           {UPCOMING_MODULES.map((m) => (
             <li key={m.id} className="flex items-center gap-2 rounded-full bg-surface px-4 py-2 text-sm font-bold text-muted shadow-[0_3px_0_var(--border)]">
               <m.icon className="size-4" aria-hidden />
-              {m.label}
-              <Lock className="size-3.5 opacity-60" aria-label="Coming soon" />
+              {m.status === "live" && m.href ? <Link href={m.href} className="text-primary hover:underline">{m.label}</Link> : <>{m.label}<Lock className="size-3.5 opacity-60" aria-label="Coming soon" /></>}
             </li>
           ))}
         </ul>
