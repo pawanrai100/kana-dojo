@@ -16,6 +16,8 @@ import { applyBattle, type TowerOutcome } from "@/lib/tower/progress";
 import type { LocalSide, SyncMeta } from "@/lib/sync/types";
 import { withBelt } from "@/lib/progress/belts";
 import { claimQuests } from "@/lib/progress/quests";
+import { applyKanjiRound } from "@/lib/kanji/progress";
+import type { KanjiResult } from "@/lib/kanji/quiz";
 
 // guest data lives under the same keys as before accounts existed, so nobody's
 // old progress moves. a signed in user gets their own "u:<id>:" copy that syncs
@@ -147,6 +149,13 @@ export const actions = {
     const right = graded ? graded.results.filter((r) => r.correct).length : 0;
     p = { ...p, days: { ...p.days, [k]: { ...d, voice: (d.voice ?? 0) + right || undefined, talks: (d.talks ?? 0) + (opts.talk ? 1 : 0) || undefined } } };
     const after = withBelt(claimQuests(p).progress);
+    set({ progress: after });
+    return newlyEarned(before, after);
+  },
+  // a finished kanji round. doesn't touch a kana round you left open
+  recordKanji(roundId: string, results: KanjiResult[]): Achievement[] {
+    const before = ensure().progress;
+    const after = withBelt(claimQuests(applyKanjiRound(before, roundId, results)).progress);
     set({ progress: after });
     return newlyEarned(before, after);
   },

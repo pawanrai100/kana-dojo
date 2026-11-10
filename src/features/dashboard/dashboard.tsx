@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BookOpenText, Castle, Flame, Lock, Mic, Play, RotateCcw, Target, Trophy, UserRound } from "lucide-react";
+import { BookOpenText, Castle, Flame, Languages, Lock, Mic, Play, RotateCcw, Target, Trophy, UserRound } from "lucide-react";
+import { KANJI } from "@/lib/kanji/data";
+import { kanjiLevel, knownKanji } from "@/lib/kanji/progress";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProgressBar } from "@/components/ui/misc";
@@ -204,6 +206,7 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
           <Mic className="size-4" aria-hidden /> Voice mode
         </span>
       </Link>
+      <KanjiCard progress={progress} />
       <LeaderboardCard />
 
       <section aria-label="Coming next">
@@ -219,6 +222,31 @@ function DashboardView({ progress, enabled, script, hasActive }: { progress: Pro
         </ul>
       </section>
     </div>
+  );
+}
+
+function KanjiCard({ progress }: { progress: Progress }) {
+  const known = knownKanji(progress).length;
+  const started = Object.keys(progress.kanji ?? {}).length > 0;
+  const preview = KANJI.slice(0, 10);
+  return (
+    <Link href="/kanji" className="press flex flex-wrap items-center gap-4 rounded-[var(--radius-card)] bg-surface p-5 shadow-[0_6px_0_var(--border)] sm:p-6">
+      <span lang="ja" aria-hidden className="font-kana grid size-16 shrink-0 place-items-center rounded-2xl bg-sun text-4xl text-sun-ink">
+        漢
+      </span>
+      <span className="min-w-0 flex-1 basis-56 space-y-2">
+        <span className="font-display block text-xl">{started ? `Kanji: ${known} of ${KANJI.length} known` : "Next step: kanji"}</span>
+        <span className="block text-sm text-muted">{started ? "Keep going with the N5 kanji, lesson by lesson." : "Start the N5 kanji. Numbers first, then days, people and more."}</span>
+        <span lang="ja" aria-hidden className="font-kana flex gap-1 text-lg text-muted">
+          {preview.map((k) => (
+            <span key={k.k} className={cn(kanjiLevel(progress, k.k) === "known" && "text-sun-deep")}>{k.k}</span>
+          ))}
+        </span>
+      </span>
+      <span className="flex items-center gap-1.5 rounded-2xl bg-primary px-5 py-3 font-extrabold text-primary-foreground shadow-[0_4px_0_var(--primary-deep)]">
+        <Languages className="size-4" aria-hidden /> {started ? "Keep going" : "Start kanji"}
+      </span>
+    </Link>
   );
 }
 

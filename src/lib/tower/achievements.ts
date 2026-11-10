@@ -3,9 +3,11 @@ import { encounteredChars, masteredChars } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
 import { KANA_GROUPS } from "@/lib/kana/hiragana";
 import { skillMissRate } from "@/lib/quiz/adaptive";
-import { BELTS, beltStatus } from "@/lib/progress/belts";
+import { BELTS, KANJI_BELTS, beltStatus } from "@/lib/progress/belts";
 import { ALL_BOSSES, ALL_FLOORS, FLOORS, FINAL_BOSS, KATA_FINAL_BOSS, KATA_FIRST, KATA_FLOORS, SKY_FINAL_BOSS, SKY_FLOORS, floorLabel, getFloor, type Enemy } from "./floors";
 import { skyOpen } from "./gate";
+import { KANJI, KANJI_WORDS } from "@/lib/kanji/data";
+import { knownKanji, learnedKanjiWords, lessonProgress } from "@/lib/kanji/progress";
 import { clearedCount, isCleared } from "./progress";
 
 // badges are worked out from progress, never stored on their own,
@@ -123,6 +125,16 @@ export const ACHIEVEMENTS: Achievement[] = [
     earned: (p) => Object.values(p.days).reduce((n, d) => n + (d.talks ?? 0), 0) >= 10,
   },
   { id: "both-scripts", name: "Two Scripts", how: "Master all 46 hiragana and all 46 katakana.", glyph: "両", tier: "gold", earned: (p) => allMastered(p, group("basic")) && allMastered(p, group("k-basic")) },
+  // kanji
+  { id: "kanji-first", name: "First Kanji", how: "Finish your first kanji round.", glyph: "字", tier: "bronze", earned: (p) => Object.keys(p.kanji ?? {}).length + Object.keys(p.kanjiRead ?? {}).length > 0 },
+  { id: "kanji-numbers", name: "Counting Up", how: "Learn every number kanji, 一 to 万.", glyph: "万", tier: "bronze", earned: (p) => (lessonProgress(p).find((l) => l.id === 1)?.known ?? 0) === KANJI.filter((k) => k.lesson === 1).length },
+  { id: "kanji-week", name: "Day by Day", how: "Learn every days-and-time kanji (日, 月, 火...).", glyph: "曜", tier: "silver", earned: (p) => { const l = lessonProgress(p).find((x) => x.id === 2)!; return l.known === l.total; } },
+  { id: "kanji-25", name: "Kanji Collector", how: "Learn 25 kanji.", glyph: "漢", tier: "silver", earned: (p) => knownKanji(p).length >= 25 },
+  { id: "kanji-words", name: "Word Smith", how: "Learn 50 kanji words.", glyph: "語", tier: "silver", earned: (p) => learnedKanjiWords(p).length >= 50 },
+  { id: "kanji-day", name: "Brush Marathon", how: "Get 50 kanji cards right in one day.", glyph: "筆", tier: "silver", earned: (p) => bestDay(p, (d) => (d.kanji ?? 0) >= 50) },
+  { id: "kanji-n5", name: "N5 Kanji Master", how: `Learn all ${KANJI.length} N5 kanji.`, glyph: "極", tier: "gold", earned: (p) => knownKanji(p).length >= KANJI.length },
+  { id: "kanji-black", name: "Kanji Black Belt", how: "Earn your kanji Black belt.", glyph: "黒", tier: "gold", earned: (p) => beltStatus(p, "kanji").index >= KANJI_BELTS.findIndex((b) => b.id === "j-black") },
+  { id: "kanji-all-words", name: "Walking Dictionary", how: `Learn all ${KANJI_WORDS.length} kanji words.`, glyph: "辞", tier: "gold", earned: (p) => learnedKanjiWords(p).length >= KANJI_WORDS.length },
   // sentences
   {
     id: "particle-pro",

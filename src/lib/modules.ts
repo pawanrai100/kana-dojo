@@ -2,11 +2,12 @@ import type { LucideIcon } from "lucide-react";
 import { BookOpenText, Castle, Ear, Grid3x3, Languages, LayoutDashboard, Mic, LineChart, Settings, Sparkles, Swords, Trophy } from "lucide-react";
 
 // nav + learning module registry. flip status to "live" and add a route
-// when a new module ships (katakana, kanji, vocab...)
+// when a new module ships (vocab, grammar...)
 export interface NavItem {
   href: string;
   label: string;
   icon: LucideIcon;
+  phone?: false; // left off the phone bottom bar (still on desktop and the home page)
 }
 
 export interface LearningModule {
@@ -20,16 +21,16 @@ export interface LearningModule {
 export const MAIN_NAV: NavItem[] = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/practice", label: "Kana Practice", icon: Swords },
+  { href: "/kanji", label: "Kanji", icon: Languages },
   { href: "/voice", label: "Voice", icon: Mic },
   { href: "/tower", label: "The Tower", icon: Castle },
   { href: "/chart", label: "Kana Chart", icon: Grid3x3 },
   { href: "/progress", label: "Progress & Stats", icon: LineChart },
-  { href: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { href: "/leaderboard", label: "Leaderboard", icon: Trophy, phone: false },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export const UPCOMING_MODULES: LearningModule[] = [
-  { id: "kanji", label: "Kanji", icon: Languages, status: "soon" },
   { id: "vocab", label: "Vocabulary", icon: BookOpenText, status: "soon" },
   { id: "listening", label: "Listening", icon: Ear, status: "soon" },
   { id: "grammar", label: "Grammar", icon: Sparkles, status: "soon" },

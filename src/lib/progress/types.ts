@@ -41,6 +41,7 @@ export interface DayStat {
   kata?: number; // katakana cards read right
   voice?: number; // listen/speak cards right in voice mode
   talks?: number; // conversations finished with hana
+  kanji?: number; // kanji cards right
   floors?: number;
   bestCombo?: number;
   quests?: string[]; // quest ids already paid out today
@@ -89,6 +90,11 @@ export interface Progress {
   skills: Record<string, SkillStat>;
   belt: number; // highest belt ever earned (index into BELTS), never goes down
   kBelt: number; // same for the katakana ladder
+  // kanji live apart from kana so the kana coach stays accurate
+  kanji: Record<string, CharStat>; // knowing what it means
+  kanjiRead: Record<string, CharStat>; // reading it inside words
+  kanjiWords: Record<string, WordStat>;
+  kjBelt: number;
 }
 
 export function emptyProgress(): Progress {
@@ -113,5 +119,9 @@ export function emptyProgress(): Progress {
     skills: {},
     belt: 0,
     kBelt: 0,
+    kanji: {},
+    kanjiRead: {},
+    kanjiWords: {},
+    kjBelt: 0,
   };
 }

@@ -1,4 +1,5 @@
 import { isKnownKana } from "@/lib/kana/hiragana";
+import { isKanjiWord, isN5Kanji } from "@/lib/kanji/data";
 import { sanitizeTower } from "@/lib/tower/progress";
 import { SKILLS } from "@/lib/coach/analyze";
 import { emptyProgress, type CharStat, type DayStat, type Progress, type RoundLog, type SessionLog, type SkillStat, type WordStat } from "./types";
@@ -89,6 +90,7 @@ function day(v: unknown): DayStat | null {
     kata: opt(v.kata),
     voice: opt(v.voice),
     talks: opt(v.talks),
+    kanji: opt(v.kanji),
     floors: opt(v.floors),
     bestCombo: opt(v.bestCombo),
     quests: Array.isArray(v.quests) ? [...new Set(v.quests.filter((q): q is string => typeof q === "string"))].slice(0, 10) : undefined,
@@ -152,5 +154,9 @@ export function sanitizeProgress(raw: unknown): Progress {
     skills: record(raw.skills, skillStat, (k) => k in SKILLS),
     belt: Math.min(Math.floor(num(raw.belt)), 20),
     kBelt: Math.min(Math.floor(num(raw.kBelt)), 20),
+    kanji: record(raw.kanji, charStat, isN5Kanji),
+    kanjiRead: record(raw.kanjiRead, charStat, isN5Kanji),
+    kanjiWords: record(raw.kanjiWords, wordStat, isKanjiWord),
+    kjBelt: Math.min(Math.floor(num(raw.kjBelt)), 20),
   };
 }

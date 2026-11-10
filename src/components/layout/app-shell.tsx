@@ -21,6 +21,7 @@ function isActive(pathname: string, href: string) {
 const SHORT: Record<string, string> = {
   "/": "Home",
   "/practice": "Practice",
+  "/kanji": "Kanji",
   "/voice": "Voice",
   "/tower": "Tower",
   "/chart": "Chart",
@@ -95,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-8 bg-surface pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_0_var(--border)] lg:hidden"
       >
-        {MAIN_NAV.map((item) => {
+        {MAIN_NAV.filter((item) => item.phone !== false).map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link

@@ -2,6 +2,8 @@ import { KANA_GROUPS, getRow } from "@/lib/kana/hiragana";
 import { skillMissRate } from "@/lib/quiz/adaptive";
 import { isCleared } from "@/lib/tower/progress";
 import { FLOORS, TOP_FLOOR, floorsOf } from "@/lib/tower/floors";
+import { KANJI, KANJI_WORDS } from "@/lib/kanji/data";
+import { knownKanji, learnedKanjiWords } from "@/lib/kanji/progress";
 import { isMastered } from "./stats";
 import type { Progress } from "./types";
 
@@ -168,10 +170,39 @@ export const KATA_BELTS: Belt[] = [
   },
 ];
 
-export type BeltScript = "hiragana" | "katakana";
-const LADDER: Record<BeltScript, Belt[]> = { hiragana: BELTS, katakana: KATA_BELTS };
+// kanji: "known" means you know the meaning and can read it in words
+const NUMBERS = KANJI.filter((k) => k.lesson === 1).map((k) => k.k);
+function kanjiStep(p: Progress, need: number, pool?: string[], what = "kanji"): BeltStep {
+  const have = Math.min(knownKanji(p, pool).length, need);
+  return { have, need, label: have >= need ? "Done" : `Learn ${need - have} more ${what}` };
+}
+function kWordStep(p: Progress, need: number): BeltStep {
+  const have = Math.min(learnedKanjiWords(p).length, need);
+  return { have, need, label: have >= need ? "Done" : `Learn ${need - have} more kanji words` };
+}
+
+export const KANJI_BELTS: Belt[] = [
+  { ...hira("white"), id: "j-white", goal: "Start here." },
+  { ...hira("yellow"), id: "j-yellow", goal: "Learn the number kanji (一 to 万, plus 円).", step: (p) => kanjiStep(p, NUMBERS.length, NUMBERS, "number kanji") },
+  { ...hira("orange"), id: "j-orange", goal: "Learn 25 kanji.", step: (p) => kanjiStep(p, 25) },
+  { ...hira("green"), id: "j-green", goal: "Learn 45 kanji.", step: (p) => kanjiStep(p, 45) },
+  { ...hira("blue"), id: "j-blue", goal: "Learn 65 kanji.", step: (p) => kanjiStep(p, 65) },
+  { ...hira("purple"), id: "j-purple", goal: "Learn 85 kanji.", step: (p) => kanjiStep(p, 85) },
+  { ...hira("brown"), id: "j-brown", goal: `Learn all ${KANJI.length} N5 kanji.`, step: (p) => kanjiStep(p, KANJI.length) },
+  {
+    ...hira("black"),
+    id: "j-black",
+    goal: `Every N5 kanji, plus 120 kanji words you can read.`,
+    step: (p) => both(kanjiStep(p, KANJI.length), kWordStep(p, 120)),
+  },
+  { ...hira("dan1"), id: "j-dan1", goal: `Learn all ${KANJI_WORDS.length} kanji words.`, step: (p) => kWordStep(p, KANJI_WORDS.length) },
+  { ...hira("dan2"), id: "j-dan2" },
+];
+
+export type BeltScript = "hiragana" | "katakana" | "kanji";
+const LADDER: Record<BeltScript, Belt[]> = { hiragana: BELTS, katakana: KATA_BELTS, kanji: KANJI_BELTS };
 export const ladderOf = (script: BeltScript = "hiragana") => LADDER[script];
-const earnedOf = (p: Progress, script: BeltScript) => (script === "katakana" ? (p.kBelt ?? 0) : (p.belt ?? 0));
+const earnedOf = (p: Progress, script: BeltScript) => (script === "katakana" ? (p.kBelt ?? 0) : script === "kanji" ? (p.kjBelt ?? 0) : (p.belt ?? 0));
 
 const done = (s: BeltStep) => s.have >= s.need;
 
@@ -200,17 +231,18 @@ export function beltStatus(p: Progress, script: BeltScript = "hiragana"): BeltSt
   return { script, index, belt: L[index], next, nextStep: next?.step(p), needsReview: q < index };
 }
 
-// lock in newly earned belts (both ladders) so they can never be taken away
+// lock in newly earned belts (every ladder) so they can never be taken away
 export function withBelt(p: Progress): Progress {
   const h = qualifiedBelt(p, "hiragana");
   const k = qualifiedBelt(p, "katakana");
-  if (h <= (p.belt ?? 0) && k <= (p.kBelt ?? 0)) return p;
-  return { ...p, belt: Math.max(h, p.belt ?? 0), kBelt: Math.max(k, p.kBelt ?? 0) };
+  const j = qualifiedBelt(p, "kanji");
+  if (h <= (p.belt ?? 0) && k <= (p.kBelt ?? 0) && j <= (p.kjBelt ?? 0)) return p;
+  return { ...p, belt: Math.max(h, p.belt ?? 0), kBelt: Math.max(k, p.kBelt ?? 0), kjBelt: Math.max(j, p.kjBelt ?? 0) };
 }
 
-// a belt you just earned on either ladder, for the promotion banner
+// a belt you just earned on any ladder, for the promotion banner
 export function promotedBelt(before: Progress, after: Progress): Belt | undefined {
-  for (const sc of ["katakana", "hiragana"] as const) {
+  for (const sc of ["kanji", "katakana", "hiragana"] as const) {
     const a = beltStatus(after, sc).index;
     if (a > beltStatus(before, sc).index) return LADDER[sc][a];
   }

@@ -28,6 +28,8 @@ import { BarChart, LineChart } from "./charts";
 import { SessionList } from "./session-list";
 import { CoachCard } from "@/features/coach/coach-card";
 import { BeltLadder, BeltProgress, shortName } from "@/features/belts/belt";
+import { KANJI, KANJI_WORDS } from "@/lib/kanji/data";
+import { knownKanji, learnedKanjiWords } from "@/lib/kanji/progress";
 import { beltScriptFor, beltStatus, type BeltScript } from "@/lib/progress/belts";
 
 // dakuten, combos and small っ, counted apart from the basic 46
@@ -114,6 +116,8 @@ function ProgressBody({ p }: { p: Progress }) {
         />
         <Tile label="Real words learned" value={String(wordsLearned(p))} sub={`${plural(wordsPracticed(p), "word")} practiced`} />
         <Tile label="Best combo" value={`×${p.bestCombo}`} sub={`Best round ${p.bestRoundPoints.toLocaleString()} pts`} />
+        <Tile label="Kanji known" value={`${knownKanji(p).length}/${KANJI.length}`} sub={`${Object.keys(p.kanji ?? {}).length} practiced, ${shortName(beltStatus(p, "kanji").belt)} belt`} />
+        <Tile label="Kanji words learned" value={`${learnedKanjiWords(p).length}/${KANJI_WORDS.length}`} sub={`${Object.keys(p.kanjiWords ?? {}).length} practiced`} />
       </section>
 
       <Card id="belts" className="scroll-mt-24">
@@ -335,6 +339,7 @@ function BeltsBody({ p }: { p: Progress }) {
         options={[
           { value: "hiragana", label: "Hiragana belts" },
           { value: "katakana", label: "Katakana belts" },
+          { value: "kanji", label: "Kanji belts" },
         ]}
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
