@@ -417,6 +417,21 @@ export function wordsFor(kanji: string[]): KanjiWord[] {
   return KANJI_WORDS.filter((w) => w.kanji.every((k) => set.has(k)));
 }
 
+// a handful of words for the detail card, without six weekdays in a row
+export function exampleWords(k: string, n = 6): KanjiWord[] {
+  const out: KanjiWord[] = [];
+  const tails = new Map<string, number>();
+  const all = wordsWith(k).sort((a, b) => a.kanji.length - b.kanji.length);
+  for (const w of all) {
+    const tail = w.word.length > 2 ? w.word.slice(1) : w.word;
+    if ((tails.get(tail) ?? 0) >= 2) continue;
+    tails.set(tail, (tails.get(tail) ?? 0) + 1);
+    out.push(w);
+    if (out.length === n) break;
+  }
+  return out;
+}
+
 export function isKanjiWord(id: string): boolean {
   return WORD_IDS.has(id);
 }

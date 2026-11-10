@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/misc";
 import { toHiragana, toRomaji } from "@/lib/kana/hiragana";
-import { getKanji, kanjiTwins, wordsWith } from "@/lib/kanji/data";
+import { exampleWords, getKanji, kanjiTwins } from "@/lib/kanji/data";
 import { kanjiLevel, type KanjiLevel } from "@/lib/kanji/progress";
 import { isWordLearned } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
@@ -38,7 +38,7 @@ function Kun({ r }: { r: string }) {
 export function KanjiDetail({ k, progress, onClose, onPick }: { k: string | null; progress: Progress; onClose: () => void; onPick: (k: string) => void }) {
   const kj = k ? getKanji(k) : undefined;
   const level = k ? kanjiLevel(progress, k) : "new";
-  const words = k ? wordsWith(k).slice(0, 6) : [];
+  const words = k ? exampleWords(k) : [];
   const twins = k ? kanjiTwins(k) : [];
   return (
     <Dialog open={!!kj} onOpenChange={(o) => !o && onClose()}>
