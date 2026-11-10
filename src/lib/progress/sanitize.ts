@@ -1,5 +1,5 @@
 import { isKnownKana } from "@/lib/kana/hiragana";
-import { isKanjiWord, isN5Kanji } from "@/lib/kanji/data";
+import { isKanjiWord, isCourseKanji } from "@/lib/kanji/data";
 import { sanitizeTower } from "@/lib/tower/progress";
 import { SKILLS } from "@/lib/coach/analyze";
 import { emptyProgress, type CharStat, type DayStat, type Progress, type RoundLog, type SessionLog, type SkillStat, type WordStat } from "./types";
@@ -154,8 +154,8 @@ export function sanitizeProgress(raw: unknown): Progress {
     skills: record(raw.skills, skillStat, (k) => k in SKILLS),
     belt: Math.min(Math.floor(num(raw.belt)), 20),
     kBelt: Math.min(Math.floor(num(raw.kBelt)), 20),
-    kanji: record(raw.kanji, charStat, isN5Kanji),
-    kanjiRead: record(raw.kanjiRead, charStat, isN5Kanji),
+    kanji: record(raw.kanji, charStat, isCourseKanji),
+    kanjiRead: record(raw.kanjiRead, charStat, isCourseKanji),
     kanjiWords: record(raw.kanjiWords, wordStat, isKanjiWord),
     kjBelt: Math.min(Math.floor(num(raw.kjBelt)), 20),
   };

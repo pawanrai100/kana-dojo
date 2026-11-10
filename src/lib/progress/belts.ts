@@ -2,7 +2,7 @@ import { KANA_GROUPS, getRow } from "@/lib/kana/hiragana";
 import { skillMissRate } from "@/lib/quiz/adaptive";
 import { isCleared } from "@/lib/tower/progress";
 import { FLOORS, TOP_FLOOR, floorsOf } from "@/lib/tower/floors";
-import { KANJI, KANJI_WORDS } from "@/lib/kanji/data";
+import { KANJI, N5_KANJI } from "@/lib/kanji/data";
 import { knownKanji, learnedKanjiWords } from "@/lib/kanji/progress";
 import { isMastered } from "./stats";
 import type { Progress } from "./types";
@@ -188,15 +188,16 @@ export const KANJI_BELTS: Belt[] = [
   { ...hira("green"), id: "j-green", goal: "Learn 45 kanji.", step: (p) => kanjiStep(p, 45) },
   { ...hira("blue"), id: "j-blue", goal: "Learn 65 kanji.", step: (p) => kanjiStep(p, 65) },
   { ...hira("purple"), id: "j-purple", goal: "Learn 85 kanji.", step: (p) => kanjiStep(p, 85) },
-  { ...hira("brown"), id: "j-brown", goal: `Learn all ${KANJI.length} N5 kanji.`, step: (p) => kanjiStep(p, KANJI.length) },
+  { ...hira("brown"), id: "j-brown", goal: `Learn all ${N5_KANJI.length} N5 kanji (lessons 1 to 9).`, step: (p) => kanjiStep(p, N5_KANJI.length, N5_KANJI, "N5 kanji") },
   {
     ...hira("black"),
     id: "j-black",
     goal: `Every N5 kanji, plus 120 kanji words you can read.`,
-    step: (p) => both(kanjiStep(p, KANJI.length), kWordStep(p, 120)),
+    step: (p) => both(kanjiStep(p, N5_KANJI.length, N5_KANJI, "N5 kanji"), kWordStep(p, 120)),
   },
-  { ...hira("dan1"), id: "j-dan1", goal: `Learn all ${KANJI_WORDS.length} kanji words.`, step: (p) => kWordStep(p, KANJI_WORDS.length) },
-  { ...hira("dan2"), id: "j-dan2" },
+  { ...hira("dan1"), id: "j-dan1", goal: "Learn 250 kanji.", step: (p) => kanjiStep(p, 250) },
+  { ...hira("dan2"), id: "j-dan2", goal: `Learn all ${KANJI.length} kanji.`, step: (p) => kanjiStep(p, KANJI.length) },
+  { ...hira("dan3"), id: "j-dan3", goal: `All ${KANJI.length} kanji, plus 600 kanji words you can read.`, step: (p) => both(kanjiStep(p, KANJI.length), kWordStep(p, 600)) },
 ];
 
 export type BeltScript = "hiragana" | "katakana" | "kanji";

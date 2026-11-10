@@ -6,7 +6,7 @@ import { skillMissRate } from "@/lib/quiz/adaptive";
 import { BELTS, KANJI_BELTS, beltStatus } from "@/lib/progress/belts";
 import { ALL_BOSSES, ALL_FLOORS, FLOORS, FINAL_BOSS, KATA_FINAL_BOSS, KATA_FIRST, KATA_FLOORS, SKY_FINAL_BOSS, SKY_FLOORS, floorLabel, getFloor, type Enemy } from "./floors";
 import { skyOpen } from "./gate";
-import { KANJI, KANJI_WORDS } from "@/lib/kanji/data";
+import { KANJI, N5_KANJI } from "@/lib/kanji/data";
 import { knownKanji, learnedKanjiWords, lessonProgress } from "@/lib/kanji/progress";
 import { clearedCount, isCleared } from "./progress";
 
@@ -132,9 +132,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "kanji-25", name: "Kanji Collector", how: "Learn 25 kanji.", glyph: "漢", tier: "silver", earned: (p) => knownKanji(p).length >= 25 },
   { id: "kanji-words", name: "Word Smith", how: "Learn 50 kanji words.", glyph: "語", tier: "silver", earned: (p) => learnedKanjiWords(p).length >= 50 },
   { id: "kanji-day", name: "Brush Marathon", how: "Get 50 kanji cards right in one day.", glyph: "筆", tier: "silver", earned: (p) => bestDay(p, (d) => (d.kanji ?? 0) >= 50) },
-  { id: "kanji-n5", name: "N5 Kanji Master", how: `Learn all ${KANJI.length} N5 kanji.`, glyph: "極", tier: "gold", earned: (p) => knownKanji(p).length >= KANJI.length },
+  { id: "kanji-n5", name: "N5 Kanji Master", how: `Learn all ${N5_KANJI.length} N5 kanji.`, glyph: "極", tier: "gold", earned: (p) => knownKanji(p, N5_KANJI).length >= N5_KANJI.length },
+  { id: "kanji-250", name: "Halfway There", how: "Learn 250 kanji.", glyph: "半", tier: "gold", earned: (p) => knownKanji(p).length >= 250 },
+  { id: "kanji-500", name: "Kanji 500", how: `Learn all ${KANJI.length} kanji.`, glyph: "王", tier: "gold", earned: (p) => knownKanji(p).length >= KANJI.length },
   { id: "kanji-black", name: "Kanji Black Belt", how: "Earn your kanji Black belt.", glyph: "黒", tier: "gold", earned: (p) => beltStatus(p, "kanji").index >= KANJI_BELTS.findIndex((b) => b.id === "j-black") },
-  { id: "kanji-all-words", name: "Walking Dictionary", how: `Learn all ${KANJI_WORDS.length} kanji words.`, glyph: "辞", tier: "gold", earned: (p) => learnedKanjiWords(p).length >= KANJI_WORDS.length },
+  { id: "kanji-all-words", name: "Walking Dictionary", how: "Learn 300 kanji words.", glyph: "辞", tier: "gold", earned: (p) => learnedKanjiWords(p).length >= 300 },
   // sentences
   {
     id: "particle-pro",

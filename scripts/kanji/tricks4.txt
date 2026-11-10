@@ -1,0 +1,95 @@
+農	farming,agriculture	A field (田) on top and a clam-shell hoe (辰) below: farming.
+州	state,province	A river (川) with dots of land between: a region. Used for US states.
+武	military,warrior	A halberd (弋) and stop (止): a warrior stops fights with weapons.
+声	voice	A samurai (士) over a door: his voice booms through.
+質	quality,matter,question	Two axes (斤) over money (貝): weighing the quality. 質問 = question.
+念	thought,wish,sense	Now (今) over heart (心): what's on your mind right now.
+待	wait	Walking (彳) to the temple (寺): waiting there. 待つ = wait.
+試	test,try	Words (言) and a formula (式): testing it out. 試験 = exam.
+族	tribe,family	A flag (方) and an arrow (矢): everyone under one banner. 家族 = family.
+象	elephant,phenomenon	A drawing of an elephant standing on its side.
+銀	silver	Metal (金) that stays (艮): silver. 銀行 = bank.
+域	region,area,range	Earth (土) and a box guarded with a halberd (戈): a defended area.
+助	help,assist	An eye (目) on a stand and power (力): lending a hand. 助ける = help.
+労	labor,work,effort	Sparks over a cover (冖) and power (力): hard labor.
+例	example	A person (亻) lining up in a row (列): for example. 例えば = for example.
+衛	defense,protect	Guards walking around (行) the city: defense.
+然	so,like that,nature	Dog meat (犬 + 月) over fire (灬): of course, naturally. 自然 = nature.
+張	stretch,spread	A bow (弓) and long (長): stretching the bowstring. 頑張る = do your best.
+映	reflect,project	Sun (日) and center (央): light reflecting. 映画 = movie.
+限	limit	A hill (⻖) and a staring eye (艮): you can't see past the hill. Limit.
+親	parent,close,intimate	Standing (立) on a tree (木) to see (見): a parent watching. 親切 = kind.
+額	forehead,amount,frame	A guest (客) and a head (頁): your forehead. 金額 = amount of money.
+監	oversee,supervise	A person looking down into a bowl (皿): keeping watch.
+環	ring,circle	A jewel (王) in a ring: surrounding. 環境 = environment.
+験	test,verify	A horse (馬) on display: checking it out. 経験 = experience.
+追	chase,follow	A pile on the road (⻌): chasing after it.
+審	judge,examine	A roof (宀) over a numbered field (番): examining every detail.
+商	trade,commerce,deal	A stand with a mouth (口) shouting deals: a merchant.
+葉	leaf	Grass (艹), a generation (世) on a tree (木): leaves. 言葉 = word.
+義	justice,meaning	A sheep (羊) over me (我): doing the right thing.
+伝	transmit,tell,legend	A person (亻) and a cloud (云): passing the message along.
+働	work	A person (亻) moving (動): working. 働く = work.
+形	shape,form	A frame (开) and three hairs (彡): a shape. 人形 = doll.
+景	view,scenery	Sun (日) over the capital (京): the city view. 景色 = scenery.
+落	fall,drop	Grass (艹), water (氵) and each (各): leaves falling into the water.
+欧	Europe	A box (区) and a yawn (欠): short for Europe (欧州).
+担	carry,shoulder,bear	A hand (扌) and dawn (旦): carrying the load from sunrise.
+好	like,fond	A woman (女) and a child (子): she loves her kid. 好き = like.
+退	retreat,withdraw	A stubborn eye (艮) on the road (⻌): backing off.
+準	standard,semi-	Water (氵) and a bird (隹) on a ten (十): level like water. 準備 = preparation.
+賞	prize,reward,praise	Still (尚) over money (貝): the prize money.
+訴	sue,complain,appeal	Words (言) and an axe (斥): accusing someone.
+辺	area,around,edge	A sword (刀) on the road (⻌): around the edges.
+造	make,build,create	Tell (告) on the road (⻌): building as you go.
+英	English,hero,brilliant	Grass (艹) and center (央): a flower in the middle. 英語 = English.
+被	suffer,receive,cover	Clothes (衤) and skin (皮): getting covered. 被害 = damage.
+株	stock,share,stump	A tree (木) and red (朱): a stump. 株式会社 = corporation.
+頭	head	Beans (豆) and a head (頁): a bean-shaped head. 頭がいい = smart.
+技	skill,technique	A hand (扌) and a branch (支): skilled hands.
+低	low,short	A person (亻) at the bottom (氐): low.
+医	doctor,medicine	An arrow (矢) in a box (匚): pulling it out, the doctor. 医者 = doctor.
+復	return,restore,again	Walking (彳) back the same way: returning.
+仕	serve,do	A person (亻) and a samurai (士): serving. 仕事 = job.
+去	leave,past,gone	Earth (土) and a nose (厶): left and gone. 去年 = last year.
+姿	figure,appearance	Next (次) over a woman (女): her figure.
+味	taste,flavor	A mouth (口) and not yet (未): tasting it. 意味 = meaning.
+負	lose,defeat,carry	A person over money (貝): losing it all. 負ける = lose.
+閣	tower,cabinet	Each (各) inside a gate (門): the cabinet of ministers.
+韓	Korea	Leather (韋) next to a sunrise: Korea. 韓国 = South Korea.
+渡	cross,hand over	Water (氵) and degree (度): crossing the river. 渡す = hand over.
+失	lose,mistake	A husband (夫) with something slipping out of his hand: lost.
+移	move,shift	Rice (禾) and many (多): moving the harvest.
+差	difference,gap	A sheep (羊) and work (工): the difference.
+衆	crowd,masses	Blood (血) over three people: the masses.
+個	individual,piece	A person (亻) and solid (固): one single piece. 一個 = one item.
+門	gate	Two swinging doors: a gate.
+写	copy,photograph	A cover (冖) over a ladle: copying it. 写真 = photo.
+評	review,evaluate	Words (言) and flat (平): a fair review.
+課	lesson,section	Words (言) and fruit (果): the result of a lesson. 第一課 = lesson 1.
+末	end,tip	A tree (木) with a long top line: the very tip, the end. 週末 = weekend.
+守	protect,guard,keep	A roof (宀) and a hand (寸): guarding the house.
+若	young	Grass (艹) and right (右): fresh young sprouts. 若い = young.
+脳	brain	A body (月) with a head full of hair: the brain.
+極	extreme,pole	A tree (木) between heaven and earth: the extreme end. 南極 = South Pole.
+種	kind,seed,type	Rice (禾) and heavy (重): heavy seeds. 種類 = type.
+美	beautiful	A big (大) sheep (羊): a beautiful fat sheep. 美しい = beautiful.
+岡	hill,(names)	A mountain (山) in a frame: a hill. In names like 福岡, 静岡.
+影	shadow	A view (景) with hairs (彡): a shadow.
+命	life,command	A roof over a kneeling person giving an order: your life.
+含	contain,include	Now (今) over a mouth (口): holding it in your mouth.
+福	luck,fortune,blessing	An altar (礻) with a full jar: good fortune.
+蔵	storehouse,warehouse	Grass (艹) and a halberd (戈) guarding a vassal (臣): the storehouse.
+量	amount,quantity	The sun (日) over a village (里): measuring the land.
+望	hope,wish	The moon (月) and a king (王): wishing on the moon.
+松	pine tree	A tree (木) that's public (公): the pine. Also a common name, 松本.
+非	not,non-,wrong	Two rows of wings flapping apart: not this.
+撃	attack,shoot	A car (車), a weapon (殳) and a hand (手): hitting hard.
+佐	help,assistant	A person (亻) and left (左): the helper on the left. 佐藤 is a top name.
+核	nucleus,core	A tree (木) and a seed (亥): the core.
+観	view,observe	A bird (隹) and seeing (見): watching closely. 観光 = sightseeing.
+察	guess,observe	A roof (宀) and a festival (祭): watching carefully. 警察 = police.
+整	arrange,organize	Tie up (束), hit (攵), correct (正): putting it all in order.
+段	step,stairs,grade	Steps on the left and a hand with a tool: steps. 階段 = stairs.
+横	side,horizontal	A tree (木) and yellow (黄): lying sideways.
+融	melt,dissolve,finance	A pot (鬲) and a bug (虫): melting together. 金融 = finance.

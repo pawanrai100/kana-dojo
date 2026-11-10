@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KANJI, KANJI_LIST, KANJI_WORDS, LESSONS, kanjiOfLessons, kanjiTwins, wordsFor } from "./data";
+import { KANJI, KANJI_LIST, KANJI_WORDS, LESSONS, N5_KANJI, exampleWords, getKanji, kanjiOfLessons, kanjiTwins, wordsFor } from "./data";
 import { buildKanjiRound, checkMeaning, checkReading, meaningMatches, pickOptions, type KanjiQuestion, type KanjiResult } from "./quiz";
 import { applyKanjiRound, kanjiLevel, knownKanji } from "./progress";
 import { emptyProgress, type CharStat } from "@/lib/progress/types";
@@ -19,6 +19,18 @@ describe("kanji data", () => {
     expect(new Set(KANJI_LIST).size).toBe(KANJI_LIST.length);
     expect(LESSONS.length).toBe(KANJI_LESSON_COUNT);
     for (const l of LESSONS) expect(KANJI.some((k) => k.lesson === l.id)).toBe(true);
+  });
+
+  it("has the 500 most used, with n5 first", () => {
+    expect(KANJI.length).toBe(500);
+    expect(N5_KANJI.length).toBe(105);
+    expect(kanjiOfLessons([10])).toContain("同");
+    expect(sanitizeSettings({ kanjiLessons: [25, 26] }).kanjiLessons).toEqual([25]);
+  });
+
+  it("shows easy example words first", () => {
+    expect(exampleWords("日").slice(0, 4).map((w) => w.word)).toEqual(["日", "毎日", "今日", "日曜日"]);
+    expect(exampleWords("同")[0].word).toBe("同じ");
   });
 
   it("gives every kanji at least one word to read", () => {
@@ -62,6 +74,26 @@ describe("checking answers", () => {
     expect(meaningMatches("八", "8")).toBe(true);
     expect(meaningMatches("八", "9")).toBe(false);
     expect(meaningMatches("日", "moon, fire, water, sun")).toBe(false);
+  });
+
+  it("a real meaning of another kanji isn't a typo", () => {
+    // "eight" is one letter off "right", but it's 八
+    expect(checkMeaning("右", "eight")).toEqual({ correct: false, mixedWith: "八" });
+    expect(checkMeaning("右", "rihgt").correct).toBe(false);
+    expect(checkMeaning("右", "rigt").correct).toBe(false); // too short for typos
+    expect(checkMeaning("政", "politcs").correct).toBe(true);
+    // synonyms are fine: 場 and 所 both mean place
+    expect(checkMeaning("所", "place").correct).toBe(true);
+  });
+
+  it("never offers a second right answer on pick cards", () => {
+    for (const k of KANJI_LIST) {
+      const main = getKanji(k)!.meanings[0];
+      for (let s = 0; s < 3; s++) {
+        const o = pickOptions(k, KANJI_LIST, mulberry32(s));
+        for (const c of o) if (c !== k) expect(meaningMatches(c, main, false), `${k} ${main} vs ${c}`).toBe(false);
+      }
+    }
   });
 
   it("points out the kanji you mixed it up with", () => {

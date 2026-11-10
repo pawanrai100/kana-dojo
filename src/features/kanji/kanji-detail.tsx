@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/misc";
 import { toHiragana, toRomaji } from "@/lib/kana/hiragana";
-import { exampleWords, getKanji, kanjiTwins } from "@/lib/kanji/data";
+import { N5_LAST_LESSON, exampleWords, getKanji, kanjiTwins } from "@/lib/kanji/data";
 import { kanjiLevel, type KanjiLevel } from "@/lib/kanji/progress";
 import { isWordLearned } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
@@ -51,7 +51,7 @@ export function KanjiDetail({ k, progress, onClose, onPick }: { k: string | null
               </span>
               <div className="min-w-0 space-y-1">
                 <DialogTitle className="text-2xl capitalize">{kj.meanings[0]}</DialogTitle>
-                <DialogDescription>{kj.meanings.length > 1 ? `Also: ${kj.meanings.slice(1).join(", ")}` : "N5 kanji"}</DialogDescription>
+                <DialogDescription>{kj.meanings.length > 1 ? `Also: ${kj.meanings.slice(1).join(", ")}` : kj.lesson <= N5_LAST_LESSON ? "N5 kanji" : "Common kanji"}</DialogDescription>
                 <Badge tone={level === "known" ? "sun" : level === "new" ? "default" : "primary"}>{LEVEL_LABEL[level]}</Badge>
               </div>
             </div>

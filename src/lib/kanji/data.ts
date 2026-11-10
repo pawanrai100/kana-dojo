@@ -1,6 +1,7 @@
 import { isKnownKana, splitKana, toHiragana, toRomaji } from "@/lib/kana/hiragana";
+import { COMMON_LESSONS, COMMON_RAW, COMMON_WORDS } from "./common";
 
-// the jlpt n5 kanji, in lessons. readings: on'yomi in katakana (the chinese-style
+// the jlpt n5 kanji in lessons 1-9, then the most used kanji up to 500 in 10+ (see common.ts). readings: on'yomi in katakana (the chinese-style
 // reading, used in compounds), kun'yomi in hiragana with a dot before the
 // okurigana (the kana tail): た.べる = 食べる
 
@@ -38,12 +39,16 @@ export const LESSONS: KanjiLesson[] = [
   { id: 7, name: "Actions", blurb: "Go, come, eat, drink, read and write." },
   { id: 8, name: "Describing", blurb: "Big, small, new, old, cheap, expensive." },
   { id: 9, name: "Things & language", blurb: "Books, cars, trains and Japanese itself." },
+  ...COMMON_LESSONS,
 ];
 
-type Row = [k: string, meanings: string, on: string, kun: string, trick: string];
+// lessons 1-9 are the n5 set
+export const N5_LAST_LESSON = 9;
+
+export type Row = [k: string, meanings: string, on: string, kun: string, trick: string];
 const s = (x: string) => (x ? x.split("|") : []);
 
-const RAW: Record<number, Row[]> = {
+const N5_RAW: Record<number, Row[]> = {
   1: [
     ["一", "one", "イチ|イツ", "ひと|ひと.つ", "One single line."],
     ["二", "two", "ニ", "ふた|ふた.つ", "Two lines stacked."],
@@ -170,7 +175,7 @@ const RAW: Record<number, Row[]> = {
 };
 
 // [word, reading, meaning]
-const WORDS: [string, string, string][] = [
+const N5_WORDS: [string, string, string][] = [
   // numbers
   ["一つ", "ひとつ", "one (thing)"],
   ["一人", "ひとり", "one person, alone"],
@@ -364,6 +369,9 @@ const WORDS: [string, string, string][] = [
 
 // ---- build + check everything once ----
 
+const RAW: Record<number, Row[]> = { ...N5_RAW, ...COMMON_RAW };
+const WORDS = [...N5_WORDS, ...COMMON_WORDS];
+
 const ALL: Kanji[] = Object.entries(RAW).flatMap(([lesson, rows]) =>
   rows.map(([k, m, on, kun, trick]) => ({ k, meanings: s(m), on: s(on), kun: s(kun), trick, lesson: Number(lesson) })),
 );
@@ -380,8 +388,9 @@ function buildWords(): KanjiWord[] {
     if (seen.has(word)) throw new Error(`duplicate kanji word: ${word}`);
     seen.add(word);
     if (!kanji.length) throw new Error(`no kanji in ${word}`);
-    for (const k of kanji) if (!BY_K.has(k)) throw new Error(`${word} uses ${k}, which isn't in the n5 list`);
-    for (const ch of chars) if (!isKanji(ch) && !isKnownKana(ch)) throw new Error(`odd character in ${word}: ${ch}`);
+    for (const k of kanji) if (!BY_K.has(k)) throw new Error(`${word} uses ${k}, which isn't in the kanji list`);
+    for (const part of word.split(/\p{Script=Han}+/u).filter(Boolean))
+      for (const u of splitKana(part)) if (!isKnownKana(u)) throw new Error(`odd character in ${word}: ${u}`);
     const units = splitKana(reading);
     if (!units.every(isKnownKana)) throw new Error(`bad reading for ${word}: ${reading}`);
     return { id: word, word, reading, romaji: toRomaji(reading), meaning, kanji };
@@ -395,6 +404,7 @@ for (const x of ALL) {
 
 export const KANJI: Kanji[] = ALL;
 export const KANJI_LIST: string[] = ALL.map((x) => x.k);
+export const N5_KANJI: string[] = ALL.filter((x) => x.lesson <= N5_LAST_LESSON).map((x) => x.k);
 export const KANJI_WORDS: KanjiWord[] = buildWords();
 const WORD_IDS = new Set(KANJI_WORDS.map((w) => w.id));
 
@@ -402,7 +412,7 @@ export function getKanji(k: string): Kanji | undefined {
   return BY_K.get(k);
 }
 
-export function isN5Kanji(k: string): boolean {
+export function isCourseKanji(k: string): boolean {
   return BY_K.has(k);
 }
 
@@ -421,7 +431,9 @@ export function wordsFor(kanji: string[]): KanjiWord[] {
 export function exampleWords(k: string, n = 6): KanjiWord[] {
   const out: KanjiWord[] = [];
   const tails = new Map<string, number>();
-  const all = wordsWith(k).sort((a, b) => a.kanji.length - b.kanji.length);
+  // words built only from easier kanji come first
+  const level = (w: KanjiWord) => Math.max(...w.kanji.map((x) => BY_K.get(x)!.lesson));
+  const all = wordsWith(k).sort((a, b) => level(a) - level(b) || a.kanji.length - b.kanji.length);
   for (const w of all) {
     const tail = w.word.length > 2 ? w.word.slice(1) : w.word;
     if ((tails.get(tail) ?? 0) >= 2) continue;
@@ -454,6 +466,31 @@ export const KANJI_LOOKALIKES: { set: string[]; tip: string }[] = [
   { set: ["小", "少"], tip: "少 is 小 with an extra slash at the bottom." },
   { set: ["土", "上"], tip: "土 has the long line at the bottom. 上 has a short stroke sticking up and right." },
   { set: ["見", "貝"], tip: "見 ends in legs (儿) that walk. 貝 ends in two short little feet." },
+  { set: ["持", "待", "特", "時"], tip: "All have 寺 on the right. 持 has a hand (扌), 待 has walking (彳), 特 has a cow (牛), 時 has the sun (日)." },
+  { set: ["問", "間", "聞", "開", "関"], tip: "All gates (門). Mouth inside = 問 ask, sun = 間 between, ear = 聞 hear, hands lifting a bar = 開 open, tied up = 関 barrier." },
+  { set: ["右", "石"], tip: "右 starts with a hand that sticks out on top. 石 has a flat cliff top with no stick-out." },
+  { set: ["官", "宮"], tip: "Both under a roof. 宮 has two stacked boxes, 官 has a hill-like shape." },
+  { set: ["住", "主"], tip: "主 is the master. 住 adds a person (亻): the place where the master lives." },
+  { set: ["体", "休", "本"], tip: "休 is a person by a tree. 体 is a person by a root (本)." },
+  { set: ["期", "朝", "明"], tip: "All have a moon (月). 明 = sun + moon, 朝 has the sun rising in grass, 期 has a basket (其)." },
+  { set: ["治", "台", "始"], tip: "All have 台. Water (氵) = 治 govern, woman (女) = 始 begin, alone = 台 stand." },
+  { set: ["議", "義"], tip: "義 is justice. 議 adds words (言): talking about what's just." },
+  { set: ["近", "所"], tip: "Both have an axe (斤). 近 is on the road (⻌), 所 has a door (戸)." },
+  { set: ["代", "化"], tip: "Both start with a person (亻). 代 has a stake with a dot (弋), 化 has a person upside down (匕)." },
+  { set: ["民", "氏"], tip: "氏 is the plain one. 民 adds a box on top." },
+  { set: ["方", "万"], tip: "方 has a dot on top. 万 doesn't." },
+  { set: ["重", "動", "働"], tip: "重 heavy, plus power (力) = 動 move, plus a person (亻) = 働 work." },
+  { set: ["共", "供"], tip: "共 is together. 供 adds a person (亻)." },
+  { set: ["反", "友"], tip: "反 has a cliff (厂). 友 has two hands crossing." },
+  { set: ["成", "戦"], tip: "Both have a halberd (戈). 戦 has 単 on the left, 成 has nothing on the left." },
+  { set: ["元", "院"], tip: "元 is the base. 院 adds a hill (⻖) and a roof." },
+  { set: ["分", "今"], tip: "分 is eight (八) over a knife (刀). 今 is a roof over a short line and a hook." },
+  { set: ["可", "何"], tip: "可 is a mouth with a hook. 何 adds a person (亻)." },
+  { set: ["続", "読", "売"], tip: "All have 売 sell. Thread (糸) = 続 continue, words (言) = 読 read." },
+  { set: ["説", "話", "語"], tip: "All start with words (言). 説 explain, 話 talk, 語 language." },
+  { set: ["式", "試"], tip: "式 is a ceremony. 試 adds words (言): testing." },
+  { set: ["活", "話"], tip: "Both have a tongue (舌). Water (氵) = 活 lively, words (言) = 話 talk." },
+  { set: ["番", "審"], tip: "番 is a number. 審 adds a roof (宀): judging under a roof." },
 ];
 
 export function kanjiTwins(k: string): { other: string; tip: string }[] {

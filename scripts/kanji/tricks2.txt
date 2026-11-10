@@ -1,0 +1,100 @@
+界	world,boundary	A field (田) with a boundary (介) around it: your little world.
+支	support,branch	Ten (十) over a hand (又): a hand holding up a branch.
+第	ordinal number,No.	Bamboo (竹) over a bow (弓): bamboo strips lined up in order. 第一 = number one.
+産	produce,give birth,products	Stand (立) over a cliff (厂) with life (生) below: something being born.
+結	tie,bind,join	Thread (糸) plus good luck (吉): tying a lucky knot.
+派	faction,group,sect	Water (氵) splitting into branches: a group that splits off.
+点	point,dot,score	A fortune stick (占) over fire dots (灬): a mark, a point.
+教	teach,teaching	An old man (耂), a child (子) and a hand with a stick (攵): the teacher.
+報	report,news,reward	A happy (幸) person kneeling and a hand (又): bringing the news.
+済	finish,settle,economy	Water (氵) and even (斉): everything's settled and flat. 経済 = economy.
+府	government office,prefecture	A building (广) where the documents (付) are kept: a government office.
+活	lively,active,life	Water (氵) and a tongue (舌): a wet tongue means you're alive and kicking.
+原	original,field,plain	A cliff (厂) with a spring (泉) under it: the source, the original.
+共	together,both	Two hands holding something up together.
+得	gain,get,profit	Walking (彳) toward the sun (日) with a hand (寸): going out to get stuff.
+解	solve,untie,understand	A knife (刀) cutting a horn (角) off a cow (牛): taking it apart.
+交	mix,exchange,cross	A person with crossed legs: things crossing and mixing.
+資	resources,capital,funds	Next (次) over money (貝): money saved for what's next.
+予	in advance,beforehand	A hand passing something forward: ahead of time. 予定 = plan.
+向	face toward,direction	A window (口) in a house: which way it faces.
+際	occasion,edge,when	A hill (⻖) plus festival (祭): the border where festivals meet. 国際 = international.
+査	investigate,inspect	A tree (木) on top of a pile (且): checking every layer.
+勝	win,victory	A moon (月) and power (力): win with the strength of the moon.
+面	face,mask,surface	A face with a nose and a frame around it.
+委	entrust,committee	Rice (禾) over a woman (女): handing the harvest over to someone.
+告	tell,announce	A cow (牛) over a mouth (口): mooing out an announcement.
+軍	army,military	A cover (冖) over a car (車): army trucks under camo.
+文	writing,sentence,culture	A person with a tattoo on their chest: patterns, writing.
+反	against,anti-,opposite	A hand (又) pushing on a cliff (厂): pushing back.
+元	origin,former,source	Two (二) on legs (儿): where it all started. 元気 = energy.
+重	heavy,important,layer	A person carrying a heavy bag full of rice: heavy.
+近	near,close	An axe (斤) on the road (⻌): it's close by.
+考	think,consider	An old man (耂) bent over with his cane: deep in thought.
+判	judge,stamp,seal	Half (半) and a knife (刂): cutting it down the middle to decide.
+認	recognize,admit,approve	Words (言) and patience (忍): taking time before you admit it.
+画	picture,drawing,stroke	A field (田) inside a frame: a painting.
+海	sea,ocean	Water (氵) and every (毎): every drop of water ends up in the sea.
+参	participate,visit	Three hairpins (彡) with a person: joining the party. 参加 = take part.
+売	sell	A samurai (士) with a box on legs: going out to sell stuff.
+利	profit,benefit,advantage	Rice (禾) and a knife (刂): harvesting the rice, profit!
+組	group,team,assemble	Thread (糸) and stacked (且): weaving people into a team.
+知	know,wisdom	An arrow (矢) and a mouth (口): knowing it fast as an arrow.
+案	plan,idea,proposal	Calm (安) over a desk of wood (木): sitting down to plan.
+信	trust,believe,faith	A person (亻) next to words (言): you trust their word.
+策	plan,policy,measure	Bamboo (竹) and thorns (朿): a sharp plan.
+集	gather,collect	A bird (隹) on a tree (木): birds gathering on a branch.
+在	exist,be located	Earth (土) with a person leaning in: someone's here.
+件	matter,case,item	A person (亻) and a cow (牛): an old case about a missing cow.
+団	group,team	A box (囗) with an inch (寸) in it: people packed in a group.
+別	separate,different,another	A bone and a knife (刂): cutting it apart.
+物	thing,object	A cow (牛) and a "not" flag (勿): stuff. 食べ物 = food.
+側	side	A person (亻) standing beside the rules (則): on this side.
+任	duty,responsibility,entrust	A person (亻) carrying a load (壬): your duty.
+引	pull	A bow (弓) and a string (丨): pulling back the bowstring.
+使	use,messenger	A person (亻) and an official (吏): using someone as a messenger.
+求	request,want,seek	A furry coat with drops: wanting something warm.
+所	place	A door (戸) and an axe (斤): the place where you keep the axe by the door.
+次	next,order	Two drops (冫) next to a yawn (欠): yawning, next please.
+品	goods,product,quality	Three boxes (口) stacked: goods in a shop.
+昨	yesterday,last	The sun (日) and a sudden (乍) change: yesterday's sun. 昨日 = yesterday.
+論	argument,theory,discuss	Words (言) and arranged books: an organized argument.
+計	measure,plan,total	Words (言) and ten (十): counting out loud. 時計 = clock.
+死	death,die	Bones (歹) next to a person bent over (匕): dead.
+官	official,government	A roof (宀) over stacked hills: the official's office.
+増	increase,add	Earth (土) and pile (曽): piling up more and more.
+係	in charge,connection	A person (亻) holding a thread (系): connected to the job.
+感	feeling,emotion,sense	All (咸) over a heart (心): feeling it with your whole heart.
+特	special	A cow (牛) at the temple (寺): a special offering.
+情	feelings,emotion,situation	Heart (忄) and blue (青): true feelings.
+投	throw,cast	A hand (扌) swinging a weapon (殳): throwing it.
+示	show,indicate	An altar where you show offerings to the gods.
+変	change,strange	A head (亠) over a red body with legs (夂): something strange is changing.
+打	hit,strike	A hand (扌) and a nail (丁): hammering a nail.
+基	base,foundation	A basket (其) on the earth (土): the base everything rests on.
+私	I,me,private	Rice (禾) and a private nose (厶): my own rice. 私 = I.
+各	each,every	A foot (夂) walking to a mouth (口): each one gets a turn.
+始	begin,start	A woman (女) on a platform (台): she starts the show.
+島	island	A bird (鳥) sitting on a mountain (山): a rock island in the sea.
+直	straight,fix,direct	Ten (十) eyes (目) looking straight ahead.
+両	both,pair	A balance scale with a weight on each side: both.
+朝	morning	The sun (日) coming up through the grass with the moon (月) still out: morning.
+革	leather,reform	An animal skin stretched out to dry: leather.
+価	price,value	A person (亻) and the west (西): what the westerner pays.
+式	ceremony,style,formula	Work (工) and a stake (弋): doing it by the rules. 結婚式 = wedding.
+確	certain,sure,firm	A stone (石) and a bird with a crown: rock solid.
+村	village	A tree (木) and a measure (寸): a few trees, a village.
+提	propose,carry,present	A hand (扌) holding up what is (是): presenting it.
+運	carry,luck,transport	An army (軍) on the road (⻌): moving supplies. 運 is also luck.
+終	end,finish	Thread (糸) and winter (冬): the year's thread runs out.
+挙	raise,give,list	Hands (手) raising something up high.
+果	fruit,result	A field (田) on a tree (木): fruit growing on the branch.
+勢	force,energy,power	A big ball and power (力): momentum.
+減	decrease,reduce	Water (氵) and all (咸): all the water running out.
+台	stand,platform,counter for machines	A nose (厶) over a mouth (口) on a stand. 一台 = one car or machine.
+広	wide,broad	A building (广) with a nose (厶): a wide hall.
+容	contain,form,looks	A roof (宀) over a valley (谷): it holds a lot.
+必	certainly,must	A heart (心) cut by a slash: it has to happen.
+応	respond,apply,answer	A building (广) with a heart (心): answering from the heart.
+演	perform,act	Water (氵) and a long (寅) stage: a performance.
+歳	age,years old	A foot stopping (止) by a halberd (戈): counting the years. 二十歳 = 20.

@@ -236,7 +236,7 @@ function KanjiCard({ progress }: { progress: Progress }) {
       </span>
       <span className="min-w-0 flex-1 basis-56 space-y-2">
         <span className="font-display block text-xl">{started ? `Kanji: ${known} of ${KANJI.length} known` : "Next step: kanji"}</span>
-        <span className="block text-sm text-muted">{started ? "Keep going with the N5 kanji, lesson by lesson." : "Start the N5 kanji. Numbers first, then days, people and more."}</span>
+        <span className="block text-sm text-muted">{started ? "Keep going, lesson by lesson. N5 first, then the 500 most used." : "Start the N5 kanji. Numbers first, then days, people and more."}</span>
         <span lang="ja" aria-hidden className="font-kana flex gap-1 text-lg text-muted">
           {preview.map((k) => (
             <span key={k.k} className={cn(kanjiLevel(progress, k.k) === "known" && "text-sun-deep")}>{k.k}</span>

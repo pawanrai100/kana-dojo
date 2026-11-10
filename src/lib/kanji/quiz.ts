@@ -49,10 +49,10 @@ export function normMeaning(s: string): string {
 
 const plural = (w: string) => w.replace(/(ies)$/, "y").replace(/(?<=[^s])s$/, "");
 
-function close(a: string, b: string): boolean {
+function close(a: string, b: string, fuzzy: boolean): boolean {
   if (a === b || plural(a) === plural(b)) return true;
   // one typo is fine on longer words (moutain, frend)
-  if (Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
+  if (!fuzzy || Math.min(a.length, b.length) < 5 || Math.abs(a.length - b.length) > 1) return false;
   const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
   for (let j = 1; j <= b.length; j++) dp[0][j] = j;
   for (let i = 1; i <= a.length; i++)
@@ -62,7 +62,8 @@ function close(a: string, b: string): boolean {
 }
 
 // does what you typed match one of this kanji's meanings? "sun", "the sun", "Day" all count
-export function meaningMatches(k: string, input: string): boolean {
+// fuzzy = allow one typo. off when checking against other kanji, so "right" isn't "eight"
+export function meaningMatches(k: string, input: string, fuzzy = true): boolean {
   const kj = getKanji(k);
   const typed = normMeaning(input);
   if (!kj || !typed) return false;
@@ -72,7 +73,7 @@ export function meaningMatches(k: string, input: string): boolean {
   const pieces = input.split(/[,/;]| or /).map(normMeaning).filter(Boolean).slice(0, 3);
   return kj.meanings.some((m) => {
     const want = normMeaning(m);
-    return pieces.some((p) => close(p, want));
+    return pieces.some((p) => close(p, want, fuzzy));
   });
 }
 
@@ -83,10 +84,12 @@ export interface MeaningCheck {
 }
 
 export function checkMeaning(k: string, input: string): MeaningCheck {
-  if (meaningMatches(k, input)) return { correct: true };
+  if (meaningMatches(k, input, false)) return { correct: true };
   const twins = kanjiTwins(k).map((t) => t.other);
-  const other = [...twins, ...KANJI.map((x) => x.k)].find((o) => o !== k && meaningMatches(o, input));
-  return { correct: false, mixedWith: other };
+  const other = [...twins, ...KANJI.map((x) => x.k)].find((o) => o !== k && meaningMatches(o, input, false));
+  // spot on for another kanji beats one typo away from this one
+  if (other) return { correct: false, mixedWith: other };
+  return { correct: meaningMatches(k, input) };
 }
 
 // romaji or kana both work for readings
@@ -117,10 +120,12 @@ function wordWeight(s: WordStat | undefined): number {
 // four kanji to choose from: lookalikes first so it's a real test
 export function pickOptions(k: string, pool: string[], rng: Rng): string[] {
   const twins = kanjiTwins(k).map((t) => t.other);
+  const main = getKanji(k)?.meanings[0] ?? "";
   const sameLesson = KANJI.filter((x) => x.lesson === getKanji(k)?.lesson).map((x) => x.k);
   const others: string[] = [];
   for (const c of [...shuffle(twins, rng), ...shuffle(pool, rng), ...shuffle(sameLesson, rng), ...shuffle(KANJI.map((x) => x.k), rng)]) {
-    if (c !== k && !others.includes(c)) others.push(c);
+    // skip kanji that also mean the thing we're asking for (場 and 所 are both "place")
+    if (c !== k && !others.includes(c) && !meaningMatches(c, main, false)) others.push(c);
     if (others.length === 3) break;
   }
   return shuffle([k, ...others], rng);

@@ -1,7 +1,7 @@
 import { ALL_KANA_LIST, BASIC_KANA_LIST, KATAKANA_BASIC_LIST, LONG_MARK, isKnownKana, scriptOf } from "@/lib/kana/hiragana";
 
 // kept here instead of importing the kanji data so settings stay light
-export const KANJI_LESSON_COUNT = 9;
+export const KANJI_LESSON_COUNT = 25;
 
 export type PracticeMode = "mixed" | "words" | "random" | "sentences";
 // 2-4 is only used by tower floors, settings still offer the three below

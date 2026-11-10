@@ -9,7 +9,7 @@ import { Badge, ProgressBar, Segmented } from "@/components/ui/misc";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { Medal } from "@/features/tower/medal";
 import { SpeakerButton } from "@/features/voice/speaker-button";
-import { KANJI, LESSONS, getKanji, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
+import { KANJI, LESSONS, N5_KANJI, N5_LAST_LESSON, getKanji, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
 import { kanjiLevel, knownKanji, lessonProgress } from "@/lib/kanji/progress";
 import { answerOf, buildKanjiRound, checkMeaning, checkReading, promptOf, type KanjiQuestion, type KanjiResult } from "@/lib/kanji/quiz";
 import { beltStatus, promotedBelt, type Belt } from "@/lib/progress/belts";
@@ -72,7 +72,7 @@ export function KanjiView() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Kanji" description="The N5 kanji, one lesson at a time. Learn what each one means and how to read it in real words." />
+      <PageHeader title="Kanji" description="The N5 kanji first, then the 500 most used. Learn what each one means and how to read it in real words." />
       {played && <Summary played={played} progress={state.progress} onAgain={start} onClose={() => setPlayed(null)} />}
       <Lessons progress={state.progress} settings={state.settings} onStart={start} />
     </div>
@@ -88,6 +88,9 @@ const MODES: { value: KanjiMode; label: string; help: string }[] = [
 
 function Lessons({ progress, settings, onStart }: { progress: Progress; settings: Settings; onStart: () => void }) {
   const [open, setOpen] = useState<string | null>(null);
+  const [tab, setTab] = useState<"n5" | "common">(() => (settings.kanjiLessons.every((id) => id > N5_LAST_LESSON) ? "common" : "n5"));
+  const shown = LESSONS.filter((l) => (tab === "n5" ? l.id <= N5_LAST_LESSON : l.id > N5_LAST_LESSON));
+  const n5Known = knownKanji(progress, N5_KANJI).length;
   const lessons = lessonProgress(progress);
   const chosen = new Set(settings.kanjiLessons);
   const pool = kanjiOfLessons(settings.kanjiLessons);
@@ -103,15 +106,18 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
       <Card className="space-y-4 p-5 sm:p-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-sm font-bold text-muted">N5 kanji known</p>
+            <p className="text-sm font-bold text-muted">Kanji known</p>
             <p className="font-display text-4xl">
               {known}
               <span className="text-xl text-muted"> / {KANJI.length}</span>
             </p>
+            <p className="text-xs font-bold text-muted">
+              N5: {n5Known} / {N5_KANJI.length}
+            </p>
           </div>
           <BeltProgress status={beltStatus(progress, "kanji")} className="w-full min-w-0 sm:w-auto sm:max-w-sm sm:flex-1" />
         </div>
-        <ProgressBar value={known / KANJI.length} label="N5 kanji known" barClassName="bg-sun-deep" />
+        <ProgressBar value={known / KANJI.length} label="Kanji known" barClassName="bg-sun-deep" />
         <div className="space-y-2">
           <Segmented label="Kanji practice mode" value={settings.kanjiMode} onChange={(v) => actions.updateSettings({ kanjiMode: v })} options={MODES.map((m) => ({ value: m.value, label: m.label }))} />
           <p className="text-sm text-muted">{mode.help}</p>
@@ -126,8 +132,21 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
         </div>
       </Card>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Segmented
+          label="Kanji lessons"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "n5", label: `N5 basics (${N5_KANJI.length})` },
+            { value: "common", label: `500 most used (+${KANJI.length - N5_KANJI.length})` },
+          ]}
+        />
+        <p className="text-sm text-muted">{tab === "n5" ? "The JLPT N5 set, grouped by topic." : "The next most common kanji, in order of how often they show up."}</p>
+      </div>
+
       <ul className="grid gap-4 md:grid-cols-2">
-        {LESSONS.map((l) => {
+        {shown.map((l) => {
           const lp = lessons.find((x) => x.id === l.id)!;
           const on = chosen.has(l.id);
           const ks = KANJI.filter((x) => x.lesson === l.id);
@@ -137,7 +156,8 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="font-display text-lg">
-                      {l.id}. {l.name}
+                      {l.id <= N5_LAST_LESSON ? `${l.id}. ` : ""}
+                      {l.name}
                     </h2>
                     <p className="text-sm text-muted">{l.blurb}</p>
                   </div>
@@ -145,7 +165,7 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
                     type="button"
                     role="checkbox"
                     aria-checked={on}
-                    aria-label={`Practise lesson ${l.id}, ${l.name}`}
+                    aria-label={`Practise ${l.id <= N5_LAST_LESSON ? `lesson ${l.id}, ` : ""}${l.name}`}
                     onClick={() => toggle(l.id)}
                     className={cn(
                       "flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-extrabold transition-colors",
