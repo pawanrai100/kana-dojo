@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { KANJI, KANJI_LIST, KANJI_WORDS, LESSONS, N5_KANJI, exampleWords, getKanji, kanjiOfLessons, kanjiTwins, wordsFor } from "./data";
+import { KANJI, KANJI_LIST, KANJI_WORDS, LESSONS, N5_KANJI, exampleWords, getKanji, sayIt, kanjiOfLessons, kanjiTwins, wordsFor } from "./data";
 import { buildKanjiRound, checkMeaning, checkReading, meaningMatches, pickOptions, type KanjiQuestion, type KanjiResult } from "./quiz";
 import { applyKanjiRound, kanjiLevel, knownKanji } from "./progress";
 import { emptyProgress, type CharStat } from "@/lib/progress/types";
@@ -26,6 +26,14 @@ describe("kanji data", () => {
     expect(N5_KANJI.length).toBe(105);
     expect(kanjiOfLessons([10])).toContain("同");
     expect(sanitizeSettings({ kanjiLessons: [25, 26] }).kanjiLessons).toEqual([25]);
+  });
+
+  it("knows how to say every kanji", () => {
+    expect(sayIt("一")).toEqual({ text: "いち", reading: "いち", romaji: "ichi" });
+    expect(sayIt("山")?.text).toBe("やま");
+    expect(sayIt("食")).toMatchObject({ text: "た(べる)", reading: "たべる", romaji: "taberu" });
+    expect(sayIt("同")?.text).toBe("どう");
+    for (const k of KANJI_LIST) expect(sayIt(k)?.text, k).toBeTruthy();
   });
 
   it("shows easy example words first", () => {

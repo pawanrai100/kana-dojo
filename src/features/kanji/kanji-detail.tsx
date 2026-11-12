@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/misc";
 import { toHiragana, toRomaji } from "@/lib/kana/hiragana";
-import { N5_LAST_LESSON, exampleWords, getKanji, kanjiTwins } from "@/lib/kanji/data";
+import { N5_LAST_LESSON, exampleWords, getKanji, kanjiTwins, sayIt } from "@/lib/kanji/data";
 import { kanjiLevel, type KanjiLevel } from "@/lib/kanji/progress";
 import { isWordLearned } from "@/lib/progress/stats";
 import type { Progress } from "@/lib/progress/types";
@@ -40,6 +40,7 @@ export function KanjiDetail({ k, progress, onClose, onPick }: { k: string | null
   const level = k ? kanjiLevel(progress, k) : "new";
   const words = k ? exampleWords(k) : [];
   const twins = k ? kanjiTwins(k) : [];
+  const say = k ? sayIt(k) : undefined;
   return (
     <Dialog open={!!kj} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
@@ -52,6 +53,13 @@ export function KanjiDetail({ k, progress, onClose, onPick }: { k: string | null
               <div className="min-w-0 space-y-1">
                 <DialogTitle className="text-2xl capitalize">{kj.meanings[0]}</DialogTitle>
                 <DialogDescription>{kj.meanings.length > 1 ? `Also: ${kj.meanings.slice(1).join(", ")}` : kj.lesson <= N5_LAST_LESSON ? "N5 kanji" : "Common kanji"}</DialogDescription>
+                {say && (
+                  <p className="flex items-center gap-2">
+                    <span lang="ja" className="font-kana text-xl">{say.text}</span>
+                    <span className="text-muted">{say.romaji}</span>
+                    <SpeakerButton text={say.reading} label={`Hear ${say.romaji}`} className="size-8" />
+                  </p>
+                )}
                 <Badge tone={level === "known" ? "sun" : level === "new" ? "default" : "primary"}>{LEVEL_LABEL[level]}</Badge>
               </div>
             </div>

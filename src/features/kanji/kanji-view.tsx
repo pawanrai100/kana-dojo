@@ -9,7 +9,7 @@ import { Badge, ProgressBar, Segmented } from "@/components/ui/misc";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { Medal } from "@/features/tower/medal";
 import { SpeakerButton } from "@/features/voice/speaker-button";
-import { KANJI, LESSONS, N5_KANJI, N5_LAST_LESSON, exampleWords, getKanji, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
+import { KANJI, LESSONS, N5_KANJI, N5_LAST_LESSON, exampleWords, getKanji, sayIt, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
 import { kanjiLevel, knownKanji, lessonProgress } from "@/lib/kanji/progress";
 import { answerOf, buildKanjiRound, checkMeaning, checkReading, promptOf, type KanjiQuestion, type KanjiResult } from "@/lib/kanji/quiz";
 import { beltStatus, promotedBelt, type Belt } from "@/lib/progress/belts";
@@ -152,12 +152,12 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
           className="flex h-10 items-center gap-2 rounded-xl bg-surface px-3 text-sm font-extrabold shadow-[0_3px_0_var(--border)]"
         >
           {settings.kanjiMeanings ? <Eye className="size-4" aria-hidden /> : <EyeOff className="size-4" aria-hidden />}
-          {settings.kanjiMeanings ? "Meanings on" : "Meanings hidden"}
+          {settings.kanjiMeanings ? "Readings + meanings on" : "Hidden (test yourself)"}
         </button>
       </div>
       <p className="-mt-2 text-sm text-muted">
         {tab === "n5" ? "The JLPT N5 set, grouped by topic." : "The next most common kanji, in order of how often they show up."} Tap any kanji for its readings, trick and words.
-        {settings.kanjiMeanings ? " Hide the meanings to test yourself." : ""}
+        {settings.kanjiMeanings ? " Hide them to test yourself." : ""}
       </p>
 
       <ul className="grid gap-4 md:grid-cols-2">
@@ -191,27 +191,33 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
                     {on ? "In practice" : "Add"}
                   </button>
                 </div>
-                <div className={cn("flex flex-wrap", settings.kanjiMeanings ? "gap-2" : "gap-1.5")}>
+                <div className={cn(settings.kanjiMeanings ? "grid grid-cols-4 gap-2 sm:flex sm:flex-wrap" : "flex flex-wrap gap-1.5")}>
                   {ks.map((x) => {
                     const lv = kanjiLevel(progress, x.k);
+                    const say = sayIt(x.k);
                     return (
                       <button
                         key={x.k}
                         type="button"
                         lang="ja"
                         onClick={() => setOpen(x.k)}
-                        aria-label={`${x.k}, ${x.meanings[0]}, ${LEVEL_LABEL[lv]}`}
+                        aria-label={`${x.k}, ${say ? `${say.romaji}, ` : ""}${x.meanings[0]}, ${LEVEL_LABEL[lv]}`}
                         className={cn(
                           "flex flex-col items-center justify-center rounded-xl shadow-[0_3px_0_var(--border)] transition-transform hover:-translate-y-0.5",
-                          settings.kanjiMeanings ? "h-[4.25rem] w-[4.5rem] gap-0.5 px-1" : "size-11",
+                          settings.kanjiMeanings ? "h-[5.25rem] w-full gap-0.5 px-1 sm:w-[4.75rem]" : "size-11",
                           LEVEL_TILE[lv],
                         )}
                       >
                         <span className="font-kana text-2xl leading-none">{x.k}</span>
                         {settings.kanjiMeanings && (
-                          <span lang="en" aria-hidden className="w-full truncate text-center text-[11px] font-bold leading-tight opacity-80">
-                            {x.meanings[0]}
-                          </span>
+                          <>
+                            <span lang="ja" aria-hidden className="font-kana w-full truncate text-center text-[11px] leading-tight">
+                              {say?.text}
+                            </span>
+                            <span lang="en" aria-hidden className="w-full truncate text-center text-[11px] font-bold leading-tight opacity-75">
+                              {x.meanings[0]}
+                            </span>
+                          </>
                         )}
                       </button>
                     );
@@ -465,6 +471,7 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
 function TeachCard({ k, reading, onDone }: { k: string; reading?: string; onDone: () => void }) {
   const kj = getKanji(k)!;
   const word = exampleWords(k)[0];
+  const say = sayIt(k);
   return (
     <article aria-label={`New kanji: ${k}`} className="animate-deal space-y-4 rounded-[1.75rem] bg-surface px-5 pb-6 pt-5 shadow-[0_10px_0_var(--border)] sm:px-8">
       <div className="flex items-center justify-between gap-2">
@@ -480,8 +487,16 @@ function TeachCard({ k, reading, onDone }: { k: string; reading?: string; onDone
         <div className="min-w-0 space-y-1">
           <h2 className="font-display text-3xl first-letter:uppercase">{kj.meanings[0]}</h2>
           {kj.meanings.length > 1 && <p className="text-sm text-muted">Also: {kj.meanings.slice(1).join(", ")}</p>}
-          <p lang="ja" className="font-kana text-base">
-            {[...kj.on, ...kj.kun.map((r) => r.replace(".", ""))].slice(0, 4).join("・")}
+          {say && (
+            <p className="flex items-center gap-2">
+              <span className="text-sm font-bold text-muted">Say it:</span>
+              <span lang="ja" className="font-kana text-xl">{say.text}</span>
+              <span className="text-muted">{say.romaji}</span>
+              <SpeakerButton text={say.reading} label={`Hear ${say.romaji}`} className="size-8" />
+            </p>
+          )}
+          <p className="text-xs text-muted">
+            All readings: <span lang="ja" className="font-kana">{[...kj.on, ...kj.kun.map((r) => r.replace(".", ""))].join("・")}</span>
           </p>
         </div>
       </div>

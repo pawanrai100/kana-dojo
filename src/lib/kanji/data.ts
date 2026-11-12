@@ -427,6 +427,50 @@ export function wordsFor(kanji: string[]): KanjiWord[] {
   return KANJI_WORDS.filter((w) => w.kanji.every((k) => set.has(k)));
 }
 
+export interface SayIt {
+  text: string; // た(べる): kana, with the okurigana in brackets
+  reading: string; // たべる, for the speaker
+  romaji: string;
+}
+
+// the one reading to show under a kanji: the word on its own (山 = やま),
+// else its verb or adjective (食べる), else the on reading (同 = どう).
+// numbers use the on reading since いち beats ひとつ when counting
+const SAY = new Map<string, SayIt>();
+export function sayIt(k: string): SayIt | undefined {
+  if (SAY.has(k)) return SAY.get(k);
+  const kj = BY_K.get(k);
+  if (!kj) return undefined;
+  const on = kj.on[0] ? toHiragana(kj.on[0]) : undefined;
+  const alone = KANJI_WORDS.find((w) => w.word === k);
+  // a verb or adjective that uses one of its kun readings (食べる, not 発する)
+  const stems = kj.kun.map((r) => r.split(".")[0]);
+  const okuri = KANJI_WORDS.find(
+    (w) =>
+      w.word.startsWith(k) &&
+      w.kanji.length === 1 &&
+      w.word.length > 1 &&
+      /[うくぐすつぬぶむるい]$/.test(w.word) &&
+      stems.some((st) => w.reading.startsWith(st) && w.reading.length - st.length === w.word.length - 1),
+  );
+  let out: SayIt | undefined;
+  // よん and なな are what people actually say for 4 and 7
+  const num = ({ 四: "よん", 七: "なな" } as Record<string, string>)[k] ?? on;
+  if (kj.lesson === 1 && num) out = { text: num, reading: num, romaji: toRomaji(num) };
+  else if (alone) out = { text: alone.reading, reading: alone.reading, romaji: alone.romaji };
+  else if (okuri) {
+    const tail = okuri.word.slice(1);
+    const stem = okuri.reading.endsWith(tail) ? okuri.reading.slice(0, -tail.length) : okuri.reading;
+    out = { text: stem === okuri.reading ? stem : `${stem}(${tail})`, reading: okuri.reading, romaji: okuri.romaji };
+  } else if (on) out = { text: on, reading: on, romaji: toRomaji(on) };
+  else if (kj.kun[0]) {
+    const r = kj.kun[0].replace(".", "");
+    out = { text: kj.kun[0].replace(/\.(.+)$/, "($1)"), reading: r, romaji: toRomaji(r) };
+  }
+  if (out) SAY.set(k, out);
+  return out;
+}
+
 // a handful of words for the detail card, without six weekdays in a row
 export function exampleWords(k: string, n = 6): KanjiWord[] {
   const out: KanjiWord[] = [];
