@@ -29,6 +29,7 @@ export interface Settings {
   enabledChars: string[];
   kanjiLessons: number[]; // which kanji lessons practice pulls from
   kanjiMode: KanjiMode;
+  kanjiMeanings: boolean; // show the meaning under each kanji on the lessons page
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -48,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enabledChars: [...BASIC_KANA_LIST, ...KATAKANA_BASIC_LIST, LONG_MARK],
   kanjiLessons: [1],
   kanjiMode: "mixed",
+  kanjiMeanings: true,
 };
 
 // katakana everyone starts with: the basic 46 plus ー, since so many words use it
@@ -98,6 +100,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     enabledChars: enabled,
     kanjiLessons: lessons(r.kanjiLessons),
     kanjiMode: pick(r.kanjiMode, ["mixed", "meaning", "reading", "pick"] as const, d.kanjiMode),
+    kanjiMeanings: bool(r.kanjiMeanings, d.kanjiMeanings),
   };
 }
 

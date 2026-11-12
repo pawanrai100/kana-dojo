@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowRight, BookOpen, Check, Lightbulb, Play, RotateCcw, Square, X } from "lucide-react";
+import { ArrowRight, BookOpen, Check, Eye, EyeOff, GraduationCap, Lightbulb, Play, RotateCcw, Square, X } from "lucide-react";
 import { PageHeader, PageSkeleton } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Badge, ProgressBar, Segmented } from "@/components/ui/misc";
 import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { Medal } from "@/features/tower/medal";
 import { SpeakerButton } from "@/features/voice/speaker-button";
-import { KANJI, LESSONS, N5_KANJI, N5_LAST_LESSON, getKanji, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
+import { KANJI, LESSONS, N5_KANJI, N5_LAST_LESSON, exampleWords, getKanji, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
 import { kanjiLevel, knownKanji, lessonProgress } from "@/lib/kanji/progress";
 import { answerOf, buildKanjiRound, checkMeaning, checkReading, promptOf, type KanjiQuestion, type KanjiResult } from "@/lib/kanji/quiz";
 import { beltStatus, promotedBelt, type Belt } from "@/lib/progress/belts";
@@ -37,7 +37,7 @@ interface Played {
 
 export function KanjiView() {
   const state = useAppState();
-  const [round, setRound] = useState<{ id: string; qs: KanjiQuestion[] } | null>(null);
+  const [round, setRound] = useState<{ id: string; qs: KanjiQuestion[]; fresh: Set<string> } | null>(null);
   const [played, setPlayed] = useState<Played | null>(null);
   if (!state) return <PageSkeleton />;
 
@@ -52,7 +52,9 @@ export function KanjiView() {
       rng: mulberry32(seed),
     });
     setPlayed(null);
-    setRound({ id: `kj-${seed.toString(36)}`, qs });
+    // kanji you've never practised get a quick lesson card before the quiz
+    const fresh = new Set(qs.map((q) => q.kanji).filter((k) => !s.progress.kanji?.[k]?.seen && !s.progress.kanjiRead?.[k]?.seen));
+    setRound({ id: `kj-${seed.toString(36)}`, qs, fresh });
     window.scrollTo({ top: 0 });
   };
 
@@ -68,7 +70,7 @@ export function KanjiView() {
     window.scrollTo({ top: 0 });
   };
 
-  if (round) return <KanjiRound key={round.id} qs={round.qs} settings={state.settings} onDone={finish} onQuit={() => setRound(null)} />;
+  if (round) return <KanjiRound key={round.id} qs={round.qs} fresh={round.fresh} settings={state.settings} onDone={finish} onQuit={() => setRound(null)} />;
 
   return (
     <div className="space-y-5">
@@ -80,7 +82,7 @@ export function KanjiView() {
 }
 
 const MODES: { value: KanjiMode; label: string; help: string }[] = [
-  { value: "mixed", label: "Mixed", help: "A bit of everything. New kanji start with an easy pick." },
+  { value: "mixed", label: "Mixed", help: "A bit of everything. New kanji are taught first, then quizzed." },
   { value: "pick", label: "Pick", help: "See the meaning, tap the right kanji." },
   { value: "meaning", label: "Meaning", help: "See the kanji, type what it means in English." },
   { value: "reading", label: "Reading", help: "See a kanji word, type how it's read." },
@@ -142,8 +144,21 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
             { value: "common", label: `500 most used (+${KANJI.length - N5_KANJI.length})` },
           ]}
         />
-        <p className="text-sm text-muted">{tab === "n5" ? "The JLPT N5 set, grouped by topic." : "The next most common kanji, in order of how often they show up."}</p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={settings.kanjiMeanings}
+          onClick={() => actions.updateSettings({ kanjiMeanings: !settings.kanjiMeanings })}
+          className="flex h-10 items-center gap-2 rounded-xl bg-surface px-3 text-sm font-extrabold shadow-[0_3px_0_var(--border)]"
+        >
+          {settings.kanjiMeanings ? <Eye className="size-4" aria-hidden /> : <EyeOff className="size-4" aria-hidden />}
+          {settings.kanjiMeanings ? "Meanings on" : "Meanings hidden"}
+        </button>
       </div>
+      <p className="-mt-2 text-sm text-muted">
+        {tab === "n5" ? "The JLPT N5 set, grouped by topic." : "The next most common kanji, in order of how often they show up."} Tap any kanji for its readings, trick and words.
+        {settings.kanjiMeanings ? " Hide the meanings to test yourself." : ""}
+      </p>
 
       <ul className="grid gap-4 md:grid-cols-2">
         {shown.map((l) => {
@@ -176,7 +191,7 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
                     {on ? "In practice" : "Add"}
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
+                <div className={cn("flex flex-wrap", settings.kanjiMeanings ? "gap-2" : "gap-1.5")}>
                   {ks.map((x) => {
                     const lv = kanjiLevel(progress, x.k);
                     return (
@@ -186,9 +201,18 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
                         lang="ja"
                         onClick={() => setOpen(x.k)}
                         aria-label={`${x.k}, ${x.meanings[0]}, ${LEVEL_LABEL[lv]}`}
-                        className={cn("font-kana grid size-11 place-items-center rounded-xl text-2xl shadow-[0_3px_0_var(--border)] transition-transform hover:-translate-y-0.5", LEVEL_TILE[lv])}
+                        className={cn(
+                          "flex flex-col items-center justify-center rounded-xl shadow-[0_3px_0_var(--border)] transition-transform hover:-translate-y-0.5",
+                          settings.kanjiMeanings ? "h-[4.25rem] w-[4.5rem] gap-0.5 px-1" : "size-11",
+                          LEVEL_TILE[lv],
+                        )}
                       >
-                        {x.k}
+                        <span className="font-kana text-2xl leading-none">{x.k}</span>
+                        {settings.kanjiMeanings && (
+                          <span lang="en" aria-hidden className="w-full truncate text-center text-[11px] font-bold leading-tight opacity-80">
+                            {x.meanings[0]}
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -228,7 +252,7 @@ interface Feedback {
   mixedWith?: string;
 }
 
-function KanjiRound({ qs, settings, onDone, onQuit }: { qs: KanjiQuestion[]; settings: Settings; onDone: (r: KanjiResult[]) => void; onQuit: () => void }) {
+function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion[]; fresh: Set<string>; settings: Settings; onDone: (r: KanjiResult[]) => void; onQuit: () => void }) {
   const [queue, setQueue] = useState(qs);
   const [i, setI] = useState(0);
   const [value, setValue] = useState("");
@@ -237,6 +261,7 @@ function KanjiRound({ qs, settings, onDone, onQuit }: { qs: KanjiQuestion[]; set
   const [startedAt] = useState(() => Date.now());
   const shownAt = useRef<number | null>(null);
   const retried = useRef(new Set<string>());
+  const [taught, setTaught] = useState<string[]>([]);
   const input = useRef<HTMLInputElement>(null);
   const nextBtn = useRef<HTMLButtonElement>(null);
   const q = queue[i];
@@ -293,6 +318,12 @@ function KanjiRound({ qs, settings, onDone, onQuit }: { qs: KanjiQuestion[]; set
   const kj = getKanji(q.kanji)!;
   const again = q.id.endsWith("-again");
   const total = queue.length;
+  const teaching = fresh.has(q.kanji) && !taught.includes(q.kanji);
+  const learnt = () => {
+    setTaught((t) => [...t, q.kanji]);
+    shownAt.current = Date.now();
+    setTimeout(() => input.current?.focus(), 0);
+  };
 
   return (
     <div className="mx-auto max-w-[620px] space-y-4">
@@ -306,6 +337,9 @@ function KanjiRound({ qs, settings, onDone, onQuit }: { qs: KanjiQuestion[]; set
         </Button>
       </div>
 
+      {teaching ? (
+        <TeachCard k={q.kanji} reading={reading} onDone={learnt} />
+      ) : (
       <article className="animate-deal flex flex-col items-center gap-5 rounded-[1.75rem] bg-surface px-5 pb-7 pt-5 shadow-[0_10px_0_var(--border)] sm:px-8" key={q.id}>
         <div className="flex w-full items-center justify-between gap-2">
           <span className="flex items-center gap-2">
@@ -379,6 +413,7 @@ function KanjiRound({ qs, settings, onDone, onQuit }: { qs: KanjiQuestion[]; set
           </>
         )}
       </article>
+      )}
 
       {fb && (
         <section aria-live="polite" className={cn("animate-pop space-y-3 rounded-[var(--radius-card)] p-5", fb.correct ? "bg-good-soft" : "bg-bad-soft")}>
@@ -423,6 +458,52 @@ function KanjiRound({ qs, settings, onDone, onQuit }: { qs: KanjiQuestion[]; set
         </section>
       )}
     </div>
+  );
+}
+
+// shown once before the first quiz on a kanji you've never practised
+function TeachCard({ k, reading, onDone }: { k: string; reading?: string; onDone: () => void }) {
+  const kj = getKanji(k)!;
+  const word = exampleWords(k)[0];
+  return (
+    <article aria-label={`New kanji: ${k}`} className="animate-deal space-y-4 rounded-[1.75rem] bg-surface px-5 pb-6 pt-5 shadow-[0_10px_0_var(--border)] sm:px-8">
+      <div className="flex items-center justify-between gap-2">
+        <Badge tone="sun">
+          <GraduationCap className="size-3.5" aria-hidden /> New kanji
+        </Badge>
+        <span className="text-sm font-bold text-muted">Learn it, then you&apos;ll be quizzed</span>
+      </div>
+      <div className="flex items-center gap-5">
+        <span lang="ja" className="font-kana grid size-28 shrink-0 place-items-center rounded-3xl bg-sun-soft text-7xl">
+          {k}
+        </span>
+        <div className="min-w-0 space-y-1">
+          <h2 className="font-display text-3xl first-letter:uppercase">{kj.meanings[0]}</h2>
+          {kj.meanings.length > 1 && <p className="text-sm text-muted">Also: {kj.meanings.slice(1).join(", ")}</p>}
+          <p lang="ja" className="font-kana text-base">
+            {[...kj.on, ...kj.kun.map((r) => r.replace(".", ""))].slice(0, 4).join("・")}
+          </p>
+        </div>
+      </div>
+      <p className="flex gap-2 rounded-2xl bg-sun-soft px-4 py-3 text-sm">
+        <Lightbulb className="size-4 shrink-0 text-sun-deep" aria-hidden />
+        <span>{kj.trick}</span>
+      </p>
+      {word && (
+        <div className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-2.5">
+          <span lang="ja" className="font-kana text-2xl">{word.word}</span>
+          <span className="min-w-0 flex-1 text-sm">
+            <span lang="ja" className="font-kana">{word.reading}</span> <span className="text-muted">{word.romaji}</span>
+            <span className="block truncate font-bold">{word.meaning}</span>
+          </span>
+          <SpeakerButton text={word.reading} label={`Hear ${word.word}`} />
+        </div>
+      )}
+      {!word && reading && <SpeakerButton text={reading} label="Hear it" />}
+      <Button autoFocus size="lg" className="w-full" onClick={onDone}>
+        Got it, quiz me <ArrowRight className="size-5" aria-hidden />
+      </Button>
+    </article>
   );
 }
 
