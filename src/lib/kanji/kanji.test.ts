@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { KANJI, KANJI_LIST, KANJI_WORDS, LESSONS, N5_KANJI, exampleWords, getKanji, sayIt, kanjiOfLessons, kanjiTwins, wordsFor } from "./data";
-import { buildKanjiRound, checkMeaning, checkReading, meaningMatches, pickOptions, type KanjiQuestion, type KanjiResult } from "./quiz";
-import { applyKanjiRound, kanjiLevel, knownKanji } from "./progress";
+import { buildKanjiRound, checkMeaning, checkReading, checkWord, meaningMatches, pickOptions, type KanjiQuestion, type KanjiResult } from "./quiz";
+import { applyKanjiRound, kanjiLevel, knownKanji, nextStudySet } from "./progress";
 import { emptyProgress, type CharStat } from "@/lib/progress/types";
 import { sanitizeProgress } from "@/lib/progress/sanitize";
 import { mergeDiverged, mergeGuestInto } from "@/lib/sync/merge";
@@ -110,6 +110,20 @@ describe("checking answers", () => {
     expect(checkMeaning("日", "banana").mixedWith).toBeUndefined();
   });
 
+  it("takes english or japanese on both kinds of card", () => {
+    expect(checkMeaning("山", "mountain")).toEqual({ correct: true });
+    expect(checkMeaning("山", "yama")).toEqual({ correct: true, via: "japanese" });
+    expect(checkMeaning("山", "やま")).toEqual({ correct: true, via: "japanese" });
+    expect(checkMeaning("山", "san").correct).toBe(true);
+    expect(checkMeaning("食", "taberu").correct).toBe(true);
+    expect(checkMeaning("山", "kawa").correct).toBe(false);
+    expect(checkWord(word("学校"), "gakkou")).toEqual({ correct: true });
+    expect(checkWord(word("学校"), "school")).toEqual({ correct: true, via: "english" });
+    expect(checkWord(word("食べる"), "to eat").correct).toBe(true);
+    expect(checkWord(word("日曜日"), "monday").correct).toBe(false);
+    expect(checkWord(word("電車"), "car").correct).toBe(false);
+  });
+
   it("takes readings in romaji or kana", () => {
     expect(checkReading(word("学校"), "gakkou")).toBe(true);
     expect(checkReading(word("学校"), "がっこう")).toBe(true);
@@ -180,6 +194,23 @@ describe("kanji progress", () => {
     expect(p.kanjiWords["学校"].lastCorrect).toBe(true);
     expect(p.chars).toEqual({});
     expect(p.bestStreak).toBe(1);
+  });
+
+  it("studies the next 10 you don't know, in lesson order", () => {
+    const pool = kanjiOfLessons([1, 2]);
+    expect(nextStudySet(emptyProgress(), pool)).toEqual(pool.slice(0, 10));
+    const p = { ...emptyProgress(), kanji: Object.fromEntries(pool.slice(0, 10).map((k) => [k, solid])), kanjiRead: Object.fromEntries(pool.slice(0, 10).map((k) => [k, solid])) };
+    expect(nextStudySet(p, pool)).toEqual(pool.slice(10, 20));
+    // ones you've been missing come back before brand new ones
+    const q = { ...p, kanji: { ...p.kanji, 日: { ...solid, roundsCorrect: 1, recent: [true, false] } } };
+    expect(nextStudySet(q, pool)[0]).toBe("日");
+    // still learning but no misses: move on to new ones, they fill in at the end
+    const r = { ...p, kanji: { ...p.kanji, 百: { ...solid, roundsCorrect: 1 } } };
+    expect(nextStudySet(r, pool).slice(0, 3)).toEqual(["千", "万", "円"]);
+    expect(nextStudySet(r, pool, 30)).toContain("百");
+    // all known: review the ones you haven't seen in a while
+    const all = Object.fromEntries(pool.map((k, n) => [k, { ...solid, lastSeen: 100 - n }]));
+    expect(nextStudySet({ kanji: all, kanjiRead: all }, pool, 3)).toEqual(pool.slice(-3).reverse());
   });
 
   it("needs both meaning and reading to call a kanji known", () => {

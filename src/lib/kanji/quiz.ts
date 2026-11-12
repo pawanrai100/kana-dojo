@@ -3,7 +3,7 @@ import { checkAnswer } from "@/lib/quiz/validate";
 import { shuffle, weightedSample, type Rng } from "@/lib/quiz/random";
 import type { CharStat, WordStat } from "@/lib/progress/types";
 import { isMastered } from "@/lib/progress/stats";
-import { KANJI, getKanji, kanjiTwins, wordsFor, type KanjiWord } from "./data";
+import { KANJI, getKanji, kanjiTwins, sayIt, wordsFor, type KanjiWord } from "./data";
 
 export type KanjiKind = "meaning" | "reading" | "pick";
 export type KanjiMode = "mixed" | KanjiKind;
@@ -79,12 +79,15 @@ export function meaningMatches(k: string, input: string, fuzzy = true): boolean 
 
 export interface MeaningCheck {
   correct: boolean;
+  // answered in the other language (a reading on a meaning card, or the reverse)
+  via?: "japanese" | "english";
   // you typed another kanji's meaning, so show that one next to it
   mixedWith?: string;
 }
 
 export function checkMeaning(k: string, input: string): MeaningCheck {
   if (meaningMatches(k, input, false)) return { correct: true };
+  if (readingMatches(k, input)) return { correct: true, via: "japanese" };
   const twins = kanjiTwins(k).map((t) => t.other);
   const other = [...twins, ...KANJI.map((x) => x.k)].find((o) => o !== k && meaningMatches(o, input, false));
   // spot on for another kanji beats one typo away from this one
@@ -92,13 +95,55 @@ export function checkMeaning(k: string, input: string): MeaningCheck {
   return { correct: meaningMatches(k, input) };
 }
 
+// does this kana (or romaji) say that reading? ガッコウ, がっこう and gakkou all count
+function saysKana(reading: string, input: string): boolean {
+  const trimmed = input.trim();
+  if (!trimmed || !reading) return false;
+  const units = splitKana(trimmed.replace(/\s/g, ""));
+  if (units.length && units.every(isKnownKana)) return toHiragana(units.join("")) === reading;
+  if (!/^[a-zA-Z' -]+$/.test(trimmed)) return false;
+  return checkAnswer(reading, trimmed).correct;
+}
+
+// every way you could say a kanji on its own: on, kun, kun with its kana tail
+export function readingsOf(k: string): string[] {
+  const kj = getKanji(k);
+  if (!kj) return [];
+  const out = new Set<string>();
+  for (const r of kj.on) out.add(toHiragana(r));
+  for (const r of kj.kun) {
+    out.add(r.replace(".", ""));
+    out.add(r.split(".")[0]);
+  }
+  const say = sayIt(k);
+  if (say) out.add(say.reading);
+  return [...out].filter(Boolean);
+}
+
+export function readingMatches(k: string, input: string): boolean {
+  return readingsOf(k).some((r) => saysKana(r, input));
+}
+
 // romaji or kana both work for readings
 export function checkReading(word: KanjiWord, input: string): boolean {
-  const trimmed = input.trim();
-  if (!trimmed) return false;
-  const units = splitKana(trimmed.replace(/\s/g, ""));
-  if (units.length && units.every(isKnownKana)) return toHiragana(units.join("")) === word.reading;
-  return checkAnswer(word.reading, trimmed).correct;
+  return saysKana(word.reading, input);
+}
+
+// a word card takes the reading, or what it means in english
+export function wordMeaningMatches(word: KanjiWord, input: string): boolean {
+  const typed = normMeaning(input);
+  if (!typed || /^[\u3040-\u30ff]+$/.test(input.trim())) return false;
+  const wants = word.meaning
+    .split(/[,;/]/)
+    .map(normMeaning)
+    .filter(Boolean);
+  return wants.some((w) => close(typed, w, true));
+}
+
+export function checkWord(word: KanjiWord, input: string): MeaningCheck {
+  if (checkReading(word, input)) return { correct: true };
+  if (wordMeaningMatches(word, input)) return { correct: true, via: "english" };
+  return { correct: false };
 }
 
 // ---- building a round ----
@@ -138,10 +183,11 @@ export interface BuildInput {
   size: number;
   rng: Rng;
   now?: number;
+  studied?: boolean; // you just went through these on study cards
 }
 
 // a kanji you've never seen starts with a pick card, so the first meet is gentle
-export function buildKanjiRound({ pool, stats, mode, size, rng, now = Date.now() }: BuildInput): KanjiQuestion[] {
+export function buildKanjiRound({ pool, stats, mode, size, rng, now = Date.now(), studied }: BuildInput): KanjiQuestion[] {
   const list = pool.filter((k) => getKanji(k));
   if (!list.length) return [];
   const words = wordsFor(list);
@@ -157,7 +203,8 @@ export function buildKanjiRound({ pool, stats, mode, size, rng, now = Date.now()
   chosen.slice(0, size).forEach((k, i) => {
     const fresh = !stats.kanji[k]?.seen;
     let kind: KanjiKind = mode === "mixed" ? (["pick", "meaning", "reading"] as const)[Math.floor(rng() * 3)] : mode;
-    if (mode === "mixed" && fresh) kind = "pick";
+    // brand new kanji start with a pick card. if you just studied them, pick or type the meaning
+    if (mode === "mixed" && fresh) kind = studied && rng() < 0.5 ? "meaning" : "pick";
     const id = `${i}-${k}-${kind}`;
     if (kind === "reading") {
       const mine = words.filter((w) => w.kanji.includes(k) && !usedWords.has(w.id));
@@ -177,8 +224,8 @@ export function buildKanjiRound({ pool, stats, mode, size, rng, now = Date.now()
 
 // what to say on the card
 export function promptOf(q: KanjiQuestion): string {
-  if (q.kind === "meaning") return "What does this kanji mean?";
-  if (q.kind === "reading") return "How do you read this word?";
+  if (q.kind === "meaning") return "What is this kanji? Type the meaning or how to say it.";
+  if (q.kind === "reading") return "What's this word? Type how to say it or what it means.";
   return `Which kanji means "${getKanji(q.kanji)?.meanings[0]}"?`;
 }
 

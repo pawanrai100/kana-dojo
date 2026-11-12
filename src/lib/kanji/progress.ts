@@ -113,6 +113,21 @@ export function lessonProgress(p: Pick<Progress, "kanji" | "kanjiRead">): Lesson
   });
 }
 
+// the next handful to study, in lesson order: kanji you've been missing first,
+// then ones you haven't met. sets move forward once you get through a quiz,
+// and if there's room, ones you're still learning fill it up for review
+export function nextStudySet(p: Pick<Progress, "kanji" | "kanjiRead">, pool: string[], n = 10): string[] {
+  const missed = (s?: CharStat) => !!s && s.recent.slice(-5).includes(false);
+  const todo = pool.filter((k) => kanjiLevel(p, k) !== "known");
+  const shaky = todo.filter((k) => missed(p.kanji?.[k]) || missed(p.kanjiRead?.[k]));
+  const fresh = todo.filter((k) => kanjiLevel(p, k) === "new");
+  const rest = todo.filter((k) => !shaky.includes(k) && !fresh.includes(k));
+  const out = [...shaky, ...fresh, ...rest].slice(0, n);
+  if (out.length) return out;
+  const lastSeen = (k: string) => Math.max(p.kanji?.[k]?.lastSeen ?? 0, p.kanjiRead?.[k]?.lastSeen ?? 0);
+  return [...pool].sort((a, b) => lastSeen(a) - lastSeen(b)).slice(0, n);
+}
+
 // the kanji you keep missing, for the summary and stats
 export function shakyKanji(p: Pick<Progress, "kanji" | "kanjiRead">, limit = 6): string[] {
   const miss = (s?: CharStat) => (s ? s.recent.filter((x) => !x).length : 0);

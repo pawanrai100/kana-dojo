@@ -10,8 +10,8 @@ import { BeltProgress, BeltPromotion } from "@/features/belts/belt";
 import { Medal } from "@/features/tower/medal";
 import { SpeakerButton } from "@/features/voice/speaker-button";
 import { KANJI, LESSONS, N5_KANJI, N5_LAST_LESSON, exampleWords, getKanji, sayIt, kanjiOfLessons, kanjiTwins, wordsWith } from "@/lib/kanji/data";
-import { kanjiLevel, knownKanji, lessonProgress } from "@/lib/kanji/progress";
-import { answerOf, buildKanjiRound, checkMeaning, checkReading, promptOf, type KanjiQuestion, type KanjiResult } from "@/lib/kanji/quiz";
+import { kanjiLevel, knownKanji, lessonProgress, nextStudySet } from "@/lib/kanji/progress";
+import { answerOf, buildKanjiRound, checkMeaning, checkWord, promptOf, type KanjiQuestion, type KanjiResult } from "@/lib/kanji/quiz";
 import { beltStatus, promotedBelt, type Belt } from "@/lib/progress/belts";
 import { todaysQuests } from "@/lib/progress/quests";
 import type { Progress } from "@/lib/progress/types";
@@ -25,10 +25,12 @@ import { actions, useAppState } from "@/store/app-store";
 import { KanjiDetail, LEVEL_LABEL, LEVEL_TILE } from "./kanji-detail";
 
 const since = (t: number) => Date.now() - t;
+const STUDY_SIZE = 10;
 const newSeed = () => (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
 
 interface Played {
   id: string;
+  set?: string[]; // the kanji you studied first, if this was a study round
   results: KanjiResult[];
   badges: Achievement[];
   promoted?: Belt;
@@ -37,9 +39,32 @@ interface Played {
 
 export function KanjiView() {
   const state = useAppState();
-  const [round, setRound] = useState<{ id: string; qs: KanjiQuestion[]; fresh: Set<string> } | null>(null);
+  const [round, setRound] = useState<{ id: string; qs: KanjiQuestion[]; fresh: Set<string>; set?: string[] } | null>(null);
+  const [study, setStudy] = useState<{ id: string; set: string[] } | null>(null);
   const [played, setPlayed] = useState<Played | null>(null);
   if (!state) return <PageSkeleton />;
+
+  // study a set of 10 first, then get quizzed on just those
+  const startStudy = (set?: string[]) => {
+    const s = actions.getState();
+    const pick = set ?? nextStudySet(s.progress, kanjiOfLessons(s.settings.kanjiLessons), STUDY_SIZE);
+    if (!pick.length) return;
+    setPlayed(null);
+    setRound(null);
+    setStudy({ id: `st-${newSeed().toString(36)}`, set: pick });
+    window.scrollTo({ top: 0 });
+  };
+
+  const quizSet = (set: string[]) => {
+    const s = actions.getState();
+    const seed = newSeed();
+    const qs = buildKanjiRound({ pool: set, stats: s.progress, mode: s.settings.kanjiMode, size: Math.max(set.length, s.settings.questionsPerRound), rng: mulberry32(seed), studied: true });
+    setPlayed(null);
+    setStudy(null);
+    // you just studied them, so no lesson cards
+    setRound({ id: `kj-${seed.toString(36)}`, qs, fresh: new Set(), set });
+    window.scrollTo({ top: 0 });
+  };
 
   const start = () => {
     const s = actions.getState();
@@ -65,18 +90,28 @@ export function KanjiView() {
     const badges = actions.recordKanji(round.id, results);
     const after = actions.getState().progress;
     const quests = todaysQuests(after).filter((q) => q.done && !paid.has(q.quest.id)).map((q) => q.quest.label);
-    setPlayed({ id: round.id, results, badges, promoted: promotedBelt(before, after), quests });
+    setPlayed({ id: round.id, set: round.set, results, badges, promoted: promotedBelt(before, after), quests });
     setRound(null);
     window.scrollTo({ top: 0 });
   };
 
+  if (study) return <StudyDeck key={study.id} set={study.set} settings={state.settings} onQuiz={() => quizSet(study.set)} onQuit={() => setStudy(null)} />;
   if (round) return <KanjiRound key={round.id} qs={round.qs} fresh={round.fresh} settings={state.settings} onDone={finish} onQuit={() => setRound(null)} />;
 
   return (
     <div className="space-y-5">
       <PageHeader title="Kanji" description="The N5 kanji first, then the 500 most used. Learn what each one means and how to read it in real words." />
-      {played && <Summary played={played} progress={state.progress} onAgain={start} onClose={() => setPlayed(null)} />}
-      <Lessons progress={state.progress} settings={state.settings} onStart={start} />
+      {played && (
+        <Summary
+          played={played}
+          progress={state.progress}
+          onAgain={played.set ? () => quizSet(played.set!) : start}
+          onStudyAgain={played.set ? () => startStudy(played.set) : undefined}
+          onNext={() => startStudy()}
+          onClose={() => setPlayed(null)}
+        />
+      )}
+      <Lessons progress={state.progress} settings={state.settings} onStudy={() => startStudy()} onStart={start} />
     </div>
   );
 }
@@ -84,11 +119,11 @@ export function KanjiView() {
 const MODES: { value: KanjiMode; label: string; help: string }[] = [
   { value: "mixed", label: "Mixed", help: "A bit of everything. New kanji are taught first, then quizzed." },
   { value: "pick", label: "Pick", help: "See the meaning, tap the right kanji." },
-  { value: "meaning", label: "Meaning", help: "See the kanji, type what it means in English." },
-  { value: "reading", label: "Reading", help: "See a kanji word, type how it's read." },
+  { value: "meaning", label: "Meaning", help: "See the kanji, type what it means or how to say it (English or Japanese)." },
+  { value: "reading", label: "Reading", help: "See a kanji word, type how to say it or what it means (English or Japanese)." },
 ];
 
-function Lessons({ progress, settings, onStart }: { progress: Progress; settings: Settings; onStart: () => void }) {
+function Lessons({ progress, settings, onStudy, onStart }: { progress: Progress; settings: Settings; onStudy: () => void; onStart: () => void }) {
   const [open, setOpen] = useState<string | null>(null);
   const [tab, setTab] = useState<"n5" | "common">(() => (settings.kanjiLessons.every((id) => id > N5_LAST_LESSON) ? "common" : "n5"));
   const shown = LESSONS.filter((l) => (tab === "n5" ? l.id <= N5_LAST_LESSON : l.id > N5_LAST_LESSON));
@@ -102,6 +137,7 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
     if (next.length) actions.updateSettings({ kanjiLessons: next });
   };
   const mode = MODES.find((m) => m.value === settings.kanjiMode) ?? MODES[0];
+  const upNext = nextStudySet(progress, pool, STUDY_SIZE);
 
   return (
     <>
@@ -124,13 +160,22 @@ function Lessons({ progress, settings, onStart }: { progress: Progress; settings
           <Segmented label="Kanji practice mode" value={settings.kanjiMode} onChange={(v) => actions.updateSettings({ kanjiMode: v })} options={MODES.map((m) => ({ value: m.value, label: m.label }))} />
           <p className="text-sm text-muted">{mode.help}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button size="lg" onClick={onStart}>
-            <Play className="size-5" aria-hidden /> Practise {pool.length} kanji
-          </Button>
-          <p className="text-sm text-muted">
-            {settings.questionsPerRound} cards a round. Tap a lesson to add or remove it.
-          </p>
+        <div className="space-y-3 rounded-2xl bg-sun-soft p-4">
+          <div>
+            <p className="text-sm font-bold text-muted">Up next to study</p>
+            <p lang="ja" className="font-kana text-3xl tracking-wide" aria-label={`Next set: ${upNext.join(" ")}`}>
+              {upNext.join(" ")}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="lg" onClick={onStudy}>
+              <GraduationCap className="size-5" aria-hidden /> Study these {upNext.length}
+            </Button>
+            <Button variant="outline" onClick={onStart}>
+              <Play className="size-4" aria-hidden /> Quick quiz ({pool.length} kanji)
+            </Button>
+          </div>
+          <p className="text-sm text-muted">Go through each one, then take a quiz on just these. Quick quiz mixes everything from your picked lessons.</p>
         </div>
       </Card>
 
@@ -256,6 +301,7 @@ interface Feedback {
   correct: boolean;
   typed: string;
   mixedWith?: string;
+  via?: "japanese" | "english";
 }
 
 function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion[]; fresh: Set<string>; settings: Settings; onDone: (r: KanjiResult[]) => void; onQuit: () => void }) {
@@ -291,11 +337,8 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
     if (fb) return;
     let check: Feedback;
     if (q.kind === "pick") check = { correct: typed === q.kanji, typed, mixedWith: typed !== q.kanji ? typed : undefined };
-    else if (q.kind === "reading" && q.word) check = { correct: checkReading(q.word, typed), typed };
-    else {
-      const c = checkMeaning(q.kanji, typed);
-      check = { correct: c.correct, typed, mixedWith: c.mixedWith };
-    }
+    else if (q.kind === "reading" && q.word) check = { ...checkWord(q.word, typed), typed };
+    else check = { ...checkMeaning(q.kanji, typed), typed };
     setFb(check);
     const res: KanjiResult = { q, correct: check.correct, typed, ms: since(shownAt.current ?? startedAt) };
     setResults((r) => [...r, res]);
@@ -387,7 +430,7 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
               }}
             >
               <label htmlFor={`kj-${q.id}`} className="sr-only">
-                {q.kind === "reading" ? "Reading" : "Meaning in English"}
+                {q.kind === "reading" ? "How to say it, or what it means" : "Meaning, or how to say it"}
               </label>
               <input
                 ref={input}
@@ -399,7 +442,7 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
                 autoCapitalize="none"
                 spellCheck={false}
                 readOnly={!!fb}
-                placeholder={q.kind === "reading" ? "Type the reading" : "Type the meaning"}
+                placeholder="English or Japanese"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 maxLength={40}
@@ -426,6 +469,7 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
           <p className={cn("flex items-center gap-2 text-lg font-extrabold", fb.correct ? "text-good" : "text-bad")}>
             {fb.correct ? <Check className="size-5" aria-hidden /> : <X className="size-5" aria-hidden />}
             {fb.correct ? "Correct!" : fb.typed ? "Not quite" : "Here it is"}
+            {fb.correct && fb.via && <span className="text-sm font-bold text-muted">(you answered in {fb.via === "japanese" ? "Japanese" : "English"})</span>}
           </p>
           <div className="flex items-center gap-4">
             <span lang="ja" className="font-kana grid size-16 shrink-0 place-items-center rounded-2xl bg-surface text-4xl">
@@ -440,7 +484,13 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
                 </p>
               ) : (
                 <p className="text-sm">
-                  <span lang="ja" className="font-kana">{[...kj.on, ...kj.kun.map((r) => r.replace(".", ""))].slice(0, 4).join("・")}</span>
+                  {sayIt(q.kanji) && (
+                    <>
+                      Say it: <span lang="ja" className="font-kana text-base">{sayIt(q.kanji)!.text}</span> <span className="text-muted">({sayIt(q.kanji)!.romaji})</span>
+                      {" · "}
+                    </>
+                  )}
+                  <span lang="ja" className="font-kana text-muted">{[...kj.on, ...kj.kun.map((r) => r.replace(".", ""))].slice(0, 4).join("・")}</span>
                 </p>
               )}
               {!fb.correct && fb.typed && q.kind !== "pick" && (
@@ -462,6 +512,175 @@ function KanjiRound({ qs, fresh, settings, onDone, onQuit }: { qs: KanjiQuestion
             {i + 1 >= queue.length ? "See results" : "Next"} <ArrowRight className="size-5" aria-hidden />
           </Button>
         </section>
+      )}
+    </div>
+  );
+}
+
+// flip through the set before the quiz. cover mode hides the answers so you can test yourself
+function StudyDeck({ set, settings, onQuiz, onQuit }: { set: string[]; settings: Settings; onQuiz: () => void; onQuit: () => void }) {
+  const [i, setI] = useState(0);
+  const [seen, setSeen] = useState<number[]>([0]);
+  const [cover, setCover] = useState(false);
+  const [shown, setShown] = useState(false);
+  const k = set[i];
+  const kj = getKanji(k)!;
+  const say = sayIt(k);
+  const words = exampleWords(k, 3);
+  const twin = kanjiTwins(k)[0];
+  const allSeen = seen.length >= set.length;
+  const hidden = cover && !shown;
+  const go = (n: number) => {
+    const next = Math.max(0, Math.min(set.length - 1, n));
+    setI(next);
+    setShown(false);
+    setSeen((x) => (x.includes(next) ? x : [...x, next]));
+    if (settings.speakAnswers && !cover) {
+      const r = sayIt(set[next])?.reading;
+      if (r) void speak(r, { voice: settings.voiceName || undefined, rate: settings.voiceRate });
+    }
+  };
+  const last = i === set.length - 1;
+
+  return (
+    <div
+      className="mx-auto max-w-[620px] space-y-4"
+      onKeyDown={(e) => {
+        if (e.key === "ArrowRight") go(i + 1);
+        if (e.key === "ArrowLeft") go(i - 1);
+        if (e.key === " " && hidden) {
+          e.preventDefault();
+          setShown(true);
+        }
+      }}
+    >
+      <div className="flex items-center gap-3">
+        <ProgressBar value={seen.length / set.length} label={`Studied ${seen.length} of ${set.length}`} className="flex-1" />
+        <span className="text-sm font-bold tabular-nums text-muted">
+          {i + 1}/{set.length}
+        </span>
+        <Button variant="outline" size="sm" onClick={onQuit} aria-label="Stop studying">
+          <Square className="size-4" aria-hidden /> Stop
+        </Button>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <ol className="flex flex-wrap gap-1.5" aria-label="Kanji in this set">
+          {set.map((x, n) => (
+            <li key={x}>
+              <button
+                type="button"
+                lang="ja"
+                aria-current={n === i ? "true" : undefined}
+                aria-label={`${x}${seen.includes(n) ? ", studied" : ""}`}
+                onClick={() => go(n)}
+                className={cn(
+                  "font-kana grid size-9 place-items-center rounded-lg text-lg transition-colors",
+                  n === i ? "bg-primary text-primary-foreground" : seen.includes(n) ? "bg-good-soft text-good" : "bg-surface-2 text-muted",
+                )}
+              >
+                {x}
+              </button>
+            </li>
+          ))}
+        </ol>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={cover}
+          onClick={() => {
+            setCover(!cover);
+            setShown(false);
+          }}
+          className="flex h-9 items-center gap-1.5 rounded-xl bg-surface px-3 text-sm font-extrabold shadow-[0_3px_0_var(--border)]"
+        >
+          {cover ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+          {cover ? "Answers covered" : "Cover answers"}
+        </button>
+      </div>
+
+      <article key={k} aria-label={`Study card: ${k}`} className="animate-deal space-y-4 rounded-[1.75rem] bg-surface px-5 pb-6 pt-5 shadow-[0_10px_0_var(--border)] sm:px-8">
+        <div className="flex items-center gap-5">
+          <span lang="ja" className="font-kana grid size-28 shrink-0 place-items-center rounded-3xl bg-sun-soft text-7xl sm:size-32 sm:text-8xl">
+            {k}
+          </span>
+          {hidden ? (
+            <button type="button" onClick={() => setShown(true)} className="flex h-28 flex-1 items-center justify-center rounded-2xl border-[3px] border-dashed border-border text-center font-extrabold text-muted hover:border-primary hover:text-primary">
+              What does it mean, and how do you say it?
+              <br />
+              Tap to check
+            </button>
+          ) : (
+            <div className="min-w-0 space-y-1">
+              <h2 className="font-display text-3xl first-letter:uppercase">{kj.meanings[0]}</h2>
+              {kj.meanings.length > 1 && <p className="text-sm text-muted">Also: {kj.meanings.slice(1).join(", ")}</p>}
+              {say && (
+                <p className="flex flex-wrap items-center gap-2">
+                  <span lang="ja" className="font-kana text-2xl">{say.text}</span>
+                  <span className="text-muted">{say.romaji}</span>
+                  <SpeakerButton text={say.reading} label={`Hear ${say.romaji}`} className="size-8" />
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {!hidden && (
+          <>
+            <p className="flex gap-2 rounded-2xl bg-sun-soft px-4 py-3 text-sm">
+              <Lightbulb className="size-4 shrink-0 text-sun-deep" aria-hidden />
+              <span>{kj.trick}</span>
+            </p>
+            {words.length > 0 && (
+              <ul className="space-y-1.5">
+                {words.map((w) => (
+                  <li key={w.id} className="flex items-center gap-3 rounded-2xl bg-surface-2 px-4 py-2">
+                    <span lang="ja" className="font-kana text-xl">{w.word}</span>
+                    <span className="min-w-0 flex-1 text-sm">
+                      <span lang="ja" className="font-kana">{w.reading}</span> <span className="text-muted">{w.romaji}</span>
+                      <span className="block truncate font-bold">{w.meaning}</span>
+                    </span>
+                    <SpeakerButton text={w.reading} label={`Hear ${w.word}`} className="size-8" />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="text-xs text-muted">
+              All readings: <span lang="ja" className="font-kana">{[...kj.on, ...kj.kun.map((r) => r.replace(".", ""))].join("・")}</span>
+            </p>
+            {twin && (
+              <p className="text-sm text-muted">
+                <strong className="text-foreground">Don&apos;t mix it up with</strong> <span lang="ja" className="font-kana text-lg text-foreground">{twin.other}</span> ({getKanji(twin.other)?.meanings[0]}). {twin.tip}
+              </p>
+            )}
+          </>
+        )}
+      </article>
+
+      <div className="flex gap-3">
+        <Button variant="outline" size="lg" className="flex-1" onClick={() => go(i - 1)} disabled={i === 0}>
+          Back
+        </Button>
+        {last ? (
+          <Button size="lg" className="flex-[2]" onClick={onQuiz}>
+            Quiz me on these {set.length} <ArrowRight className="size-5" aria-hidden />
+          </Button>
+        ) : (
+          <Button size="lg" className="flex-[2]" onClick={() => go(i + 1)}>
+            Next <ArrowRight className="size-5" aria-hidden />
+          </Button>
+        )}
+      </div>
+      {!last && (
+        <p className="text-center text-sm text-muted">
+          {allSeen ? (
+            <button type="button" className="font-bold text-primary underline-offset-4 hover:underline" onClick={onQuiz}>
+              I&apos;m ready, quiz me now
+            </button>
+          ) : (
+            "Take your time. Say each one out loud, then hit Next."
+          )}
+        </p>
       )}
     </div>
   );
@@ -533,7 +752,21 @@ function MixedTip({ k, other }: { k: string; other: string }) {
   );
 }
 
-function Summary({ played, progress, onAgain, onClose }: { played: Played; progress: Progress; onAgain: () => void; onClose: () => void }) {
+function Summary({
+  played,
+  progress,
+  onAgain,
+  onStudyAgain,
+  onNext,
+  onClose,
+}: {
+  played: Played;
+  progress: Progress;
+  onAgain: () => void;
+  onStudyAgain?: () => void;
+  onNext: () => void;
+  onClose: () => void;
+}) {
   const { results } = played;
   // only first tries count for the headline, retries are a bonus
   const first = results.filter((r) => !r.q.id.endsWith("-again"));
@@ -549,12 +782,22 @@ function Summary({ played, progress, onAgain, onClose }: { played: Played; progr
             You got <strong className="text-foreground">{right}</strong> of {first.length} right the first time ({pct}%).
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={onAgain}>
-            <RotateCcw className="size-4" aria-hidden /> Again
+        <div className="flex flex-wrap gap-2">
+          {played.set && pct >= 80 && (
+            <Button onClick={onNext}>
+              <GraduationCap className="size-4" aria-hidden /> Study next set
+            </Button>
+          )}
+          {onStudyAgain && (
+            <Button variant={pct >= 80 ? "outline" : "default"} onClick={onStudyAgain}>
+              <BookOpen className="size-4" aria-hidden /> Study these again
+            </Button>
+          )}
+          <Button variant="outline" onClick={onAgain}>
+            <RotateCcw className="size-4" aria-hidden /> {played.set ? "Quiz again" : "Again"}
           </Button>
           <Button variant="outline" onClick={onClose}>
-            <BookOpen className="size-4" aria-hidden /> Lessons
+            Lessons
           </Button>
         </div>
       </div>
